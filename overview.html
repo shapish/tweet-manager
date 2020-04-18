@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	
+	<title>The Forty Fifth's Twitter Archive</title>
+	<link rel="stylesheet" href="css/master.css">
+	<link rel="stylesheet" href="css/overview.css">
+	<script src="js/nav.js"></script>
+	
+	<script src="js/master.js" defer></script>
+</head>
+<body>
+	
+	<div id="header">
+		<h1>The Forty Fifth's Twitter Archive</h1>
+		<div id="main-nav" class="nav">
+			<a href="index.html">Tweets</a>
+			<a href="overview.html" class="sel">Overview</a>
+			<a href="chapters.html">Chapters</a>
+		</div>
+	</div>
+	
+	<!-- body -->
+	<div id="body">
+		
+		<h2 id="template-h2">2020</h2>
+		
+		<div id="template-year" class="year-wrap">
+		</div>
+		
+		<div id="template-month" class="month-overview">
+			<a href="#" class="month">Jan</a>
+			<div class="bar">
+				<div class="archived"></div>
+				<div class="processed"></div>
+			</div>
+			<div class="tweet-count">25330</div>
+		</div>
+				
+	</div>
+	<!-- /body -->
+	
+	<script>
+		const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+		for (let j=2020; j>=2009; j--) {
+			const yearName = document.getElementById('template-h2').cloneNode(true);
+			const year = document.getElementById('template-year').cloneNode(true);
+			yearName.removeAttribute('id');
+			year.removeAttribute('id');
+			
+			yearName.innerText = j;
+			document.getElementById('body').appendChild(yearName);
+			document.getElementById('body').appendChild(year);
+			for (let i=0; i<12; i++) {
+				const month = document.getElementById('template-month').cloneNode(true);
+				month.removeAttribute('id');
+				month.getElementsByClassName('month')[0].innerText = months[i];
+				year.appendChild(month);
+			}
+		}
+		
+		document.getElementById('template-h2').remove();
+		document.getElementById('template-year').remove();
+		document.getElementById('template-month').remove();
+		
+	</script>
+	
+</body>
+</html>

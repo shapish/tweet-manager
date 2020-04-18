@@ -1,0 +1,191 @@
+.table {
+	display: table;
+	width: 100%;
+	border-bottom: none;
+	border-top: none;
+	user-select: none;
+}
+
+
+
+/**
+  * Table Header
+  */
+.table-header {
+	font-weight: bold;
+}
+
+
+
+/**
+  * Table Row
+  */
+.table-row {
+	display: table-row;
+	height: 40px;
+	line-height: 40px;
+}
+.table-row:not(.table-header).sel {
+	background: cornsilk;
+}
+.table-row:not(.sel):not(.table-header):hover {
+	background: #f6f6f6;
+}
+
+/* Archived state */
+.table-row.archived .table-cell,
+.table-row.archived a {
+	color: rgba(0,0,0,.3);
+	text-decoration: line-through;
+}
+.table-row.archived .table-cell.star,
+.table-row.archived.star .table-cell.star,
+.table-row.archived .table-cell.star:hover {
+	color: transparent;
+	text-decoration: none;
+}
+
+/* Copied state */
+.table-row.copied .table-cell:not(.star),
+.table-row.copied a {
+	color: darkgreen;
+	animation: copy-blink 100ms 2;
+}
+@keyframes copy-blink {
+	0% {
+		color: transparent;
+	}
+	49.9% {
+		color: transparent;
+	}
+	50% {
+		color: darkgreen;
+	}
+	99.9% {
+		color: darkgreen;
+	}
+	100% {
+		color: transparent;
+	}
+}
+
+
+
+/**
+  * Table Cell
+  */
+.table-cell {
+	display: table-cell;
+	border-bottom: solid 1px rgba(0,0,0,.2);
+	padding: 0 15px;
+	cursor: pointer;
+}
+.table-row:not(.table-header) .table-cell:first-child {
+	border-left: solid 1px rgba(0,0,0,.2);
+}
+.table-row:not(.table-header) .table-cell:last-child {
+	border-right: solid 1px rgba(0,0,0,.2);
+}
+
+/* Checkbox */
+.table-cell.cb {
+	width: 10px;
+	padding-right: 0;
+}
+.table-cell.cb input {
+	margin: 0;
+}
+
+/* Star & starred state */
+.table-cell.star {
+	padding: 0;
+	text-align: center;
+	width: 40px;
+	color: rgba(0,0,0,.1);
+}
+.table-cell.star:hover {
+	color: rgba(0,0,0,.5);
+}
+.table-row.star .table-cell.star {
+	color: tomato;
+}
+
+/* Tweet */
+.table-cell.tweet {
+	line-height: 20px;
+	padding: 10px 15px 10px 0;
+}
+
+/* Labels */
+.label {
+	text-transform: uppercase;
+	height: 16px;
+	line-height: 16px;
+	font-size: 10px;
+	padding: 0 5px;
+	float: left;
+	background: rgba(0,50,0,.5);
+	color: #fff;
+	border-radius: 2px;
+	margin-right: 3px;
+	margin-top: 3px;
+	white-space: nowrap;
+	max-width: 90px;
+	overflow: hidden;
+	text-overflow: clip;
+}
+.label.add-label {
+	color: initial;
+	background: rgba(0,50,0,.1)
+}
+.label:hover {
+	background: tomato;
+	color: #fff;
+}
+
+/* Add label input */
+input.add-label-input {
+	height: 30px;
+	clear: left;
+	margin-top: 5px;
+	padding: 0 8px;
+}
+
+/* Chapter dropdown */
+.table-cell.select {
+	padding: 0;
+	position: relative;
+	width: 120px;
+}
+.table-cell.select select {
+	width: 100%;
+	position: relative;
+	z-index: 1;
+	float: none;
+	margin: 0;
+	opacity: 0;
+}
+.table-cell.select select:hover + a {
+	color: firebrick;
+}
+.table-cell.select a {
+	width: 100%;
+	text-align: left;
+	padding: 0 15px;
+	box-sizing: border-box;
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+/* Shared styles */
+.table-cell.no-wrap {
+	width: 10px; /* This stretches, meant to make it as small as possible */
+	white-space: nowrap;
+}
+.table-cell .clip-100 {
+	max-width: 150px;
+  white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}

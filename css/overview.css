@@ -1,0 +1,8 @@
+.year-wrap {
+	width: 750px;
+	column-count: 3;
+	column-gap: 0;
+}
+.year-wrap .month-overview {
+	float: left;
+}

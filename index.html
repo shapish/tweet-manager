@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	
+	<title>The Forty Fifth's Twitter Archive</title>
+	<link rel="stylesheet" href="css/master.css">
+	<link rel="stylesheet" href="css/tweets.css">
+	<link rel="stylesheet" href="css/table.css">
+	<script src="js/3p/jquery.min.js"></script>
+	<script src="js/3p/jquery.auto-complete.js"></script>
+	<link rel="stylesheet" href="js/3p/jquery.auto-complete.css">
+	<script src="js/nav.js"></script>
+	<script src="js/search.js"></script>
+	<script src="js/table.js"></script>
+	
+	<script src="js/master.js" defer></script>
+	<script src="js/tweets.js" defer></script>
+</head>
+<body>
+	
+	<div id="header">
+		<h1>The Forty Fifth's Twitter Archive</h1>
+		<div id="main-nav" class="nav">
+			<a href="index.html" class="sel">Tweets</a>
+			<a href="overview.html">Overview</a>
+			<a href="chapters.html">Chapters</a>
+		</div>
+	</div>
+	
+	<!-- body -->
+	<div id="body">
+		
+		<div id="nav-filter-type" class="nav">
+			<a href="#" class="sel">Search</a>
+			<a href="#">By Date</a>
+		</div>
+		
+		<div id="filters">
+			<form id="form-search" action="" method="get" accept-charset="utf-8">
+				<input id="search" type="text" placeholder="search" tabindex="1" autocomplete="off" autofocus>
+				<button id="search-clear"></button>
+				<input id="search-submit" type="submit" value="search">
+				<div id="search-results-count">1318 results</div>
+			</form>
+			
+			<div id="nav-year" class="nav small">
+				<a href="#">2020</a>
+				<a href="#">2019</a>
+				<a href="#">2018</a>
+				<a href="#">2017</a>
+				<a href="#">2016</a>
+				<a href="#">2015</a>
+				<a href="#">2014</a>
+				<a href="#">2013</a>
+				<a href="#">2012</a>
+				<a href="#">2011</a>
+				<a href="#">2010</a>
+				<a href="#">2009</a>
+			</div>
+		
+			<div id="nav-month" class="nav small">
+				<a href="#" data-index="0">Jan</a>
+				<a href="#" data-index="1">Feb</a>
+				<a href="#" data-index="2">Mar</a>
+				<a href="#" data-index="3">Apr</a>
+				<a href="#" data-index="4">May</a>
+				<a href="#" data-index="5">Jun</a>
+				<a href="#" data-index="6">Jul</a>
+				<a href="#" data-index="7">Aug</a>
+				<a href="#" data-index="8">Sep</a>
+				<a href="#" data-index="9">Oct</a>
+				<a href="#" data-index="10">Nov</a>
+				<a href="#" data-index="11">Dec</a>
+				<div id="selected-month-overview" class="month-overview">
+					<div class="bar">
+						<div class="archived"></div>
+						<div class="processed"></div>
+					</div>
+					<span>2533 tweets</span>
+				</div>
+			</div>
+		</div>
+		
+		<!-- controls -->
+		<div id="controls" class="hide">
+			<div class="float-wrap">
+				<input id="btn-archive" type="button" value="archive">
+				<button id="btn-star"><span class="star">&#x2605;</span><span>star</span></button>
+				<input id="add-label" type="text" placeholder="+ add label">
+				<select id="dd-chapter">
+					<option value="">move</option>
+					<option value="chapter-a">Chapter A</option>
+					<option value="chapter-b">Chapter B</option>
+					<option value="chapter-c">Chapter C With Very Long Title</option>
+				</select>
+				<button id="exit-selection"></button>
+			</div>
+		</div>
+
+		<div class="pagination top">
+			<a href="#" class="sel">1</a>
+			<a href="#">2</a>
+			<a href="#">300</a>
+		</div>
+		
+		<!-- table -->
+		<div id="tweet-table" class="table">
+			
+			<!-- table-header -->
+			<div class="table-row table-header">
+				<div class="table-cell cb">
+					<input type="checkbox">
+				</div>
+				<div class="table-cell star">
+					&#9733;
+				</div>
+				<div class="table-cell tweet">
+					Tweet
+				</div>
+				<div class="table-cell">
+					Chapter
+				</div>
+				<div class="table-cell">
+					Date
+				</div>
+				<div class="table-cell"></div>
+				<div class="table-cell"></div>
+			</div>
+			<!-- /table-header -->
+			
+			<!-- table-row -->
+			<div class="table-row" id="1">
+				<div class="table-cell cb">
+					<input type="checkbox">
+				</div>
+				<div class="table-cell star">
+					&#9733;
+				</div>
+				<div class="table-cell tweet">
+					Many people have said I’m the world’s greatest writer of 140 character sentences.
+					<div class="label-wrap">
+						<a href="#" class="label add-label">add label</a>
+						<a href="#" class="label">russia</a>
+						<!-- <a href="#" class="label">hoax</a> -->
+						<!-- <a href="#" class="label">impeachment long label</a> -->
+					</div>
+					<!-- <input type="text" class="add-label-input"> -->
+				</div>
+				<div class="table-cell select">
+					<select>
+						<option value="">move</option>
+						<option value="chapter-a">Chapter A</option>
+						<option value="chapter-b">Chapter B</option>
+						<option value="chapter-c">Chapter C With Very Long Title</option>
+					</select>
+					<a href="#" class="clip-100">move</a>
+				</div>
+				<a href="https://twitter.com/realDonaldTrump/status/491324429184823296" target="_blank" class="table-cell no-wrap">
+					July 21, 2014, 4:50 PM
+				</a>
+				<a href="#" class="table-cell no-wrap btn-copy">
+					copy
+				</a>
+				<a href="#" class="table-cell no-wrap btn-archive">
+					archive
+				</a>
+			</div>
+			<!-- /table-row -->
+			
+		</div>
+		<!-- /table -->
+		
+		<div class="pagination bottom">
+			<a href="#" class="sel">1</a>
+			<a href="#">2</a>
+			<a href="#">300</a>
+		</div>
+
+		<!-- <div id="table-pagination">
+			<a href="#">prev</a><span>1 / 3</span><a href="#">next</a>
+		</div> -->
+		
+	</div>
+	<!-- /body -->
+	
+	<script>
+		for (let i=2; i<=10; i++) {
+			const row = document.getElementsByClassName('table-row')[1].cloneNode(true);
+			row.setAttribute('id', i);
+			document.getElementsByClassName('table')[0].appendChild(row);
+		}
+	</script>
+</body>
+</html>
