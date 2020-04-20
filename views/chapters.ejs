@@ -1,0 +1,57 @@
+<%- include('partials/head.ejs', {
+	page: 'chapters',
+	title: 'Chapters',
+	css: [
+		'chapters.css'
+	],
+	js3p: [
+		'sortablejs/Sortable.min.js',
+		'jquery-sortablejs/jquery-sortable.js'
+	],
+	jsDefer: [
+		'chapters.js'
+	]
+}) %>
+
+<h2>Chapters</h2>
+
+<div id="button-wrap">
+	<button id="btn-sort">sort</button>
+	<button id="btn-cancel">cancel</button>
+	<button id="btn-save" type="submit">save</button>
+</div>
+
+<template id="template-chapter">
+	<div class="chapter">
+		<span class="index">X</span>
+		<span class="title"></span>
+		<div class="edit"></div>
+		<div class="delete"></div>
+		<div class="adopt"></div>
+		<div class="insert"></div>
+	</div>
+</template>
+
+<div id="chapters-wrap" class="sortable root">
+	<div data-id="1" class="chapter"><span class="index"></span><span class="title">The Before Time</span><div class="edit"></div><div class="delete"></div><div class="adopt"></div><div class="insert"></div></div>
+	<div data-id="2" class="chapter"><span class="index"></span><span class="title">2016 Election</span><div class="edit"></div><div class="delete"></div><div class="adopt"></div><div class="insert"></div></div>
+	<div class="sortable">
+		<div data-id="3" class="chapter"><span class="index"></span><span class="title">First Days in Office</span><div class="edit"></div><div class="delete"></div><div class="adopt"></div><div class="insert"></div></div>
+		<div data-id="3.1" class="chapter"><span class="index"></span><span class="title">Crowds & ratings</span><div class="edit"></div><div class="delete"></div><div class="adopt"></div><div class="insert"></div></div>
+	</div>
+	<div data-id="4" class="chapter"><span class="index"></span><span class="title">Worst Spelling Mistakes</span><div class="edit"></div><div class="delete"></div><div class="adopt"></div><div class="insert"></div></div>
+	<div class="sortable">
+		<div data-id="5" class="chapter"><span class="index"></span><span class="title">War & Peace</span><div class="edit"></div><div class="delete"></div><div class="adopt"></div><div class="insert"></div></div>
+		<div data-id="5.1" class="chapter"><span class="index"></span><span class="title">Syria</span><div class="edit"></div><div class="delete"></div><div class="adopt"></div><div class="insert"></div></div>
+		<div class="sortable">
+			<div data-id="5.2" class="chapter"><span class="index"></span><span class="title">Iran</span><div class="edit"></div><div class="delete"></div><div class="adopt"></div><div class="insert"></div></div>
+			<div data-id="5.2.1" class="chapter"><span class="index"></span><span class="title">Nuclear Deal</span><div class="edit"></div><div class="delete"></div><div class="adopt"></div><div class="insert"></div></div>
+			<div data-id="5.2.2" class="chapter"><span class="index"></span><span class="title">Qassem Suleimani</span><div class="edit"></div><div class="delete"></div><div class="adopt"></div><div class="insert"></div></div>
+		</div>
+		<div data-id="5.3" class="chapter"><span class="index"></span><span class="title">China</span><div class="edit"></div><div class="delete"></div><div class="adopt"></div><div class="insert"></div></div>
+	</div>
+	<div data-id="6" class="chapter"><span class="index"></span><span class="title">Immigration</span><div class="edit"></div><div class="delete"></div><div class="adopt"></div><div class="insert"></div></div>
+	<div data-id="7" class="chapter"><span class="index"></span><span class="title">Private Interests</span><div class="edit"></div><div class="delete"></div><div class="adopt"></div><div class="insert"></div></div>
+</div>
+
+<%- include('partials/foot.ejs') %>

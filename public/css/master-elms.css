@@ -1,0 +1,105 @@
+/* Header */
+#header {
+	background: #333;
+	color: #fff;
+	padding: 15px 40px;
+	display: flex;
+	align-items: center;
+}
+#header .nav {
+	flex-grow: 0;
+	flex-shrink: 0;
+	margin-bottom: 0;
+}
+#header h1 {
+	flex-grow: 1;
+	flex-shrink: 1;
+	margin-bottom: 0;
+}
+#header a {
+	color: #fff;
+}
+#header a:hover {
+	background: rgba(255,255,255,.2);
+}
+#header a.sel {
+	color: #333;
+	background: #fff;
+}
+
+/* Body */
+#body {
+	padding: 40px;
+	padding-bottom: 60px;
+}
+
+
+
+/* Navigations */
+.nav a {
+	color: rgba(0,0,0,.75);
+	text-decoration: none;
+	display: inline-block;
+	margin-right: 15px;
+	padding: 0 5px;
+	border-radius: 2px;
+}
+.nav a:hover {
+	color: tomato;
+}
+.nav a.sel {
+	background: rgba(0,0,0,.75);
+	color: white;
+}
+.nav {
+	height: 24px;
+	margin-bottom: 16px;
+}
+.nav.small {
+	height: 20px;
+	margin-bottom: 10px;
+	font-size: 13px;
+	line-height: 20px;
+}
+.nav.small a {
+	margin-right: 5px;
+}
+#nav-month {
+	margin-bottom: 20px;
+	position: relative;
+}
+
+/* Month overview */
+.month-overview {
+	height: 20px;
+	margin-bottom: 10px;
+}
+.month-overview .month {
+	float: left;
+	width: 40px;
+}
+.month-overview .tweet-count {
+	float: left;
+	width: 80px;
+}
+.month-overview .bar {
+	height: 20px;
+	width: 120px;
+	background: #eee;
+	float: left;
+	margin-right: 10px;
+	border-radius: 2px;
+	overflow: hidden;
+}
+.month-overview .bar * {
+	height: 100%;
+	width: 20px;
+	float: left;
+	transition: width 200ms ease-in-out;
+}
+.month-overview .archived {
+	background: #333;
+}
+.month-overview .processed {
+	background: forestgreen;
+}
