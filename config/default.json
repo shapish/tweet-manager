@@ -1,3 +1,4 @@
 {
+	"db": "mongodb://localhost/twitter-archive",
 	"globalEJSVars": {}
 }

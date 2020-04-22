@@ -1,0 +1,38 @@
+#chapters-wrap .handle-1, /* ## */
+#chapters-wrap .handle-2,
+#chapters-wrap .handle-3 {
+	width: 29px;
+	height: 30px;
+	margin: 4px 10px 0 -9px;
+	background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAABCAYAAAD5PA/NAAAADElEQVQYV2NkQAX/AQEhAQFnXP8iAAAAAElFTkSuQmCC);
+	opacity: .3;
+	float: left;
+	border: solid 1px rgba(0,0,0,1);
+	box-sizing: border-box;
+	/* display: none; */
+}
+#chapters-wrap .handle-1:hover,
+#chapters-wrap .handle-2:hover {
+	background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAABCAYAAAD5PA/NAAAAEklEQVQYV2NkgID/DAwMjCAaAAodAgHyEYN0AAAAAElFTkSuQmCC);
+}
+
+
+
+
+
+
+
+#chapters-wrap.editing .chapter:hover .handle-1,
+#chapters-wrap.editing .chapter:hover .handle-2,
+#chapters-wrap.editing .chapter:hover .handle-3 {
+	margin-top: 3px;
+}
+#chapters-wrap.editing .sortable:not(.root) .chapter:first-child .handle-1,
+#chapters-wrap.editing .sortable:not(.root) .chapter:first-child .handle-2,
+#chapters-wrap.editing .sortable:not(.root) .chapter:first-child .handle-3,
+#chapters-wrap.editing .chapter:hover.canAdopt .adopt,
+#chapters-wrap.editing .chapter:hover .rename,
+#chapters-wrap.editing .chapter:hover .edit,
+#chapters-wrap.editing .chapter:hover .delete {
+	display: block;
+}

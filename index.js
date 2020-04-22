@@ -2,7 +2,11 @@
 const express = require('express');
 const app = express();
 
+// Database
+
+
 // Startup
+require('./startup/db')();
 require('./startup/routes')(app);
 
 // Initialize server

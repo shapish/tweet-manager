@@ -5,6 +5,7 @@ var cookieParser = require('cookie-parser');
 
 // Routes
 const index = require('../routes/index');
+const api = require('../routes/api');
 
 module.exports = function(app) {
 	app.use(express.json());
@@ -19,4 +20,5 @@ module.exports = function(app) {
 	}
 
 	app.use('/', index);
+	app.use('/api', api);
 }
