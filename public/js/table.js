@@ -1,34 +1,35 @@
+// To do:
+// - label suggests to add existing value with capital
+
 function Table() {
 	this.selected = [];
 	this.lastClicked = null;
 	this.$ipAddLabel = $('input#add-label');
-	console.log(this.$ipAddLabel)
 	this.init();
+
+	this.debug = false;
 }
 
-// Initialize.
+// Initialize
 Table.prototype.init = function() {
 	this.$table = $('#tweet-table');
 	this.$header = this.$table.children().eq(0);
 	this.$rows = this.$table.children();
 	
-	// Hook up top controls.
+	// Hook up top controls
 	this.initControls();
 	
-	// Hook up header clicks.
+	// Hook up header clicks
 	this.initHeader();
 	
-	// Hook up row clicks.
-	for (let i=1; i<this.$rows.length; i++) {
-		this.$rows.eq(i).click((e) => {
-			this.handleRowClick(e);
-		});
-	}
+	// Hook up row clicks
+	this.handleRowClicks();
+	// $('input[type=checkbox]').eq(1).trigger('click'); // ## DEV
 
 	// Hook up labels
 	this.initlabels();
 	
-	// Hook up dropdowns.
+	// Hook up dropdowns
 	this.$dropdowns = this.$table.find('select');
 	for (let i=0; i<this.$dropdowns.length; i++) {
 		this.$dropdowns.eq(i).change((e) => {
@@ -37,78 +38,98 @@ Table.prototype.init = function() {
 	}
 };
 
-// Initialize controls at the top + pagination.
+// Initialize controls at the top
 Table.prototype.initControls = function() {
-	// Archive button.
+	// Archive button
 	$('#btn-archive').click((e) => {
 		this.toggleArchiveSelected($(e.currentTarget));
 	});
 	
-	// Star button.
-	$('#btn-star').click((e) => {
-		this.toggleStarSelected($(e.currentTarget));
+	// Star dropdown
+	$('#dd-star-display').on('change', (e) => {
+		const $target = $(e.currentTarget);
+		const level = $target.attr('data-value');
+		$target.removeClass('l-0 l-1 l-2 l-3').addClass('l-' + level);
+		this.starSelected(level);
 	});
 	
-	// Chapter dropdown.
+	// Chapter dropdown
 	$('#dd-chapter').change($.proxy(this.propagateDropdownSelected, this));
 	
 	// Exit selection
 	$('#exit-selection').click(() => {
 		this.selectAll(false);
 	});
-
-	// Pagination.
-	$('#table-pagination').children().eq(0).click((e) => {
-		this.changePage(true);
-		e.preventDefault();
-	});
-	$('#table-pagination').children().eq(2).click((e) => {
-		this.changePage(false);
-		e.preventDefault();
-	});
 };
 
-// Initialize header click events.
+// Initialize header click events
 Table.prototype.initHeader = function() {
 	const $cb = this.$header.find('input[type=checkbox]');
 	const $star = this.$header.find('.star');
 	
-	// Checkbox.
+	// Checkbox
 	$cb.change((e) => {
 		this.toggleSelectAll($(e.currentTarget));
 	});
 	
-	// Star.
+	// Star
 	$star.click((e) => {
-		this.toggleStarAll($(e.currentTarget));
+		this.starAll($(e.currentTarget));
 	});
+};
+
+// Handle row click event
+Table.prototype.handleRowClicks = function(e) {
+	for (let i=1; i<this.$rows.length; i++) {
+		const $row = this.$rows.eq(i);
+
+		$row.on('click', '.star', () => { this.cycleStar($row) });
+		$row.on('click', '.btn-archive', (e) => { this.toggleArchive($(e.target)); e.preventDefault(); });
+		$row.on('click', '.btn-copy', (e) => { this.copyToClipboard($row); e.preventDefault(); });
+		$row.on('click', 'checkbox, .cb, .tweet', (e) => { this.toggleSelect(e, $row); }); // Label & link clicks get blocked
+		
+	}
 };
 
 // Emable label UI
 Table.prototype.initlabels = function() {
+	// Show remove UI on label hover
+	this.$table.find('.label-wrap').on('mouseenter', '.label', e => {
+		setTimeout(() => {
+			console.log('##', $(e.currentTarget).is(':hover'), $(e.currentTarget), $(e.target))
+			if ($(e.currentTarget).is(':hover')) $(e.currentTarget).addClass('remove');
+		}, 500);
+	}).on('mouseleave', '.label', (e) => {
+		$(e.currentTarget).removeClass('remove');
+	});
+
+	// Remove label
+	this.$table.find('.label-wrap').on('click', '.x', e => {
+		const $row = $(e.target).closest('.table-row');
+		const $label = $(e.target).closest('.label');
+		this.removeLabel($row, $label);
+	});
+
+	// Autocomplete labels
 	this.$ipAddLabel.autoComplete({
 		source: (term, suggest) => {
-			term = term.toLowerCase();
-			const choices = ['hoax', 'hoarse', 'horse', 'hoaly', 'hoarder', 'impeachment', 'russia', 'ukraine', 'rant'];
-			let matches = [];
-			for (i=0; i<choices.length; i++) {
-				if (~choices[i].toLowerCase().indexOf(term)) {
-					matches.push(choices[i]);
+			term = term ? term.toLowerCase() : '*'; // When there's no search term, return all
+			// Suggest labels
+			this.ajax({
+				type: 'GET',
+				url: '/api/labels/' + term,
+				success: (matches) => {
+					// Suggest matches
+					suggest(matches);
 				}
-			}
-			
-			// When there's no result, offer to create new label
-			if (!matches.length) matches.push(('add: ' + term));
-			// if (!matches.length) matches.push(term);
-			suggest(matches);
+			});
 		},
+		cache: false,
 		minChars: 0,
 		onSelect: (e, term, input) => {
-			// Update UI
-			this.$ipAddLabel.val('');
+			// Get ids of selected labels
 			const ids = [];
 			this.selected.forEach(($row) => {
-				
 				// Check for duplicates
 				isDuplicate = false;
 				$row.find('.label').each((i, label) => {
@@ -117,73 +138,70 @@ Table.prototype.initlabels = function() {
 						return false;
 					}
 				});
-
-				// Add label
+				
 				if (!isDuplicate) {
-					$row.find('.label-wrap').append('<a href="#" class="label">' + term + '</a>');
+					// Store IDs
 					ids.push($row.attr('data-id'));
+					// Add labels to DOM, but in hold mode
+					const html = $('#tmp-label').html().replace('value', term);
+					const $label = $(html).addClass('hold');
+					$row.find('.label-wrap').append($label);
 				}
 			});
-			
-			// Store label
-			this.ajax('store-label', ids, term);
+
+			// Return if all selected rows already have this label
+			if (!ids.length) return;
+
+			// Write label to tweets
+			this.ajax({
+				type: 'POST',
+				url: '/api/labels',
+				data: {
+					ids: ids,
+					value: term
+				},
+				success: () => {
+					this.$ipAddLabel.val('');
+					$('.label.hold').removeClass('hold');
+				}
+			});
 		}
 	});
 }
 
-// Dispatch row click event.
-Table.prototype.handleRowClick = function(e) {
-	const $row = $(e.currentTarget);
-	const $target = $(e.target);
-	if ($target.hasClass('star')) {
-		// Star tweet.
-		this.toggleStar($row);
-	} else if ($target.hasClass('btn-archive')) {
-		// Archive tweet.
-		this.toggleArchive($row);
-		e.preventDefault();
-	} else if ($target.hasClass('btn-copy')) {
-		// Copy tweet to clipboard.
-		this.copyToClipboard($row);
-		e.preventDefault();
-	} else if ($target.is('a') || $target.is('select') || $target.is('input')) {
-		// Links & dropdown - do nothing.
-	} else {
-		// Select.
-		this.toggleSelect(e, $row);
-	}
-};
 
 
 
 
+/**
+ * SELECTING
+ */
 
-// * * * SELECTING * * * //
-
-// Toggle select all.
+// Toggle select all
 Table.prototype.toggleSelectAll = function($target) {
 	const value = $target.prop('checked');
-	console.log(value)
 	this.selectAll(value);
 };
 
-// Select all.
+// Select all
 Table.prototype.selectAll = function(value) {
 	console.log('Table.selectAll');
-	for (let i=1; i<this.$rows.length; i++) {
+	for (let i=0; i<this.$rows.length; i++) {
 		const $row = this.$rows.eq(i);
 		this.select($row, value);
 	}
 };
 
-// Toggle select.
+// Toggle select
 Table.prototype.toggleSelect = function(e, $row) {
-	// Check if we're selecting or deselecting.
+	// Block when label is clicked
+	if ($(e.target).is('a, .label, .x')) return;
+
+	// Check if we're selecting or deselecting
 	const isSelected = $row.hasClass('sel');
-	// const act = row.hasClass('sel') ? this.deselect.bind(this) : this.select.bind(this);
 	
 	if (e.shiftKey && this.selected.length) {
-		// Holding shift, you select all rows in between this and last.
+		// Holding shift, you select all rows in between this and last
 		const indexCurr = $row.index(); // Index of currently clicked row
 		const indexLast = this.lastClicked.index(); // Index of previously clicked row
 		const index1 = Math.min(indexCurr, indexLast);
@@ -193,16 +211,16 @@ Table.prototype.toggleSelect = function(e, $row) {
 			this.select(this.$rows.eq(i), !isSelected);
 		}
 	} else {
-		// Regular click, only select current row.
+		// Regular click, only select current row
 		this.select($row, !isSelected);
 	}
 	
-	// Register last row clicked.
+	// Register last row clicked
 	this.lastClicked = $row;
 };
 
 // Select
-// select: boolean => select/deselect
+// › select: boolean => select/deselect
 Table.prototype.select = function($row, select) {
 	console.log('Table.select');
 	// Color row.
@@ -212,7 +230,7 @@ Table.prototype.select = function($row, select) {
 		$row.removeClass('sel');
 	}
 	
-	// Update checkbox.
+	// Update checkbox
 	$row.find('input[type=checkbox]').prop('checked', select);
 	
 	// Check if row is already selected
@@ -222,7 +240,7 @@ Table.prototype.select = function($row, select) {
 		if ($selectedRow.get(0) == $row.get(0)) rowIndex = i;
 	});
 
-	// Add row to selected array but prevent double adds.
+	// Add row to selected array but prevent double adds
 	const isFresh = (rowIndex == -1);
 	if (select && isFresh) {
 		this.selected.push($row);
@@ -230,7 +248,7 @@ Table.prototype.select = function($row, select) {
 		this.selected.splice(rowIndex, 1);
 	}
 	
-	// Show controls when at least one row is selected.
+	// Show controls when at least one row is selected
 	if (this.selected.length == 0) {
 		$('#controls').addClass('hide');
 		$('#filters').removeClass('hide');
@@ -244,175 +262,205 @@ Table.prototype.select = function($row, select) {
 
 
 
-// * * * STARRING * * * //
+/**
+ * STARRING
+ */
 
-// Toggle star all.
-Table.prototype.toggleStarAll = function(target) {
-	const $header = $(target).parent();
-	const value = !$header.hasClass('star');
-	this.starAll($header, value);
-};
-
-// Star all.
-Table.prototype.starAll = function($header, value) {
-	if (!confirm('Are you sure you want to ' + (value ? '' : 'un') + 'star all rows?')) {
-		return;
+// Star all
+Table.prototype.starAll = function($target) {
+	if (!$target.hasClass('unlocked')) {
+		$target.addClass('unlocked');
+		if (!confirm('Are you sure you want to star all rows?')) return;
 	}
 	console.log('Table.starAll');
-	// Update header star.
-	if (value) {
-		$header.addClass('star');
-	} else {
-		$header.removeClass('star');
-	}
-	// Star all rows.
-	for (let i=1; i<this.$rows.length; i++) {
+	const level = this.$header.attr('data-star') ? (+this.$header.attr('data-star') + 1) % 4 : 1;
+
+	// Star all rows
+	const ids = [];
+	for (let i=0; i<this.$rows.length; i++) {
 		const $row = this.$rows.eq(i);
-		this.star($row, value, true);
+		this.star($row, level);
+		if (i > 0) ids.push($row.attr('data-id'));
 	}
 	
 	// Ajax
-	const ids = [];
-	for (let i=1; i<this.$rows.length; i++) {
-		ids.push(this.$rows.eq(i).attr('id'));
-	}
-	this.ajax('star', ids, value);
+	this.ajax({
+		type: 'PUT',
+		url: '/api/tweets/star',
+		data: {
+			ids: ids,
+			level: level
+		}
+	});
 };
 
-// Toggle star selected rows.
-Table.prototype.toggleStarSelected = function($btn) {
-	const value = $btn.children().eq(1).text() == 'star';
-	$btn.children().eq(0).text(value ? '\u2606' : '\u2605');
-	$btn.children().eq(1).text(value ? 'unstar' : 'star');
-	this.starSelected(value);
-};
-
-// Star all selected rows.
-Table.prototype.starSelected = function(value) {
+// Star selected rows
+Table.prototype.starSelected = function(level) {
 	console.log('Table.starSelected');
 	const ids = [];
 	this.selected.forEach(function($row, i) {
 		// Update UI.
-		this.star($row, value, true);
-		ids.push($row.attr('data-id'));
+		this.star($row, level);
+		if ($row.attr('data-id')) ids.push($row.attr('data-id')); // Make sure not to include the header
 	}.bind(this));
 	
-	// Ajax.
-	this.ajax('star', ids, value);
+	// Ajax
+	this.ajax({
+		type: 'PUT',
+		url: '/api/tweets/star',
+		data: {
+			ids: ids,
+			level: level
+		}
+	});
 };
 
-// Toggle star.
-Table.prototype.toggleStar = function($row) {
-	const value = !$row.hasClass('star');
-	this.star($row, value);
+// Cycle star
+Table.prototype.cycleStar = function($row) {
+	const level = $row.attr('data-star') ? (+$row.attr('data-star') + 1) % 4 : 1;
+	this.star($row, level, true);
+	
 };
 
-// Star.
-Table.prototype.star = function($row, value, noAjax) {
+
+// Star
+Table.prototype.star = function($row, level, ajax) {
 	console.log('Table.star');
-	const id = $row.attr('id');
-	if (value) {
-		$row.addClass('star');
+	$row.removeClass('l-0 l-1 l-2 l-3').addClass('l-' + level).attr('data-star', level);
+	
+	// Ajax
+	if (!ajax) return;
+
+	this.ajax({
+		type: 'PUT',
+		url: '/api/tweets/star/' + $row.attr('data-id'),
+		data: {
+			level: level
+		}
+	});
+};
+
+
+
+
+
+/**
+ * ARCHIVING
+ */
+
+// Toggle archive for selected rows
+Table.prototype.toggleArchiveSelected = function($btn) {
+	const doArchive = !$btn.hasClass('toggle');
+	if (doArchive) {
+		// YES - archive
+		$btn.addClass('toggle');
+		$btn.text('restore');
 	} else {
-		$row.removeClass('star');
+		// NO - restore
+		$btn.removeClass('toggle');
+		$btn.text('archive');
 	}
 	
-	// Ajax.
-	if (!noAjax) {
-		this.ajax('star', id, value);
-	}
+	this.archiveSelected(doArchive);
 };
 
-
-
-
-
-// * * * ARCHIVING * * * //
-
-// Toggle archive selected rows.
-Table.prototype.toggleArchiveSelected = function($btn) {
-	const value = $btn.attr('value') == 'archive';
-	$btn.val(value ? 'restore' : 'archive');
-	this.archiveSelected(value);
-};
-
-// Archive all selected rows.
-Table.prototype.archiveSelected = function(value) {
-	console.log('Table.archiveSelected');
-	// Update UI.
+// Archive selected rows
+Table.prototype.archiveSelected = function(doArchive) {
+	console.log('Table.archiveSelected', doArchive);
+	
+	// Update UI
+	const ids = [];
 	this.selected.forEach(function($row, i) {
-		this.archive($row, value, true);
+		this.archive($row, doArchive);
+		if ($row.attr('data-id')) ids.push($row.attr('data-id')); // Make sure not to include the header
 	}.bind(this));
 	
-	// Ajax.
-	this.ajax('archive', this.selected, value);
+	// Ajax
+	this.ajax({
+		type: 'PUT',
+		url: '/api/tweets/archive',
+		data: {
+			ids: ids,
+			doArchive: doArchive
+		}
+	});
 };
 
-// Toggle archive tweet.
-Table.prototype.toggleArchive = function($row) {
-	const value = !$row.hasClass('archived');
-	this.archive($row, value);
+// Toggle archive tweet
+Table.prototype.toggleArchive = function($btn) {
+	const $row = $btn.closest('.table-row');
+	const doArchive = !$row.hasClass('archived');
+	this.archive($row, doArchive, true);
+	$btn.text(doArchive ? 'restore' : 'archive');
 };
 
-// Archive tweet.
-Table.prototype.archive = function($row, value, noAjax) {
+// Archive tweet
+Table.prototype.archive = function($row, doArchive, ajax) {
 	console.log('Table.archive');
-	if (value) {
+
+	if (doArchive) {
 		$row.addClass('archived');
 	} else {
 		$row.removeClass('archived');
 	}
+
+	if (!ajax) return;
 	
-	// Ajax.
-	const id = $row.attr('id');
-	if (!noAjax) {
-		this.ajax('archive', id, value);
-	}
+	// Ajax
+	const id = $row.attr('data-id');
+
+	this.ajax({
+		type: 'PUT',
+		url: '/api/tweets/archive/' + id,
+		data: { doArchive: doArchive }
+	});
 };
 
 
 
 
 
-// * * * ORGANIZE * * * //
+/**
+ * ORGANIZING
+ */
 
-// Propagate main dropdown to selected rows.
+// Propagate main dropdown to selected rows
 Table.prototype.propagateDropdownSelected = function() {
 	console.log('Table.propagateDropdownSelected');
 	const ids = [];
 	const value = $('#dd-chapter').val();
 	
-	// Update UI.
+	// Update UI
 	this.selected.forEach(function($row, i) {
 		ids.push($row.attr('data-id'));
 		this.propagateDropdown($row.find('select').eq(0), value);
 	}.bind(this));
 	
-	// Ajax.
+	// Ajax
 	this.ajax('organize', ids, value);
 	
 };
 
-// Propagate to individual row dropdown.
+// Propagate to individual row dropdown
 Table.prototype.propagateDropdown = function($dropdown, value) {
-	// Update dropdown value (invisible).
+	// Update dropdown value (invisible)
 	$dropdown.val(value);
 	
-	// Update display (visible).
+	// Update display (visible)
 	this.updateDropdownDisplay($dropdown, true);
 };
 
-// Update dropdown display.
+// Update dropdown display
 Table.prototype.updateDropdownDisplay = function($dropdown, noAjax) {
 	console.log('Table.updateDropdownDisplay');
 	
-	// Update display (dropdown itself is invisible).
+	// Update display (dropdown itself is invisible)
 	const value = $dropdown.find('option:selected').val();
 	const displayValue = $dropdown.find('option:selected').text();
 	$dropdown.next().html(displayValue);
 	
 	
-	// Ajax.
+	// Ajax
 	if (!noAjax) {
 		const id = $dropdown.closest('.table-row').attr('id');
 		this.ajax('organize', id, value);
@@ -423,27 +471,39 @@ Table.prototype.updateDropdownDisplay = function($dropdown, noAjax) {
 
 
 
-// * * * AJAX HANDLING * * * //
+/**
+ * LABELING
+ */
 
-// Handle ajax calls.
-// Ids can be single id or array.
-Table.prototype.ajax = function(action, id, value) {
-	if (Array.isArray(id)) {
-		console.log('Ajax - action: ' + action + ' / id: ' + id.toString() + ' / value: ' + value);
-	} else {
-		console.log('Ajax - action: ' + action + ' / id: ' + id + ' / value: ' + value);
-	}
+Table.prototype.removeLabel = function($row, $label) {
+	// Instant feedback
+	$label.addClass('hold');
+
+	// Remove
+	this.ajax({
+		type: 'PUT',
+		url: '/api/labels/remove',
+		data: {
+			id: $row.attr('data-id'),
+			value: $label.text()
+		},
+		success: () => {
+			$label.remove();
+		}
+	});
 };
 
 
 
 
 
-// * * * COPY * * * //
+/**
+ * COPYING
+ */
 
 // Copy tweet to clipboard
 Table.prototype.copyToClipboard = function($row) {
-	// Create input field.
+	// Create input field
 	const $ip = $('<input>')
 		.attr('type', 'text')
 		.val($row.find('.tweet').text())
@@ -454,17 +514,17 @@ Table.prototype.copyToClipboard = function($row) {
 			opacity: 0
 		}).appendTo('body');
 	
-	// Select text.
+	// Select text
 	$ip.get(0).select();
 	$ip.get(0).setSelectionRange(0, 99999); // For mobile devices.
 		
-	// Copy text.
+	// Copy text
 	document.execCommand('copy');
 	
-	// Remove from dom.
+	// Remove from dom
 	$ip.remove();
 	
-	// UI update.
+	// UI update
 	$row.addClass('copied');
 	setTimeout(function() {
 		$row.removeClass('copied');
@@ -472,10 +532,36 @@ Table.prototype.copyToClipboard = function($row) {
 };
 
 
-Table.prototype.changePage = function(next) {
-	if (next) {
-		console.log('Table.changePage - prev');
-	} else {
-		console.log('Table.changePage - next');
+
+
+
+/**
+ * AJAX HANDLING
+ */
+
+Table.prototype.ajax = function(params) {
+	// Extract callback
+	const callback = params.success;
+	delete params.success;
+
+	// Insert default parameters
+	const defaultParams = {
+		dataType: 'json',
+		encode: true,
+		error: _error,
+		success: _success
+	}
+	params = {...defaultParams, ...params};
+
+	// Send to server
+	$.ajax(params);
+
+	function _error(error) {
+		if (this.debug) console.log('error:', error);
+	}
+
+	function _success(result) {
+		if (this.debug) console.log('result:', result);
+		if (callback) callback(result);
 	}
 };

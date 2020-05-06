@@ -1,0 +1,234 @@
+/**
+ * Interface
+ */ 
+
+#interface {
+	position: fixed;
+	left: 380px;
+	top: 110px;
+}
+#interface.merging #button-wrap,
+#interface.merging #button-wrap {
+	display: none;
+}
+#interface.merging #merge-list {
+	display: block;
+}
+
+
+/* Edit / Done */
+#btn-done {
+	display: none;
+}
+#button-wrap .note,
+#button-wrap .data {
+	margin-top: 30px;
+	float: left;
+	clear: left;
+}
+
+/* Stats */
+#button-wrap .data {
+	line-height: 30px;
+	font-size: 12px;
+}
+#button-wrap .data .stat {
+	margin-bottom: 30px;
+}
+#button-wrap .data .stat > div {
+	font-size: 40px;
+}
+#button-wrap .note,
+#button-wrap.cm-editing .data {
+	display: none;
+}
+#button-wrap.cm-editing #btn-done {
+	display: block;
+}
+#button-wrap.cm-editing .note {
+	display: block;
+}
+
+
+
+
+/**
+ * Merge UI
+ */
+
+ #merge-list {
+	margin-top: -30px;
+	display: none;
+ }
+#merge-list p {
+	height: 20px;
+	line-height: 20px;
+	margin: 0;
+	margin-bottom: 10px;
+	display: none;
+}
+#merge-list .label:not(:first-child) .block {
+	background: white;
+	border: solid 2px #DBE3D5;
+}
+
+/* Merge arrow */
+#merge-list .label:first-child {
+	margin-bottom: 20px;
+}
+#merge-list .label:nth-child(2)::before {
+	content: '';
+	display: block;
+	width: 40px;
+	height: 40px;
+	background: url(/img/arrow_small-20.svg) center center no-repeat;
+	position: absolute;
+	left: 50%;
+	margin-left: -20px;
+	top: -26px;
+}
+#merge-list .label:last-child {
+	margin-bottom: 20px;
+}
+
+/* Success state */
+#merge-list.success .process {
+	display: none;
+}
+#merge-list.success .success {
+	display: block;
+}
+
+/* Success Message */
+#merge-list .success {
+	clear: left;
+	display: none;
+}
+#merge-list .success p {
+	display: block;
+}
+#merge-list .success .label-values {
+	margin-bottom: 30px;
+}
+#merge-list .success .label-values div:first-child {
+	margin-bottom: 10px;
+}
+#merge-list .success .label-values div:not(:first-child) {
+	text-decoration: line-through;
+}
+#merge-list .success .label-values div::before {
+	content: '• ';
+}
+
+
+
+/**
+ * List
+ */
+
+#labels-wrap {
+	clear: left;
+	overflow: auto;
+	margin-top: -10px;
+}
+#labels-wrap.paralize {
+	pointer-events: none;
+}
+h3 {
+	height: 20px;
+	line-height: 20px;
+	float: left;
+	clear: left;
+	margin: 40px 0 10px 0;
+}
+h3:first-child {
+	margin-top: 0;
+}
+
+/* Editing */
+.cm-editing .label {
+	cursor: pointer;
+}
+.cm-editing .label:hover .count {
+	display: none;
+}
+.cm-editing .label:hover .cm-actions .rename,
+.cm-editing .label:hover .cm-actions .delete {
+	display: block;
+}
+
+
+
+/**
+ * Labels
+ */
+.label {
+	width: 300px;
+	height: 40px;
+	line-height: 40px;
+	margin: 0 10px 10px 0;
+	float: left;
+	clear: left;
+	box-sizing: border-box;
+	position: relative;
+}
+.label .block {
+	position: absolute;
+	z-index: -1;
+	width: 100%;
+	height: 40px;
+	box-sizing: border-box;
+	background: #DBE3D5;
+	border-radius: 2px;
+	line-height: 40px; /* Overrides from chapter-manager.css */
+	padding-left: 0; /* Overrides from chapter-manager.css */
+}
+.label .value {
+	padding: 0 15px;
+	height: 40px;
+	width: 220px;
+	box-sizing: border-box;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+.label .count {
+	height: 40px;
+	line-height: 40px;
+	position: absolute;
+	top: 0;
+	right: 15px;
+}
+
+/* Hover state */
+.cm-editing .label:hover .block {
+	border: solid 2px rgba(0,0,0,.3);
+}
+
+/* Selected state */
+.cm-editing .label.sel .block {
+	background: #DABCC5;
+}
+
+/* Merged state (until user clicks done) */
+.label.merged {
+	text-decoration: line-through;
+	opacity: .3;
+}
+
+/* Editing Form */
+#labels-wrap input {
+	width: 300px;
+	clear: left;
+	margin: 0 10px 10px 0;
+}
+#labels-wrap input + .error {
+	float: left;
+	margin-left: 10px;
+	height: 40px;
+	line-height: 40px;
+	color: #d00;
+}
+
+
+

@@ -5,6 +5,9 @@
 	border-top: none;
 	user-select: none;
 }
+body.loading .table {
+	opacity: .5;
+}
 
 
 
@@ -14,7 +17,14 @@
 .table-header {
 	font-weight: bold;
 }
-
+.table-header .sort::after {
+	content: '\2193';
+	white-space: pre;
+	color: #C76B8B;
+}
+.table-header .sort.dec::after {
+	content: '\2191';
+}
 
 
 /**
@@ -33,10 +43,23 @@
 }
 
 /* Archived state */
+.table-row.archived .table-cell {
+	background: rgba(0,0,0,.03);
+}
+.table-row.archived .table-cell span {
+	text-decoration: line-through;
+}
 .table-row.archived .table-cell,
 .table-row.archived a {
 	color: rgba(0,0,0,.3);
-	text-decoration: line-through;
+}
+.table-row.archived .table-cell .label {
+	color: #fff;
+	opacity: .3;
+}
+.table-row.archived .table-cell.tweet .meta {
+	text-decoration: none;
+	color: rgba(0,0,0,.3);
 }
 .table-row.archived .table-cell.star,
 .table-row.archived.star .table-cell.star,
@@ -78,6 +101,8 @@
 	display: table-cell;
 	border-bottom: solid 1px rgba(0,0,0,.2);
 	padding: 0 15px;
+}
+.table-row:not(.table-header) .table-cell {
 	cursor: pointer;
 }
 .table-row:not(.table-header) .table-cell:first-child {
@@ -104,9 +129,15 @@
 	color: rgba(0,0,0,.1);
 }
 .table-cell.star:hover {
-	color: rgba(0,0,0,.5);
+	color: rgba(0,0,0,.15);
 }
-.table-row.star .table-cell.star {
+.table-row.l-1 .table-cell.star {
+	color: #E2D06D;
+}
+.table-row.l-2 .table-cell.star {
+	color: #F19A5A;
+}
+.table-row.l-3 .table-cell.star {
 	color: tomato;
 }
 
@@ -115,40 +146,95 @@
 	line-height: 20px;
 	padding: 10px 15px 10px 0;
 }
+.table-cell.tweet b {
+	color: crimson;
+	/* background: cornsilk; */
+	/* mix-blend-mode: multiply; */
+}
+.table-cell.tweet .meta {
+	clear: left;
+	margin-top: 5px;
+	font-size: 11px;
+	line-height: 13px;
+	color: rgba(0,0,0,.3);
+	color: #8AA07A
+}
 
 /* Labels */
+.meta + .label-wrap {
+	margin-top: 5px;
+}
+.label-wrap {
+	overflow: auto;
+	margin-top: 2px;
+}
 .label {
 	text-transform: uppercase;
-	height: 16px;
+	height: 15px;
 	line-height: 16px;
 	font-size: 10px;
+	font-weight: 600;
 	padding: 0 5px;
 	float: left;
-	background: rgba(0,50,0,.5);
 	color: #fff;
-	border-radius: 2px;
 	margin-right: 3px;
 	margin-top: 3px;
 	white-space: nowrap;
 	max-width: 90px;
 	overflow: hidden;
 	text-overflow: clip;
+	position: relative;
+	z-index: 0;
 }
-.label.add-label {
-	color: initial;
-	background: rgba(0,50,0,.1)
+.label .bg {
+	width: 100%;
+	height: 100%;
+	background: #8AA07A;
+	border-radius: 2px;
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: -1;
 }
 .label:hover {
-	background: tomato;
 	color: #fff;
 }
+.label:hover .bg {
+	background: #657E54;
+}
 
-/* Add label input */
-input.add-label-input {
-	height: 30px;
-	clear: left;
-	margin-top: 5px;
-	padding: 0 8px;
+/* Hold state (waiting for server) */
+.label.hold {
+	opacity: .3;
+}
+
+/* Delete UI */
+.label.remove {
+	padding-right: 20px;
+}
+.label.remove .x {
+	width: 15px;
+	height: 15px;
+	position: absolute;
+	top: 0;
+	right: 0;
+	border-radius: 0 2px 2px 0;
+}
+.label.remove .x::after {
+	content: '';
+	font-size: 16px;
+	font-weight: 400;
+	text-align: center;
+	line-height: 15px;
+	width: 100%;
+	height: 100%;
+	background: url(/img/x-small-10.svg) center center no-repeat;
+	background-size: 75%;
+	position: absolute;
+	
+}
+.label.remove .x:hover + .bg {
+	background: red;
 }
 
 /* Chapter dropdown */
@@ -164,9 +250,10 @@ input.add-label-input {
 	float: none;
 	margin: 0;
 	opacity: 0;
+	cursor: pointer;
 }
 .table-cell.select select:hover + a {
-	color: firebrick;
+	color: tomato;
 }
 .table-cell.select a {
 	width: 100%;
@@ -185,7 +272,7 @@ input.add-label-input {
 }
 .table-cell .clip-100 {
 	max-width: 150px;
-  white-space: nowrap;
+  	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }

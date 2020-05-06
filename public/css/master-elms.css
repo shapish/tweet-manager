@@ -1,12 +1,20 @@
 /* Header */
 #header {
-	background: #333;
+	background: #3C464D;
 	color: #fff;
-	padding: 15px 40px;
+	padding: 0 40px;
 	display: flex;
 	align-items: center;
+	position: fixed;
+	z-index: 1;
+	width: 100%;
+	height: 50px;
+	line-height: 50px;
+	box-sizing: border-box;
 }
 #header .nav {
+	height: 20px;
+	line-height: 20px;
 	flex-grow: 0;
 	flex-shrink: 0;
 	margin-bottom: 0;
@@ -26,11 +34,36 @@
 	color: #333;
 	background: #fff;
 }
+#header::after {
+	content: '';
+	display: block;
+	width: calc(100% + 200px);
+	height: 2px;
+	position: absolute;
+	left: -200px;
+	bottom: -5px;
+	background: rgba(255,0,0,.3);
+}
+
+/* Loading state */
+body.loading #header::after {
+	background: linear-gradient(90deg, rgba(255,0,0,.6) 95%, rgba(255,0,0,0) 95%);
+	background-repeat: repeat-x;
+	background-size: 200px 2px;
+	animation: slide 1s linear infinite;
+}
+@keyframes slide {
+	0% {
+		transform: translateX(0);
+	}
+	100% {
+		transform: translateX(200px);
+	}
+}
 
 /* Body */
 #body {
-	padding: 40px;
-	padding-bottom: 60px;
+	padding: 90px 40px 60px 40px;
 }
 
 

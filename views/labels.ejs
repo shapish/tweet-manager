@@ -2,10 +2,83 @@
 	page: 'labels',
 	title: 'Labels',
 	css: [
+		'chapter-manager.css',
 		'labels.css'
+	],
+	jsDefer: [
+		'labels.js'
 	]
 }) %>
+<div id="interface">
+
+	<!-- Edit/done buttons -->
+	<div id="button-wrap">
+		<button id="btn-edit">edit</button>
+		<button id="btn-done" type="submit">done</button>
+		<div class="note">Edits are saved instantaneously.</div>
+		<div class="data">
+			<div class="stat">
+				<div class="labels-total"><%= labels.length %> </div>
+				Total labels
+			</div>
+			<div class="stat">
+				<div class="tweets-labeled">15378</div>
+				Labeled tweets
+			</div>
+			<div class="stat">
+				<div class="tweets-unlabeled">37487</div>
+				Unlabeled tweets
+			</div>
+			<a id="clean-label-data" href="#">Clean Label Data</a>
+		</div>
+	</div>
+	
+	<!-- Merge UI -->
+	<div id="merge-list">
+		<div class="process">
+			<p class="m1">Select at least two labels</p>
+			<p class="m2">Merge labels:</p>
+			<div class="labels-wrap"></div>
+			<button id="btn-merge-cancel">cancel</button>
+			<button id="btn-merge" type="submit">merge</button>
+		</div>
+	
+		<div class="success">
+			<p>You successfully merged <span class="number">3</span> labels.</p>
+			<div class="label-values">
+			</div>
+			<button id="btn-merge-done" type="submit">done</button>
+		</div>
+	</div>
+
+</div>
 
 
+
+<div id="labels-wrap">
+	<%
+	const alphabet = ['1', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+	let index = -1;
+	let prevIndex = index;
+	for (let i in labels) {
+		const firstLetter = labels[i].value.slice(0,1);
+		const isNumber = ~labels[i].value.slice(0,1).search(/[0-9]/);
+		prevIndex = index;
+		index = isNumber ? 0 : alphabet.indexOf(firstLetter.toUpperCase());
+		if (index != prevIndex) {
+	%>
+	<h3><%=	alphabet[index] %></h3>
+	<% } %>
+	<div class="label content" data-id="<%= labels[i].id %>">
+		<div class="block"></div>
+		<div class="value"><%= labels[i].value %></div>
+		<div class="count"><%= labels[i].count %></div>
+		<div class="cm-actions">
+			<div class="rename" title="rename"></div>
+			<div class="delete" title="delete"></div>
+		</div>
+	</div>
+	<% } %>
+</div>
 
 <%- include('partials/foot.ejs') %>

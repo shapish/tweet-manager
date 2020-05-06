@@ -1,0 +1,40 @@
+<div class="table-row<% if (archived) { %> archived<% } %><% if (star !== null) { %> l-<%= star %>" data-star="<%= star %><% } %> " data-id="<%= _id %>">
+	<div class="table-cell cb">
+		<input type="checkbox">
+	</div>
+	<div class="table-cell star">
+		&#9733;
+	</div>
+	<div class="table-cell tweet">
+		<span><%- text %></span><br>
+		<div class="meta"><%= created_at.getHours() + ':' + padNr(created_at.getMinutes(), 2) %> &nbsp;&nbsp;•&nbsp;&nbsp; &#9825; RT <%= prettyNr(retweet_count) %> &nbsp;&nbsp;•&nbsp;&nbsp; &#9825; <%= prettyNr(favorite_count) %> &nbsp;&nbsp;•&nbsp;&nbsp; Source: <%= source %></div>
+		<div class="label-wrap">
+			<%
+			if (typeof labels !== 'undefined') {
+				labels.forEach((val) => { %>
+				<%- include('label.ejs', { val: val }) %>
+			<%
+				});
+			}
+			%>
+		</div>
+	</div>
+	<div class="table-cell select">
+		<select>
+			<option hidden selected></option>
+			<option value="chapter-a">Chapter A</option>
+			<option value="chapter-b">Chapter B</option>
+			<option value="chapter-c">Chapter C With Very Long Title</option>
+		</select>
+		<a href="#" class="clip-100">- move -</a>
+	</div>
+	<a href="https://twitter.com/realDonaldTrump/status/<%= id_str %>" target="_blank" class="table-cell no-wrap">
+		<% if (created_at) { %><%= monthNames.split(',')[created_at.getMonth()] + ' ' + created_at.getDate() + ', ' + created_at.getFullYear() %><% } %>
+	</a>
+	<a href="#" class="table-cell no-wrap btn-copy">
+		copy
+	</a>
+	<a href="#" class="table-cell no-wrap btn-archive">
+		<% if (archived) { %>restore<% } else { %>archive<% } %>
+	</a>
+</div>

@@ -1,0 +1,30 @@
+<div class="pagination <%= className %>">
+<% if (pageNumber > 1) { %>
+	<a href="<%= url(query, 'p', pageNumber - 1) %>" class="prev">Prev</a>
+<% } else { %>
+	<span>Prev</span>
+<% } %> 
+<% if (pageNumber < totalPages) { %>
+	<a href="<%= url(query, 'p', pageNumber + 1) %>" class="next">Next</a>
+<% } else { %>
+	<span>Next</span>
+<% } %> 
+	&nbsp;&nbsp;&nbsp;
+<% if (paginationStart > 1) { %> 
+	<a href="<%= url(query, 'p', 1) %>">1</a>
+	<a href="<%= url(query, 'p', paginationStart - 1) %>" class="prev">...</a>
+<% } %> 
+<% for (i=paginationStart; i<=paginationEnd; i++) { %>
+	<% if (i == pageNumber) { %>
+	<span class="sel"><%= i %></span>
+	<% } else { %> 
+	<a href="<%= url(query, 'p', i) %>"><%= i %></a>
+	<% } %>
+<% } %>
+<% if (paginationEnd != totalPages) { %> 
+	<a href="<%= url(query, 'p', paginationEnd + 1) %>" class="next">...</a>
+<% if (totalPages > 30) { %>
+	<a href="<%= url(query, 'p', totalPages) %>"><%= totalPages %></a>
+<% } %>
+<% } %> 
+</div>

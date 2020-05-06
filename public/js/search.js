@@ -1,41 +1,47 @@
 function Search() {
-	this.search = document.getElementById('search');
-	this.clearBtn = document.getElementById('search-clear');
-	this.submitBtn = document.getElementById('search-submit');
+	this.$search = $('#search');
+	this.$clearBtn = $('#search-clear');
+	this.$formSearch = $('#form-search');
 	this.init();
 }
 
 Search.prototype.init = function() {
-	this.search.addEventListener('keyup', this.keyUp.bind(this));
-	this.clearBtn.addEventListener('click', this.clear.bind(this));
-	this.submitBtn.addEventListener('click', this.submit.bind(this));
+	this.$search.on('keyup', this.keyUp.bind(this));
+	this.$clearBtn.on('click', this.clear.bind(this));
+	this.$formSearch.on('submit', this.submit.bind(this));
 };
 
 Search.prototype.clear = function() {
-	this.search.value = '';
-	this.search.focus();
+	loading();
+	window.location.href = '/'
 }
 
-Search.prototype.submit = function() {
-	console.log('Search.submit');
-	console.log('Ajax: search "' + this.search.value + '"');
-	$('#search-results-count').innerText = Math.round(Math.random() * 10000) + ' results';
+Search.prototype.submit = function(e) {
+	// Instant feedback
+	loading();
+
+	// Submit query
+	let val = this.$search.val();
+	let urlQuery = this.$search.attr('data-url-query');
+	urlQuery = urlQuery ? urlQuery : '';
+	window.location.href = '?q=' + val + urlQuery;
+	e.preventDefault();
 };
 
 Search.prototype.keyUp = function(e) {
 	// console.log(e.which);
 	if (e.which == 27) {
 		// ESC
-		if (this.search.value.length > 0) {
-			// Remove value.
-			this.search.select();
-			// this.clear(); — too agressive.
+		if (this.$search.val()) {
+			// Select text
+			this.$search.get(0).select();
 		} else {
-			// Blur search.
-			this.search.blur();
+			// Blur search
+			this.$search.get(0).blur();
 		}
 	} else if (e.which == 13) {
 		// ENTER: run query
-		this.submit();
+		// this.submit();
+		// this.$formSearch.trigger('submit');
 	}
 };

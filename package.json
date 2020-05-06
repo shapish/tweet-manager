@@ -14,7 +14,11 @@
     "cookie-parser": "^1.4.5",
     "ejs": "^3.0.2",
     "express": "^4.17.1",
-    "mongoose": "^5.9.9"
+    "moment": "^2.25.3",
+    "mongoose": "^5.9.9",
+    "mongoose-fuzzy-searching-v2": "^3.0.2",
+    "winston": "^3.2.1",
+    "winston-mongodb": "^5.0.1"
   },
   "devDependencies": {}
 }

@@ -7,9 +7,9 @@ const Chapter = mongoose.model('chapter', new mongoose.Schema({
 	},
 	index: {
 		type: String,
-		maxlength: 10,
-		unique: true
-	}
+		maxlength: 20
+	},
+	sortIndex: String
 }));
 
 module.exports = Chapter;

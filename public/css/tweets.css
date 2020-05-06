@@ -1,7 +1,15 @@
-/* Search Settings */
-#search-settings-wrap {
+/* Nav Filter Type */
+#nav-filter-type-wrap {
 	display: flex;
 }
+#nav-filter-type:not(.by-date) .f-search,
+#nav-filter-type.by-date .f-by-date {
+	background: rgba(0,0,0,.75);
+	color: white;
+}
+
+
+/* Search Settings */
 #search-settings {
 	flex-shrink: 1;
 	flex-grow: 1;
@@ -96,11 +104,32 @@
 #controls {
 	margin-bottom: 20px;
 	transition: all 100ms ease-in-out;
-	font-size: 0;
+	font-size: 0; /* To guarantee exact height */
 }
 #controls.hide {
 	display: none;
 }
+#dd-star-display {
+	width: 100px;
+}
+#dd-star-display.l-1 {
+	color: #E2D06D;
+}
+#dd-star-display.l-2 {
+	color: #F19A5A;
+}
+#dd-star-display.l-3 {
+	color: tomato;
+}
+#dd-chapter-display {
+	width: 200px;
+}
+
+
+
+
+
+
 #btn-star {
 	text-align: left;
 }
@@ -118,10 +147,6 @@
 	padding: 0;
 	position: relative;
 }
-#exit-selection:not(:hover) {
-	background: rgba(0,0,0,.07);
-	color: rgba(0,0,0,.75);
-}
 #exit-selection::after {
 	content: '+';
 	font-size: 1.5em;
@@ -134,33 +159,27 @@
 
 
 
-/* Pagination-v1 */
-#table-pagination {
-	height: 40px;
-	line-height: 40px;
-	float: right;
-}
-#table-pagination span {
-	margin: 0 10px;
-}
-
 /* Pagination-v2 */
 .pagination {
+	height: 26px;
+	line-height: 26px;
 	display: flex;
 	font-size: 13px;
 }
-.pagination a {
+.pagination a,
+.pagination span {
 	display: block;
-	min-width: 26px;
-	height: 26px;
-	line-height: 26px;
 	padding: 0 5px;
+	min-width: 26px;
 	box-sizing: border-box;
 	text-align: center;
 	border-radius: 2px;
 }
-.pagination a.sel {
-	background: #eee;
+.pagination span:not(.sel) {
+	opacity: .3;
+}
+.pagination span.sel {
+	background: #F4E1E8;
 }
 .pagination.top {
 	margin-bottom: 10px;
