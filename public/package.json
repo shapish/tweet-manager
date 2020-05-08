@@ -3,5 +3,16 @@
     "jquery": "^3.5.0",
     "jquery-sortablejs": "^1.0.1",
     "sortablejs": "^1.10.2"
-  }
+  },
+  "name": "public",
+  "version": "1.0.0",
+  "main": "index.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
 }
