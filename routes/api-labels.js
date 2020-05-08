@@ -9,7 +9,7 @@ const Label = require('../models/label');
 const Tweet = require('../models/tweet');
 
 // Helpers
-const helpers = require('../helpers/helpers');
+const {removeDupDocs, compareArrays} = require('../functions/general');
 
 
 
@@ -142,7 +142,7 @@ router.put('/merge', async (req, res) => {
 	tweetListsMergers.forEach(list => {
 		allMergedTweets = allMergedTweets.concat(list);
 	});
-	allMergedTweets = helpers.removeDupDocs(allMergedTweets);
+	allMergedTweets = removeDupDocs(allMergedTweets);
 
 	// Promise B2: Add new label to all merged tweets
 	const pB2 = allMergedTweets.map(tweet => {
@@ -159,7 +159,7 @@ router.put('/merge', async (req, res) => {
 	});
 
 	// Promise B4: Update main label count
-	const count = helpers.removeDupDocs(tweetListMain.concat(allMergedTweets)).length;
+	const count = removeDupDocs(tweetListMain.concat(allMergedTweets)).length;
 	const pB4 = Label.findByIdAndUpdate(mainId, {
 		count: count
 	});
@@ -259,11 +259,11 @@ router.put('/clean', async (req, res) => {
 			trueLabels.push(result);
 		}
 	};
-
+	
 	// Detect restored and removed values
 	console.log('ogLabelValues', ogLabelValues)
 	console.log('trueLabelValues', trueLabelValues)
-	const compare = helpers.compareArrays(ogLabelValues, trueLabelValues);
+	const compare = compareArrays(ogLabelValues, trueLabelValues);
 	const removedLabels = compare.diff1;
 	const restoredLabels = compare.diff2;
 	console.log(compare)

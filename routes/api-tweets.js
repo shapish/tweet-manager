@@ -5,7 +5,7 @@ const router = express.Router();
 // Models
 const Label = require('../models/label');
 const Tweet = require('../models/tweet');
-const Test = require('../models/test');
+const Dup = require('../models/dup');
 
 
 // Star single tweet
@@ -64,7 +64,7 @@ router.put('/archive', async (req, res) => {
 // Seed database
 router.post('/seed/:filename', async (req, res) => {
 	const seedData = require('../data/' + req.params.filename);
-	const data = await Test.create(seedData);
+	const data = await Dup.create(seedData);
 	res.send(data);
 });
 

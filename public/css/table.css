@@ -146,10 +146,19 @@ body.loading .table {
 	line-height: 20px;
 	padding: 10px 15px 10px 0;
 }
+.table-cell.tweet i {
+	color: blue;
+}
 .table-cell.tweet b {
 	color: crimson;
 	/* background: cornsilk; */
 	/* mix-blend-mode: multiply; */
+}
+.table-cell.tweet em {
+	font-style: normal;
+	font-weight: bold;
+	color: crimson;
+	text-decoration: underline;
 }
 .table-cell.tweet .meta {
 	clear: left;

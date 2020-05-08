@@ -25,6 +25,6 @@ testSchema.plugin(mongoose_fuzzy_searching, {
 	fields: ['text']
 });
 
-const Test = mongoose.model('test', testSchema);
+const Test = mongoose.model('dup', testSchema);
 
 module.exports = Test;

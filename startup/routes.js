@@ -10,8 +10,8 @@ const apiChapters = require('../routes/api-chapters');
 const apiLabels = require('../routes/api-labels');
 const apiTweets = require('../routes/api-tweets');
 
-// Helpers
-const frontendHelpers = require('../helpers/helpers-global');
+// Frontend Helpers
+const frontendHelpers = require('../functions/general-global');
 
 module.exports = function(app) {
 	app.use(express.json());

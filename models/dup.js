@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
+const mongoose_fuzzy_searching = require('mongoose-fuzzy-searching-v2');
 
-const tweetSchema = new mongoose.Schema({
+const dupSchema = new mongoose.Schema({
 	source: String,
 	text: String,
 	created_at: Date,
@@ -20,8 +21,10 @@ const tweetSchema = new mongoose.Schema({
 		default: false
 	}
 });
-tweetSchema.path('text').index({text : true});
+dupSchema.plugin(mongoose_fuzzy_searching, {
+	fields: ['text']
+});
 
-const Tweet = mongoose.model('tweet', tweetSchema);
+const Dup = mongoose.model('test', dupSchema);
 
-module.exports = Tweet;
+module.exports = Dup;

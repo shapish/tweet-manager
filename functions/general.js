@@ -51,73 +51,6 @@ function compareArrays(arr1, arr2) {
 	};
 }
 
-// Parses query and returns array of words and phrases
-// plus regex formula to highlight both in seaerch results.
-/*
-	Input: 'Jimmy loves bowling, "fluffy cats" and "cute dogs"'
-	Output: {
-		queryStems: ['Jimmy', 'loves', 'bowl', 'and'],
-		queryPhrases: ['fluffy cats', 'cute dogs'],
-		regexWords: /(\bJimmy|loves|bowl|and\w{0,3}\b)/gi, // --> selects all words beginining with stem that are up to 3 characters longer
-		regexPhrases: /(fluffy cats|cute dogs)/gi // --> selects all phrases verbatim
-	}
-	This can be truned into highlight as follows:
-	resultText = resultText.replace(regexWords, '<b>$0</b>');
-	resultText = resultText.replace(queryPhrases, '<b>$0</b>');
-*/
-function parseQuery(queryText) {
-	// Remove commas
-	queryText = queryText.replace(/,/, '');
-	
-	// Remove phrases and return array with stemmed words
-	const queryStems = _parseWords(queryText);
-
-	// Isolate Phrases in separate array
-	const queryPhrases = _parsePhrases(queryText);
-
-	// Stem RegEx: /\bSTEM\w{0,3}\b/gi
-	// => Find all words that begin with a stem and are up to three extra characters long (work --> working)
-	const regexWords = new RegExp('(\\b' + queryStems.join('|') + '\\w{0,3}\\b)', 'gi');
-
-	// Stem RegEx: /PHRASE1|PHRASE2/gi
-	const regexPhrases = new RegExp('('+queryPhrases.join('|')+')', 'gi');
-
-	return {
-		queryStems: queryStems,
-		queryPhrases: queryPhrases,
-		regexWords: regexWords,
-		regexPhrases: regexPhrases
-	}
-
-	
-	function _parseWords(queryText) {
-		// Remove quoted phrases
-		let queryWords = queryText.split(/(["])(?:(?=(\\?))\2.)*?\1/g) || [];
-		// Remove spaces and double quotes
-		queryWords = queryWords
-			.map(str => { return str.trim() })
-			.filter((str, i) => {
-				queryWords[i] = 'a';
-				return !!str.replace(/"/g, '').trim().length;
-			});
-		// Split every remaining query word
-		var tmp = [...queryWords];
-		queryWords = [];
-		tmp.forEach(str => {
-			queryWords = queryWords.concat(str.split(' '));
-		});
-		// Poor man stemming
-		return queryWords.map(word => word.replace(/(ing|s)\b/, ''));
-	}
-
-	function _parsePhrases(queryText) {
-		// Isolate quoted phrases
-		let queryPhrases = queryText.match(/(")(?:(?=(\\?))\2.)*?\1/g) || [];
-		// Remove quotes from phrases
-		return queryPhrases.map(phrase => phrase.replace(/"/g, ''));
-	}
-}
-
 
 // Wrap http links in <a>
 // Source: https://gist.github.com/ryansmith94/0fb9f6042c1e0af0d74f
@@ -144,6 +77,5 @@ function linkUserNames(text) {
 
 exports.removeDupDocs = removeDupDocs;
 exports.compareArrays = compareArrays;
-exports.parseQuery = parseQuery;
 exports.linkURLs = linkURLs;
 exports.linkUserNames = linkUserNames;

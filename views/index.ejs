@@ -91,7 +91,7 @@
 	</div>
 </div>
 
-<%- include('partials/pagination.ejs', { className: 'top' }) %>
+<%- include('partials/pagination.ejs', { p: pagination, className: 'top' }) %>
 
 <!-- table -->
 <div id="tweet-table" class="table">
@@ -127,7 +127,7 @@
 </div>
 <!-- /table -->
 
-<%- include('partials/pagination.ejs', { className: 'bottom' }) %>
+<%- include('partials/pagination.ejs', { p: pagination, className: 'bottom' }) %>
 
 <!-- <div id="table-pagination">
 	<a href="#">prev</a><span>1 / 3</span><a href="#">next</a>
