@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "@fortawesome/fontawesome-free": "^5.13.0",
     "jquery": "^3.5.0",
     "jquery-sortablejs": "^1.0.1",
     "sortablejs": "^1.10.2"
