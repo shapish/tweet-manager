@@ -3,9 +3,8 @@ const express = require('express');
 const router = express.Router();
 
 // Models
-const Label = require('../models/label');
 const Tweet = require('../models/tweet');
-const Dup = require('../models/dup');
+const Foo = require('../models/foo');
 
 
 // Star single tweet
@@ -64,11 +63,92 @@ router.put('/archive', async (req, res) => {
 // Seed database
 router.post('/seed/:filename', async (req, res) => {
 	const seedData = require('../data/' + req.params.filename);
-	const data = await Tweet.create(seedData);
-	res.send(data);
+
+	const batchSize = req.query.bs ? req.query.bs : 100;
+	// const interval = req.query.iv ? req.query.iv : 2000;
+
+
+	// Organize in batches
+	const batches = [];
+	for (let i=0; i<seedData.length; i++) {
+		if (i % batchSize === 0) {
+			batches.push([seedData[i]])
+		} else {
+			batches[batches.length - 1].push(seedData[i]);
+		}
+	}
+
+	let j = 0;
+	const result = [];
+	
+	console.log('')
+	console.log('')
+	console.log('batches.length: ', batches.length);
+
+	while (batches[j]) {
+		console.log('#'+j, batches[j].length);
+		const data = await Foo.create(batches[j]);
+		result.push(...data);
+		j++;
+	}
+	console.log('- - - - - - - - - done');
+	console.log('')
+	console.log('RESULT:\n ', result);
+
+	
+	res.send(result);
 });
 
 
 
 
 module.exports = router;
+
+
+
+
+
+
+
+
+// router.post('/seed/:filename', async (req, res) => {
+// 	const seedData = require('../data/' + req.params.filename);
+
+// 	const batchSize = req.query.bs ? req.query.bs : 10;
+// 	const interval = req.query.iv ? req.query.iv : 2000;
+
+
+// 	// Organize in batches
+// 	const batches = [];
+// 	for (let i=0; i<seedData.length; i++) {
+// 		if (i % batchSize === 0) {
+// 			batches.push([seedData[i]])
+// 		} else {
+// 			batches[batches.length - 1].push(seedData[i]);
+// 		}
+// 	}
+
+// 	let j = 0;
+// 	const result = [];
+// 	write();
+// 	console.log('')
+// 	console.log('')
+// 	console.log('batches.length: ', batches.length);
+
+// 	async function write() {
+// 		console.log('#'+j, batches[j].length);
+// 		const data = await Foo.create(batches[j]);
+// 		result.push(data);
+// 		j++;
+// 		if (batches[j]) {
+// 			setTimeout(write, interval);
+// 		} else {
+// 			console.log('- - - - - - - - - done');
+// 		}
+// 	}
+// 	console.log('')
+// 	console.log('RESULT:\n ', result);
+
+	
+// 	res.send(result);
+// });

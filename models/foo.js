@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
-const mongoose_fuzzy_searching = require('mongoose-fuzzy-searching-v2');
 
-const testSchema = new mongoose.Schema({
+const tweetSchema = new mongoose.Schema({
 	source: String,
 	text: String,
 	created_at: Date,
@@ -21,10 +20,7 @@ const testSchema = new mongoose.Schema({
 		default: false
 	}
 });
-testSchema.plugin(mongoose_fuzzy_searching, {
-	fields: ['text']
-});
 
-const Test = mongoose.model('dup', testSchema);
+const Foo = mongoose.model('foo', tweetSchema);
 
-module.exports = Test;
+module.exports = Foo;
