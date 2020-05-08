@@ -64,7 +64,7 @@ router.put('/archive', async (req, res) => {
 // Seed database
 router.post('/seed/:filename', async (req, res) => {
 	const seedData = require('../data/' + req.params.filename);
-	const data = await Dup.create(seedData);
+	const data = await Tweet.create(seedData);
 	res.send(data);
 });
 
