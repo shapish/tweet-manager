@@ -1,25 +1,36 @@
 {
-  "name": "trump-tweet-mgmt",
+  "name": "tweet-manager",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Interface to label and organize a massive tweet archive",
+  "main": "app.js",
   "scripts": {
+    "start": "node app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "Moenen Erbuer",
   "license": "ISC",
   "dependencies": {
+    "compression": "^1.7.4",
     "config": "^3.3.1",
     "cookie-parser": "^1.4.5",
     "ejs": "^3.0.2",
     "express": "^4.17.1",
+    "helmet": "^3.22.0",
+    "heroku": "^7.40.0",
     "moment": "^2.25.3",
     "mongoose": "^5.9.9",
-    "mongoose-fuzzy-searching": "^1.1.9",
     "mongoose-fuzzy-searching-v2": "^3.0.2",
     "winston": "^3.2.1",
     "winston-mongodb": "^5.0.1"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shapish/tweet-manager.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shapish/tweet-manager/issues"
+  },
+  "homepage": "https://github.com/shapish/tweet-manager#readme"
 }
