@@ -1,0 +1,28 @@
+#body {
+	overflow: auto;
+}
+.nav {
+	margin-bottom: 40px;
+}
+
+/**
+ * Control Buttons
+ */
+
+ #button-wrap {
+	margin-bottom: 30px;
+	overflow: auto;
+}
+#btn-cancel {
+	display: none;
+}
+#btn-save {
+	display: none;
+}
+#button-wrap.cm-editing #btn-edit {
+	display: none;
+}
+#button-wrap.cm-editing #btn-save,
+#button-wrap.cm-editing #btn-cancel {
+	display: block;
+}

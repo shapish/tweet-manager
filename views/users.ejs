@@ -1,0 +1,22 @@
+<%- include('partials/head.ejs', {
+	page: 'users',
+	title: 'Users',
+	css: [
+		'users.css'
+	],
+	jsDefer: [
+		'users.js'
+	]
+}) %>
+
+<h2 id="template-h2">Users</h2>
+
+<% for (let person in users) { %>
+	<div class="user" data-id="<%= users[person]._id %>" data-name="<%= users[person].name %>" data-email="<%= users[person].email %>">
+		<%= users[person].name %><br>
+		<a href="mailto:<%= users[person].email %>"><%= users[person].email %></a>
+		<% if (user.isAdmin == 2) { %><div class="x"></div><% } %> 
+	</div>
+<% } %>
+
+<%- include('partials/foot.ejs') %>

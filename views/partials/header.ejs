@@ -1,9 +1,13 @@
 <div id="header">
 	<h1>The Forty Fifth's Twitter Archive</h1>
-	<div id="main-nav" class="nav">
+	<% if (page != 'login') { %>
+	<div class="nav">
 		<a href="/"<% if (sel == 'tweets') { %> class="sel"<% } %>>Tweets</a>
 		<a href="/overview"<% if (sel == 'overview') { %> class="sel"<% } %>>Overview</a>
-		<a href="/chapters"<% if (sel == 'chapters') { %> class="sel"<% } %>>Chapters</a>
 		<a href="/labels"<% if (sel == 'labels') { %> class="sel"<% } %>>Labels</a>
+		<a href="/chapters"<% if (sel == 'chapters') { %> class="sel"<% } %>>Chapters</a>
+		<% if (user.isAdmin) { %><a href="/users"<% if (sel == 'users') { %> class="sel"<% } %>>Users</a><% } %>
+		<a href="/me"<% if (sel == 'me') { %> class="sel"<% } %>>Me</a>
 	</div>
+	<% } %>
 </div>

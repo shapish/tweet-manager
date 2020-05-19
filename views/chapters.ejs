@@ -2,77 +2,17 @@
 	page: 'chapters',
 	title: 'Chapters',
 	css: [
-		'chapter-manager.css',
-		'chapters.css'
-	],
-	js3p: [
-		'sortablejs/Sortable.min.js',
-		'jquery-sortablejs/jquery-sortable.js'
-	],
-	js: [
-		'chapter-manager.js'
+		'chapters-overview.css'
 	],
 	jsDefer: [
-		'chapters.js'
+		'chapters-overview.js'
 	]
 }) %>
 
 <h2>Chapters</h2>
 
-<div id="button-wrap">
-	<button id="btn-edit">edit</button>
-	<button id="btn-cancel">cancel</button>
-	<button id="btn-save" type="submit">save</button>
-</div>
+<%- include('partials/chapters-nav.ejs', { page: 'overview' }) %>
 
-<template id="template-chapter">
-	<div class="cm-chapter">
-		<div class="content">
-			<div class="block"></div>
-			<div class="move" title="move chapter up or down"></div>
-			<span class="index">...</span>
-			<span class="title"></span>
-			<div class="cm-actions">
-				<div class="adopt" title="adopt next"></div>
-				<div class="rename" title="rename"></div>
-				<div class="delete" title="delete"></div>
-				<div class="abandon" title="abandon children"></div>
-			</div>
-		</div>
-		<div class="insert"></div>
-	</div>
-</template>
-
-<div id="chapters-wrap" class="sortable level-0">
-	<%
-	for (const i in chapters) {
-		const level = chapters[i].index.split('.').length - 1;
-		const nextLevel = chapters[parseInt(i) + 1] ? chapters[parseInt(i) + 1].index.split('.').length - 1 : 0;
-		const test = chapters[parseInt(i) + 1] ? chapters[parseInt(i) + 1].index.split('.') : 'x';
-		if (nextLevel > level) {
-	%>
-	<div class="sortable level-<%= nextLevel %>">
-		<% } %>
-		<div class="cm-chapter" data-id="<%= chapters[i]._id %>">
-			<div class="content">
-				<div class="block"></div>
-				<div class="move" title="move chapter up or down"></div>
-				<span class="index"><%= chapters[i].index %></span>
-				<span class="title"><%= chapters[i].title %></span>
-				<div class="cm-actions">
-					<div class="adopt" title="adopt next"></div>
-					<div class="rename" title="rename"></div>
-					<div class="delete" title="delete"></div>
-					<div class="abandon" title="abandon children"></div>
-				</div>
-			</div>
-			<div class="insert"></div>
-		</div>
-	<% if (nextLevel < level) {
-		for (let j=level; j>nextLevel; j--) {
-	%>
-	</div>
-	<% }}} %>
-</div>
+Coming soon.
 
 <%- include('partials/foot.ejs') %>

@@ -1,0 +1,31 @@
+<%- include('partials/head.ejs', {
+	page: 'me',
+	title: 'Me',
+	css: [
+		'me.css'
+	],
+	js: [
+		'form-handler.js'
+	],
+	jsDefer: [
+		'me.js'
+	]
+}) %>
+
+<h2 id="template-h2">Me</h2>
+
+<form id="form-me" novalidate>
+	<input type="text" name="name" placeholder="name" autocomplete="name" value="<%= me.name %>" readonly>
+	<input type="email" name="email" placeholder="email" autocomplete="email" value="<%= me.email %>" readonly>
+	<input type="password" name="password" placeholder="password" autocomplete="password" value="•••••••" readonly>
+	<div class="info-msg">To change your email, contact the site admin.</div>
+	<button type="button" id="btn-edit" class="clear">Edit</button>
+	<button type="button" id="btn-cancel" class="clear">Cancel</button>
+	<button type="submit">Save</button>
+</form>
+<br><br>
+
+<a href="/logout">logout</a>
+
+
+<%- include('partials/foot.ejs') %>

@@ -7,27 +7,24 @@
 // Looks at all url query keys, throws out pagination
 // and overwrites whatever is being passed.
 // amp is option to return url query starting with '&'
-function url(q, key, value, options) {
+function url(q, key, value, keepPagination) {
+	// Close query object
 	const query = { ...q };
-	const skipQm = options && options.skipQm ? options.skipQm : false ; // Skip question mark
 
-	if (query.p) delete query.p;
 	if (key && !value) {
 		// Remove key when value is null
 		delete query[key];
 	} else if (key && value) {
-		// Add key & value
+		// Add/replace key & value
 		query[key] = value;
 	}
 
-	// If there's a month set but no year, add current year
-	if (query.m && !query.y) query.y = new Date().getFullYear();
-
 	let url = ''; // skipQm true = return starting with '&'
 	for (const k in query) {
-		url += (url == '' && !skipQm) ? '?' : '&';
+		url += (url == '') ? '?' : '&';
 		url += (k + '=' + query[k]);
 	}
+	
 	return url;
 }
 

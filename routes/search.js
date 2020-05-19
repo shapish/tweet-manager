@@ -1,0 +1,304 @@
+// Modules
+const express = require('express');
+const router = express.Router();
+const logger = require('../helpers/logger');
+const ejs = require('ejs');
+
+// Models
+const Tweet = require('../models/tweet');
+const { User } = require('../models/user');
+const Dup = require('../models/dup');
+
+// Functions
+const Search = require('../functions/classes/Search');
+const Pg = require('../functions/classes/Pagination');
+const {getDateNav, linkText} = require('../functions/search');
+const {url} = require('../functions/general-global');
+const {auth} = require('../middleware/auth');
+const getUserData = require('../middleware/get-user-data');
+
+
+
+// Landing
+router.get('/', auth, display);
+
+
+// Search query
+router.post('/q/:query', auth, (req, res) => {
+	const {query} = req.params;
+	req.query.q = decodeURI(query).replace(/^%2F|%2F$/g, '/');
+	req.renderFile = true;
+	display(req, res);
+});
+
+
+// Clear search
+router.post('/clear', auth, (req, res) => {
+	req.renderFile = true;
+	display(req, res);
+});
+
+
+// Sort
+router.post('/s/:sort', auth, (req, res) => {
+	req.renderFile = true;
+	if (req.params.sort == '-date') {
+		delete req.query.s;
+	} else {
+		req.query.s = req.params.sort;
+	}
+	display(req, res);
+});
+
+
+// Go to page
+router.post('/p/:nr', auth, (req, res) => {
+	req.renderFile = true;	
+	req.query.p = req.params.nr;
+	req.keepPagination = true;
+	display(req, res);
+});
+
+
+// Filter
+router.post('/filter/:action/:state', auth, (req, res) => {
+	let {action, state} = req.params;
+	
+	// Parse month/year input
+	const regexYear = /^y-(\d{4})$/;
+	const regexMonth = /^m-(\d{1,2})$/;
+	let year = false;
+	let month = false;
+	if (action.match(regexYear)) {
+		year = action.replace(regexYear, '$1');
+		action = 'year';
+	} else if (action.match(regexMonth)) {
+		month = action.replace(regexMonth, '$1');
+		action = 'month';
+	}
+
+	switch (action) {
+		// Type filters
+		case 'all':
+			delete req.query.t;
+			break;
+		case 'og':
+		case 'rt':
+			req.query.t = action;
+			break;
+
+		// Date filters
+		case 'cal':
+			if (state == '1') {
+				// Reinstate year & month if they're already selected
+				if (req.body.y) req.query.y = req.body.y;
+				if (req.body.m) req.query.m = req.body.m;
+			} else {
+				delete req.query.y;
+				delete req.query.m;
+				delete req.query.cal;
+			}
+			break;
+		case 'year':
+			if (state == '1') {
+				req.query.y = year;
+			} else if (req.query.m) {
+				req.query.y = new Date().getFullYear();
+			} else {
+				delete req.query.y;
+			}
+			break;
+		case 'month':
+			if (state == '1') {
+				req.query.m = month;
+				if (!req.query.y) {
+					req.query.y = 2020;
+				}
+			} else {
+				delete req.query.m;
+			}
+			break;
+
+		// Category filters
+		default:
+			if (state == '0') {
+				delete req.query[action];
+			} else {
+				req.query[action] = state;
+			}
+			break;
+	}
+	req.renderFile = true;
+	display(req, res);
+});
+
+
+// Change settings
+router.put('/settings', auth, async (req, res) => {
+	// Read settings
+	const settings = {};
+	if (req.body.showLabels) settings.s_showLabels = req.body.showLabels;
+	if (req.body.showMeta) settings.s_showMeta = req.body.showMeta;
+	if (req.body.clipTweets) settings.s_clipTweets = req.body.clipTweets;
+	if (req.body.pageSize) settings.s_pageSize = req.body.pageSize;
+	if (req.body.listPages) settings.s_listPages = req.body.listPages;
+
+	// Update user
+	await User.findByIdAndUpdate(req.user._id, settings);
+
+	// Reload content
+	req.renderFile = true;
+	req.keepPagination = true;
+	display(req, res);
+});
+
+
+// Search & display tweets
+async function display(req, res) {
+	// Whenever data changes, pagination is reset
+	if (req.renderFile && !req.keepPagination) delete req.query.p;
+
+	// Get years & months to display
+	const dateNav = getDateNav();
+	
+	// Gather all parameters to run search
+	const {search, searchParams, sort} = new Search(req.query);
+	// console.log('searchParams:', searchParams);
+
+	// Load user settings
+	const user = await User.findById(req.user._id)
+		.select('s_showLabels s_showMeta s_clipTweets s_pageSize s_listPages isAdmin');
+	let tableClass = '';
+	if (user.s_showLabels) tableClass += ' show-labels';
+	if (user.s_showMeta) tableClass += ' show-meta';
+	if (user.s_clipTweets) tableClass += ' clip-tweets';
+
+	// Set pagination parameters
+	const pg = new Pg(req.query.p, user);
+
+	// ## This can be done with one roundtrip:
+	// https://stackoverflow.com/a/61196254/2262741
+	const p1 = Tweet.find(searchParams)
+		.sort(sort)
+		.limit(pg.pageSize)
+		.skip((pg.pageNumber - 1) * pg.pageSize);
+	const p2 = Tweet.find(searchParams).count();
+	const [tweets, resultCount] = await Promise.all([p1, p2]);
+
+	// Complete pagination parameters
+	pg.complete(resultCount);
+
+	// Link URLs and usernames
+	linkText(tweets);
+
+	// Highlight results
+	if (req.query.q) search.highlightText(tweets);
+	
+	// Data to send
+	let data = {
+		tweets: tweets,
+		resultCount: resultCount,
+		sort: sort,
+		pagination: pg,
+		dateNav: dateNav,
+		query: req.query,
+		user: user,
+		sel: _getSelClass(req.query),
+		tableClass: tableClass
+	};
+	
+	if (req.renderFile) {
+		// Render table data
+		let html = '';
+		const renderData = { ...data, ...req.app.locals };
+		ejs.renderFile('views/partials/table.ejs', renderData, (err, str) => {
+			if (err) {
+				logger.error('Error rendering table data', err);
+			} else {
+				html += str;
+			}
+		});
+		res.send({
+			html: html,
+			resultCount: resultCount,
+			q: req.query.q,
+			urlQuery: url(req.query, null, null, req.keepPagination)
+		});
+	} else {
+		// Load page
+		res.render('search', data);
+	}
+
+	// Set UI selection states for each link
+	function _getSelClass(query) {
+		return {
+			// Type
+			all: !query.t ? 'sel' : '',
+			og:  query.t == 'og' ? 'sel' : '',
+			rt:  query.t == 'rt' ? 'sel' : '',
+
+			// Dates
+			cal: query.y || query.m ? 'sel' : '',
+
+			// Filters
+			st:  query.st == 1 ? 'sel' : query.st == -1 ? 'sel un' : false,
+			la:  query.la == 1 ? 'sel' : query.la == -1 ? 'sel un' : false,
+			as:  query.as == 1 ? 'sel' : query.as == -1 ? 'sel un' : false,
+			ar:  query.ar == 1 ? 'sel' : query.ar == -1 ? 'sel un' : false,
+
+			// Sort
+			chapter: query.s == 'chapter' ? 'sort' : query.s == '-chapter' ? 'sort dec' : '',
+			date:	 query.s == 'date' ? 'sort' : !query.s ? 'sort dec' : '',
+			score:	 query.s == 'score' ? 'sort' : query.s == '-score' ? 'sort dec' : ''
+		}
+	}
+}
+
+
+
+
+
+
+
+
+
+// Fuzz2
+router.get('/fuzzy', auth, async (req, res) => {
+	// Get years & months to display
+	const dateNav = getDateNav();
+
+	// Search
+	const {search, searchParams, pg, sort} = new Search(req.query);
+	// console.log('searchParams:', searchParams);
+
+	// ## This can be done with one roundtrip:
+	// https://stackoverflow.com/a/61196254/2262741
+	const p1 = await Dup.fuzzySearch(req.query.q)
+		.sort(sort)
+		.limit(pg.pageSize)
+		.skip((pg.pageNumber - 1) * pg.pageSize);
+	const p2 = await Dup.fuzzySearch(req.query.q).count();
+	const [tweets, resultCount] = await Promise.all([p1, p2]);
+
+	// Complete pagination parameters
+	pg.complete(resultCount);
+
+	// Link URLs and usernames
+	linkText(tweets);
+
+	// Highlight results
+	search.highlightText(tweets);
+
+	// Render
+	res.render('index', {
+		tweets: tweets,
+		resultCount: resultCount,
+		sort: sort,
+		pagination: pg,
+		dateNav: dateNav,
+		query: req.query
+	});
+});
+
+
+module.exports = router;

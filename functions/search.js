@@ -83,7 +83,6 @@ function parseQueryOLD(queryText) {
 		queryWords = queryWords.join(' ').split(' ').filter(word => !!word.length);
 		// Poor man stemming
 		return queryWords.map(word => word.replace(/(ing|s|ly|sy)\b/, ''));
-		console.log('queryWords: ', queryWords);
 	}
 
 	function _parsePhrases(queryText) {

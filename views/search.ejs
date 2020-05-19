@@ -1,0 +1,110 @@
+<%- include('partials/head.ejs', {
+	page: 'tweets',
+	title: 'Tweets',
+	css: [
+		'search.css',
+		'table.css',
+		'jquery.auto-complete.css'
+	],
+	js: [
+		'search-bar.js',
+		'search-filters.js',
+		'search-settings.js',
+		'search-table.js',
+		'jquery.auto-complete.js',
+	],
+	jsDefer: [
+		'search.js'
+	]
+}) %>
+
+<template id="tmp-label">
+<%- include('partials/label.ejs', { val: 'value' }) %>
+</template>
+
+<form id="form-search">
+	<input id="search" type="text" placeholder="Search" value="<%= query.q %>" tabindex="1" autocomplete="off" autofocus>
+	<button type="button" id="search-clear" title="Clear search"></button>
+	<button id="search-submit" type="submit">Search</button>
+	<div id="search-results-count"><%= resultCount %> results</div>
+</form>
+
+<div id="filters" class="nav">
+	<a href="#all" name="type" class="<%= sel.all %>">All</a>
+	<a href="#og" name="type" class="<%= sel.og %>">OG</a>
+	<a href="#rt" name="type" class="<%= sel.rt %>">RT</a>
+	<div class="sep"></div>
+	<a href="#cal" class="<%= sel.cal %>">By Month</a>
+	<div class="sep"></div>
+	<a href="#st" class="triad <%= sel.st %>">Starred</a>
+	<a href="#la" class="triad <%= sel.la %>">Labeled</a>
+	<a href="#as" class="triad <%= sel.as %>">Assigned</a>
+	<a href="#ar" class="triad <%= sel.ar %>">Archived</a>
+	<div class="sep"></div>
+	<a href="#settings">Settings</a>
+</div>
+
+<div id="nav-cal" class="nav small<% if (query.y || query.m) { %> show<% } %>">
+	<div class="years">
+		<% for (let i=dateNav.years.length-1; i>0; i--) { %>
+			<a href="#y-<%= dateNav.years[i] %>" name="year""<% if (query.y == dateNav.years[i]) { %> class="sel"<% } %>><%= dateNav.years[i] %></a>
+		<% } %>
+	</div>
+	<div class="months">
+		<% for (let i=1; i<dateNav.months.length; i++) { %> 
+			<a href="#m-<%= i %>" name="month"<% if (query.m == i) { %> class="sel"<% } %>><%= dateNav.months[i] %></a>
+		<% } %>
+		<div id="selected-month-overview" class="month-overview">
+			<div class="bar">
+				<div class="archived"></div>
+				<div class="processed"></div>
+			</div>
+			<span><%= resultCount %> tweets</span>
+		</div>
+	</div>
+</div>
+
+<div id="settings" class="nav">
+	<a href="#showLabels" class="op<% if (user.s_showLabels) { %> sel<% } %>">Show Labels</a>
+	<a href="#showMeta" class="op<% if (user.s_showMeta) { %> sel<% } %>">Show Metadata</a>
+	<a href="#clipTweets" class="op<% if (user.s_clipTweets) { %> sel<% } %>">Clip Tweets</a>
+	<div class="sep"></div>
+	<a href="#pageSize" class="op prompt">page size: <span class="color"><%= user.s_pageSize %></span></a>
+	<a href="#listPages" class="op prompt">list pages: <span class="color"><%= user.s_listPages %></span></a>
+</div>
+
+<div id="controls">
+	<div class="reselect-ui">
+		<button id="btn-reselect">reselect</button>
+	</div>
+	<div class="select-ui">
+		<button id="exit-selection"></button>
+		<button id="btn-archive">archive</button>
+		<div id="dd-star-display" class="dd-display">
+			<div class="dsp">- star -</div>
+			<select id="dd-stars">
+				<option hidden selected></option>
+				<option value="0" data-display-value="-">- whatever</option>
+				<option value="1" data-display-value="&#x2605;">&#x2605; noteworthy</option>
+				<option value="2" data-display-value="&#x2605;&#x2605;">&#x2605;&#x2605; great tweet</option>
+				<option value="3" data-display-value="&#x2605;&#x2605;&#x2605;">&#x2605;&#x2605;&#x2605; top content</option>
+			</select>
+		</div>
+		<input id="add-label" type="text" placeholder="+ add label">
+		<div id="dd-chapter-display" class="dd-display">
+			<div class="dsp">- move -</div>
+			<select id="dd-chapter">
+				<option value="">move</option>
+				<option value="chapter-a">Chapter A</option>
+				<option value="chapter-b">Chapter B</option>
+				<option value="chapter-c">Chapter C With Very Long Title</option>
+			</select>
+		</div>
+	</div>
+</div>
+
+<div id="table-wrap">
+<%- include('partials/table.ejs') %>
+</div>
+
+<%- include('partials/foot.ejs') %>

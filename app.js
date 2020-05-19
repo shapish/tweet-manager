@@ -6,6 +6,7 @@ const app = express();
 require('./startup/db')();
 require('./startup/prod')(app);
 require('./startup/routes')(app);
+require('./startup/config')();
 
 // Initialize server
 const port = process.env.PORT || 5000;

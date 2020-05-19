@@ -5,10 +5,13 @@ var cookieParser = require('cookie-parser');
 const error = require('../middleware/error'); // Centralized express error handler
 
 // Routes
-const index = require('../routes/index');
+const pages = require('../routes/pages');
+const search = require('../routes/search');
 const apiChapters = require('../routes/api-chapters');
 const apiLabels = require('../routes/api-labels');
 const apiTweets = require('../routes/api-tweets');
+const apiUsers = require('../routes/api-users');
+const apiLogin = require('../routes/api-login');
 
 // Frontend Helpers
 const frontendHelpers = require('../functions/general-global');
@@ -28,13 +31,13 @@ module.exports = function(app) {
 		app.locals[helper] = frontendHelpers[helper];
 	}
 	
-	app.use('/', index);
+	app.use('/', pages);
+	app.use('/search', search);
 	app.use('/api/chapters', apiChapters);
 	app.use('/api/labels', apiLabels);
 	app.use('/api/tweets', apiTweets);
+	app.use('/api/users', apiUsers);
+	app.use('/api/login', apiLogin);
 	app.use(error);
-
-
-
 	
 }

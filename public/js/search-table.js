@@ -1,117 +1,190 @@
 // To do:
 // - label suggests to add existing value with capital
 
-function Table() {
-	this.selected = [];
+function Table(callbacks) {
+	this.selected = []; // $rows that are selected
+	this.reselect = []; // $rows that can be reselected
 	this.lastClicked = null;
 	this.$ipAddLabel = $('input#add-label');
-	this.init();
+	this.debug = false; // Logs all actions
 
-	this.debug = false;
+	// Set callbacks: onSelect / onDeselect / onPopState
+	this.callbacks = callbacks ? callbacks : {};
+
+	// History back button
+	$(window).on('popstate', (e) => {
+		const data = e.originalEvent.state;
+		if (data) {
+			this.updateTable(data, true);
+			this.callbacks.onPopState(data);
+		} else {
+			location.reload();
+		}
+	});
+
+	this.init();
 }
+
 
 // Initialize
 Table.prototype.init = function() {
 	this.$table = $('#tweet-table');
 	this.$header = this.$table.children().eq(0);
 	this.$rows = this.$table.children();
+	this.$pagination = $('#table-wrap .pagination'); // Returns both
 	
 	// Hook up top controls
-	this.initControls();
+	this._initControls();
+
+	// Pagination links
+	this._initPagination();
 	
 	// Hook up header clicks
-	this.initHeader();
+	this._initHeader();
 	
 	// Hook up row clicks
-	this.handleRowClicks();
+	this._initRowClicks();
 	// $('input[type=checkbox]').eq(1).trigger('click'); // ## DEV
 
 	// Hook up labels
-	this.initlabels();
+	this._initlabels();
 	
 	// Hook up dropdowns
 	this.$dropdowns = this.$table.find('select');
 	for (let i=0; i<this.$dropdowns.length; i++) {
-		this.$dropdowns.eq(i).change((e) => {
-			this.updateDropdownDisplay($(e.currentTarget));
+		this.$dropdowns.eq(i).off('change').on('change', (e) => {
+			this._updateDropdownDisplay($(e.currentTarget));
 		});
 	}
 };
 
+
 // Initialize controls at the top
-Table.prototype.initControls = function() {
+Table.prototype._initControls = function() {
 	// Archive button
-	$('#btn-archive').click((e) => {
-		this.toggleArchiveSelected($(e.currentTarget));
+	$('#btn-archive').off('click').on('click', (e) => {
+		console.log('clocl')
+		this._toggleArchiveSelected($(e.currentTarget));
+		_deselect.bind(this)();
 	});
 	
 	// Star dropdown
-	$('#dd-star-display').on('change', (e) => {
+	$('#dd-star-display').off('change').on('change', (e) => {
 		const $target = $(e.currentTarget);
 		const level = $target.attr('data-value');
 		$target.removeClass('l-0 l-1 l-2 l-3').addClass('l-' + level);
-		this.starSelected(level);
+		this._starSelected(level);
+		_deselect.bind(this)();
 	});
 	
 	// Chapter dropdown
-	$('#dd-chapter').change($.proxy(this.propagateDropdownSelected, this));
+	$('#dd-chapter').off('change').change(() => {
+		this._propagateDropdownSelected;
+		_deselect.bind(this)();
+	});
 	
 	// Exit selection
-	$('#exit-selection').click(() => {
-		this.selectAll(false);
+	$('#exit-selection').off('click').on('click', () => {
+		_deselect.bind(this)();
 	});
-};
 
-// Initialize header click events
-Table.prototype.initHeader = function() {
-	const $cb = this.$header.find('input[type=checkbox]');
-	const $star = this.$header.find('.star');
-	
-	// Checkbox
-	$cb.change((e) => {
-		this.toggleSelectAll($(e.currentTarget));
-	});
-	
-	// Star
-	$star.click((e) => {
-		this.starAll($(e.currentTarget));
-	});
-};
+	// Reselect button
+	$('#btn-reselect').off('click').on('click', _reselect.bind(this));
 
-// Handle row click event
-Table.prototype.handleRowClicks = function(e) {
-	for (let i=1; i<this.$rows.length; i++) {
-		const $row = this.$rows.eq(i);
+	function _deselect() {
+		this.reselect = [...this.selected];
+		this._deselectSelected();
+	}
 
-		$row.on('click', '.star', () => { this.cycleStar($row) });
-		$row.on('click', '.btn-archive', (e) => { this.toggleArchive($(e.target)); e.preventDefault(); });
-		$row.on('click', '.btn-copy', (e) => { this.copyToClipboard($row); e.preventDefault(); });
-		$row.on('click', 'checkbox, .cb, .tweet', (e) => { this.toggleSelect(e, $row); }); // Label & link clicks get blocked
-		
+	function _reselect() {
+		this.reselect.forEach($row => {
+			this.select($row, true);
+		});
 	}
 };
 
+
+// Initialize pagination links
+Table.prototype._initPagination = function() {
+	this.$pagination.off('click').on('click', 'a', (e) => {
+		loading();
+		const urlQuery = window.location.search;
+		const page = $(e.target).attr('href').slice(1);
+		this.ajax({
+			type: 'POST',
+			url: '/search/p/' + page + urlQuery,
+			success: this.updateTable
+		});
+		e.preventDefault();
+	});
+};
+
+
+// Initialize header click events
+Table.prototype._initHeader = function() {
+	const $cb = this.$header.find('input[type=checkbox]');
+	const $star = this.$header.find('.star');
+	const $sortLinks = this.$header.find('a.sort-link');
+	
+	// Checkbox
+	$cb.off('change').change((e) => {
+		this._toggleSelectAll($(e.currentTarget));
+	});
+	
+	// Star
+	$star.off('click').on('click', (e) => {
+		this._starAll($(e.currentTarget));
+	});
+
+	// Sorting
+	$sortLinks.click((e) => {
+		loading();
+		const urlQuery = window.location.search;
+		const sort = $(e.target).attr('data-sort');
+		this.ajax({
+			type: 'POST',
+			url: '/search/s/' + sort + urlQuery,
+			success: this.updateTable
+		});
+		e.preventDefault();
+	});
+};
+
+
+// Handle row click event
+Table.prototype._initRowClicks = function(e) {
+	for (let i=1; i<this.$rows.length; i++) {
+		const $row = this.$rows.eq(i);
+
+		$row.off('click')
+			.on('click', '.star', () => { this._cycleStar($row) })
+			.on('click', '.btn-archive', (e) => { this._toggleArchive($(e.target)); e.preventDefault(); })
+			.on('click', '.btn-copy', (e) => { this._copyToClipboard($row); e.preventDefault(); })
+			.on('click', 'checkbox, .cb, .tweet', (e) => { this._toggleSelect(e, $row); }); // Label & link clicks get blocked
+	}
+};
+
+
 // Emable label UI
-Table.prototype.initlabels = function() {
+Table.prototype._initlabels = function() {
 	// Show remove UI on label hover
-	this.$table.find('.label-wrap').on('mouseenter', '.label', e => {
+	this.$table.find('.label-wrap').off('mouseenter').on('mouseenter', '.label', e => {
 		setTimeout(() => {
-			console.log('##', $(e.currentTarget).is(':hover'), $(e.currentTarget), $(e.target))
 			if ($(e.currentTarget).is(':hover')) $(e.currentTarget).addClass('remove');
 		}, 500);
-	}).on('mouseleave', '.label', (e) => {
+	}).off('mouseleave').on('mouseleave', '.label', (e) => {
 		$(e.currentTarget).removeClass('remove');
 	});
 
 	// Remove label
-	this.$table.find('.label-wrap').on('click', '.x', e => {
+	this.$table.find('.label-wrap').off('click').on('click', '.x', e => {
 		const $row = $(e.target).closest('.table-row');
 		const $label = $(e.target).closest('.label');
-		this.removeLabel($row, $label);
+		this._removeLabel($row, $label);
 	});
 
 	// Autocomplete labels
-	this.$ipAddLabel.autoComplete({
+	this.$ipAddLabel.autoComplete('destroy').autoComplete({
 		source: (term, suggest) => {
 			term = term ? term.toLowerCase() : '*'; // When there's no search term, return all
 			// Suggest labels
@@ -145,7 +218,7 @@ Table.prototype.initlabels = function() {
 					// Add labels to DOM, but in hold mode
 					const html = $('#tmp-label').html().replace('value', term);
 					const $label = $(html).addClass('hold');
-					$row.find('.label-wrap').append($label);
+					$row.find('.label-wrap').addClass('pad').append($label);
 				}
 			});
 
@@ -178,22 +251,38 @@ Table.prototype.initlabels = function() {
  */
 
 // Toggle select all
-Table.prototype.toggleSelectAll = function($target) {
+Table.prototype._toggleSelectAll = function($target) {
 	const value = $target.prop('checked');
-	this.selectAll(value);
+	this._selectAll(value);
 };
 
+
 // Select all
-Table.prototype.selectAll = function(value) {
-	console.log('Table.selectAll');
+Table.prototype._selectAll = function(value) {
+	this.log('Table.selectAll');
 	for (let i=0; i<this.$rows.length; i++) {
 		const $row = this.$rows.eq(i);
-		this.select($row, value);
+		this._select($row, value);
 	}
 };
 
+
+// Deselect selected
+Table.prototype._deselectSelected = function(value) {
+	this.log('Table.deselectSelected');
+	
+	// Header is ignored by the select function so checkbox needs to be diabled separately
+	this.$table.find('.table-header').find('input[type=checkbox]').prop('checked', false);
+
+	// Deselect all selected rows
+	this.reselect.forEach($row => {
+		this._select($row, false, true);
+	});
+};
+
+
 // Toggle select
-Table.prototype.toggleSelect = function(e, $row) {
+Table.prototype._toggleSelect = function(e, $row) {
 	// Block when label is clicked
 	if ($(e.target).is('a, .label, .x')) return;
 
@@ -206,28 +295,34 @@ Table.prototype.toggleSelect = function(e, $row) {
 		const indexLast = this.lastClicked.index(); // Index of previously clicked row
 		const index1 = Math.min(indexCurr, indexLast);
 		const index2 = Math.max(indexCurr, indexLast);
-		// console.log(index1 + ' --> ' + index2);
 		for (let i=index1; i<=index2; i++) {
-			this.select(this.$rows.eq(i), !isSelected);
+			this._select(this.$rows.eq(i), !isSelected);
 		}
 	} else {
 		// Regular click, only select current row
-		this.select($row, !isSelected);
+		this._select($row, !isSelected);
 	}
 	
 	// Register last row clicked
 	this.lastClicked = $row;
 };
 
+
 // Select
 // › select: boolean => select/deselect
-Table.prototype.select = function($row, select) {
-	console.log('Table.select');
+Table.prototype._select = function($row, select, batch) {
+	this.log('Table.select');
+
+	// Ignore table header
+	if ($row.is('.table-header')) return;
+
 	// Color row.
 	if (select) {
 		$row.addClass('sel');
+		if (this.callbacks.onSelect) this.callbacks.onSelect();
 	} else {
 		$row.removeClass('sel');
+		if (this.callbacks.onDeselect) this.callbacks.onSelect();
 	}
 	
 	// Update checkbox
@@ -247,14 +342,17 @@ Table.prototype.select = function($row, select) {
 	} else if (!select && !isFresh) {
 		this.selected.splice(rowIndex, 1);
 	}
+
+	// Update reselect only when individual row is clicked
+	if (!batch) this.reselect = [...this.selected];
 	
 	// Show controls when at least one row is selected
 	if (this.selected.length == 0) {
-		$('#controls').addClass('hide');
-		$('#filters').removeClass('hide');
-	} else if ($('#controls').hasClass('hide')) {
-		$('#controls').removeClass('hide');
-		$('#filters').addClass('hide');
+		$('#controls').removeClass('select');
+		if (this.reselect.length) $('#controls').addClass('reselect');
+	} else {
+		$('#controls').addClass('select');
+		$('#controls').removeClass('reselect');
 	}
 };
 
@@ -267,19 +365,20 @@ Table.prototype.select = function($row, select) {
  */
 
 // Star all
-Table.prototype.starAll = function($target) {
+Table.prototype._starAll = function($target) {
 	if (!$target.hasClass('unlocked')) {
 		$target.addClass('unlocked');
 		if (!confirm('Are you sure you want to star all rows?')) return;
 	}
-	console.log('Table.starAll');
+	this.log('Table.starAll');
+
 	const level = this.$header.attr('data-star') ? (+this.$header.attr('data-star') + 1) % 4 : 1;
 
 	// Star all rows
 	const ids = [];
 	for (let i=0; i<this.$rows.length; i++) {
 		const $row = this.$rows.eq(i);
-		this.star($row, level);
+		this._star($row, level);
 		if (i > 0) ids.push($row.attr('data-id'));
 	}
 	
@@ -294,15 +393,16 @@ Table.prototype.starAll = function($target) {
 	});
 };
 
+
 // Star selected rows
-Table.prototype.starSelected = function(level) {
-	console.log('Table.starSelected');
+Table.prototype._starSelected = function(level) {
+	this.log('Table.starSelected');
 	const ids = [];
-	this.selected.forEach(function($row, i) {
+	this.selected.forEach(($row, i) => {
 		// Update UI.
-		this.star($row, level);
+		this._star($row, level);
 		if ($row.attr('data-id')) ids.push($row.attr('data-id')); // Make sure not to include the header
-	}.bind(this));
+	});
 	
 	// Ajax
 	this.ajax({
@@ -315,22 +415,23 @@ Table.prototype.starSelected = function(level) {
 	});
 };
 
+
 // Cycle star
-Table.prototype.cycleStar = function($row) {
+Table.prototype._cycleStar = function($row) {
 	const level = $row.attr('data-star') ? (+$row.attr('data-star') + 1) % 4 : 1;
-	this.star($row, level, true);
+	this._star($row, level, true);
 	
 };
 
 
 // Star
-Table.prototype.star = function($row, level, ajax) {
-	console.log('Table.star');
+Table.prototype._star = function($row, level, ajax) {
+	this.log('Table.star');
 	$row.removeClass('l-0 l-1 l-2 l-3').addClass('l-' + level).attr('data-star', level);
 	
 	// Ajax
 	if (!ajax) return;
-
+	
 	this.ajax({
 		type: 'PUT',
 		url: '/api/tweets/star/' + $row.attr('data-id'),
@@ -349,7 +450,7 @@ Table.prototype.star = function($row, level, ajax) {
  */
 
 // Toggle archive for selected rows
-Table.prototype.toggleArchiveSelected = function($btn) {
+Table.prototype._toggleArchiveSelected = function($btn) {
 	const doArchive = !$btn.hasClass('toggle');
 	if (doArchive) {
 		// YES - archive
@@ -361,12 +462,13 @@ Table.prototype.toggleArchiveSelected = function($btn) {
 		$btn.text('archive');
 	}
 	
-	this.archiveSelected(doArchive);
+	this._archiveSelected(doArchive);
 };
 
+
 // Archive selected rows
-Table.prototype.archiveSelected = function(doArchive) {
-	console.log('Table.archiveSelected', doArchive);
+Table.prototype._archiveSelected = function(doArchive) {
+	this.log('Table.archiveSelected', doArchive);
 	
 	// Update UI
 	const ids = [];
@@ -386,17 +488,19 @@ Table.prototype.archiveSelected = function(doArchive) {
 	});
 };
 
+
 // Toggle archive tweet
-Table.prototype.toggleArchive = function($btn) {
+Table.prototype._toggleArchive = function($btn) {
 	const $row = $btn.closest('.table-row');
 	const doArchive = !$row.hasClass('archived');
-	this.archive($row, doArchive, true);
+	this._archive($row, doArchive, true);
 	$btn.text(doArchive ? 'restore' : 'archive');
 };
 
+
 // Archive tweet
-Table.prototype.archive = function($row, doArchive, ajax) {
-	console.log('Table.archive');
+Table.prototype._archive = function($row, doArchive, ajax) {
+	this.log('Table.archive');
 
 	if (doArchive) {
 		$row.addClass('archived');
@@ -425,8 +529,8 @@ Table.prototype.archive = function($row, doArchive, ajax) {
  */
 
 // Propagate main dropdown to selected rows
-Table.prototype.propagateDropdownSelected = function() {
-	console.log('Table.propagateDropdownSelected');
+Table.prototype._propagateDropdownSelected = function() {
+	this.log('Table.propagateDropdownSelected');
 	const ids = [];
 	const value = $('#dd-chapter').val();
 	
@@ -441,18 +545,20 @@ Table.prototype.propagateDropdownSelected = function() {
 	
 };
 
+
 // Propagate to individual row dropdown
-Table.prototype.propagateDropdown = function($dropdown, value) {
+Table.prototype._propagateDropdown = function($dropdown, value) {
 	// Update dropdown value (invisible)
 	$dropdown.val(value);
 	
 	// Update display (visible)
-	this.updateDropdownDisplay($dropdown, true);
+	this._updateDropdownDisplay($dropdown, true);
 };
 
+
 // Update dropdown display
-Table.prototype.updateDropdownDisplay = function($dropdown, noAjax) {
-	console.log('Table.updateDropdownDisplay');
+Table.prototype._updateDropdownDisplay = function($dropdown, noAjax) {
+	this.log('Table.updateDropdownDisplay');
 	
 	// Update display (dropdown itself is invisible)
 	const value = $dropdown.find('option:selected').val();
@@ -475,7 +581,7 @@ Table.prototype.updateDropdownDisplay = function($dropdown, noAjax) {
  * LABELING
  */
 
-Table.prototype.removeLabel = function($row, $label) {
+Table.prototype._removeLabel = function($row, $label) {
 	// Instant feedback
 	$label.addClass('hold');
 
@@ -502,11 +608,11 @@ Table.prototype.removeLabel = function($row, $label) {
  */
 
 // Copy tweet to clipboard
-Table.prototype.copyToClipboard = function($row) {
+Table.prototype._copyToClipboard = function($row) {
 	// Create input field
 	const $ip = $('<input>')
 		.attr('type', 'text')
-		.val($row.find('.tweet').text())
+		.val($row.find('.tweet span').text())
 		.css({
 			position: 'absolute',
 			top: 0,
@@ -548,8 +654,8 @@ Table.prototype.ajax = function(params) {
 	const defaultParams = {
 		dataType: 'json',
 		encode: true,
-		error: _error,
-		success: _success
+		error: _error.bind(this),
+		success: _success.bind(this)
 	}
 	params = {...defaultParams, ...params};
 
@@ -557,11 +663,34 @@ Table.prototype.ajax = function(params) {
 	$.ajax(params);
 
 	function _error(error) {
-		if (this.debug) console.log('error:', error);
+		this.log('error:', error);
 	}
 
 	function _success(result) {
-		if (this.debug) console.log('result:', result);
+		this.log('result:', result);
 		if (callback) callback(result);
 	}
 };
+
+
+// This is called whenever a search operation returns result
+Table.prototype.updateTable = function(data, noUrl) {
+	if (noUrl !== true) history.pushState(data, '', '/search' + data.urlQuery);
+	$('#table-wrap').html(data.html);
+	console.log(data)
+	$('#search-results-count').text(data.resultCount + ' results');
+	table.init();
+	loading(false);
+};
+
+
+
+
+
+/**
+ * Debugging
+ */
+
+Table.prototype.log = function(text) {
+	if (this.debug) console.log(text);
+}

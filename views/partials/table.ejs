@@ -1,0 +1,35 @@
+<%- include('pagination.ejs', { p: pagination, className: 'top' }) %>
+
+<div id="tweet-table" class="table<%= tableClass %>">
+
+	<%# <!-- Table header --> %>
+	<div class="table-row table-header">
+		<div class="table-cell cb">
+			<input type="checkbox">
+		</div>
+		<div class="table-cell star">
+			&#9733;
+		</div>
+		<div class="table-cell tweet">
+			Tweet
+		</div>
+		<div class="table-cell <%= sel.chapter %>">
+			<a href="#" data-sort="<% if (query.s == 'chapter') { %>-<% } %>chapter" class="sort-link">Chapter</a>
+		</div>
+		<div class="table-cell <%= sel.date %>">
+			<a href="#" data-sort="<% if (query.s == 'date') { %>-<% } %>date" class="sort-link">Date</a>
+		</div>
+		<div class="table-cell"></div>
+		<div class="table-cell"></div>
+	</div>
+
+	<%# <!-- Table row --> %>
+	<% for (let i=0; i<tweets.length; i++) { %>
+	<%- include('table-row.ejs', tweets[i]) %>
+	<% } %>
+	
+</div>
+
+<% if (!tweets.length) { %><div id="no-results">No matching tweets...</div><% } %>
+
+<%- include('pagination.ejs', { p: pagination, className: 'bottom' }) %>

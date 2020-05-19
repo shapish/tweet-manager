@@ -1,0 +1,6 @@
+#form-me.edit #btn-edit,
+#form-me:not(.edit) #btn-cancel,
+#form-me:not(.edit) button[type=submit],
+#form-me:not(.edit) .info-msg {
+	display: none;
+}

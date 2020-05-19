@@ -9,11 +9,11 @@ const tweetSchema = new mongoose.Schema({
 	is_retweet: Boolean,
 	id_str: String,
 	labels: Array,
-	star: {
+	stars: {
 		type: Number,
 		min: 0,
 		max: 3,
-		default: null
+		default: 0
 	},
 	archived: {
 		type: Boolean,

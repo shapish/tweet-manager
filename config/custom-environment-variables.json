@@ -1,3 +1,4 @@
 {
-	"db": "tweetManager_db"
+	"db": "tweetManager_db",
+	"jwtPrivateKey": "twm_jwtPrivateKey"
 }

@@ -1,0 +1,181 @@
+/*** Search Bar ***/
+
+#form-search {
+	position: relative;
+	width: 100%;
+}
+#form-search input,
+#form-search button {
+	clear: none;
+	margin-bottom: 0;
+}
+input#search {
+	width: 700px;
+	margin-bottom: 10px;
+	padding-right: 40px;
+}
+#search:focus {
+	height: 40px;
+	border-color: #333;
+}
+#search-clear {
+	min-width: 40px;
+	width: 40px;
+	height: 40px;
+	line-height: 40px;
+	margin-left: -50px;
+	background: transparent;
+	color: #999;
+	border-left: solid 1px transparent;
+	position: relative;
+	padding: 0;
+}
+#search-clear::after {
+	content: '+';
+	font-size: 1.5em;
+	display: block;
+	width: 100%;
+	height: 100%;
+	transform: rotate(45deg);
+	
+}
+#search-clear:hover {
+	background: rgba(0,0,0,.03);
+	border-left: solid 1px rgba(0,0,0,.2);
+}
+#search-results-count {
+	position: absolute;
+	bottom: 20px;
+	right: 0;
+	font-size: 13px;
+}
+
+
+
+/*** Search Settings ***/
+
+#settings {
+	position: absolute;
+}
+#settings:not(.show) {
+	display: none;
+}
+
+
+
+/*** Year/Month Nav ***/
+
+#nav-cal {
+	height: 60px;
+	margin-bottom: 10px;
+}
+#nav-cal div {
+	margin-bottom: 10px;
+	float: left;
+	clear: left;
+}
+#nav-cal:not(.show) {
+	display: none;
+}
+
+
+
+/*** Controls ***/
+
+#controls {
+	height: 40px;
+	margin-bottom: 20px;
+	transition: all 100ms ease-in-out;
+	font-size: 0; /* To guarantee exact height */
+}
+#controls:not(.select) .select-ui,
+#controls:not(.reselect) .reselect-ui,
+#settings.show ~ #controls .select-ui,
+#settings.show ~ #controls .reselect-ui {
+	display: none;
+}
+
+/* Exit button */
+#exit-selection {
+	min-width: 40px;
+	width: 40px;
+	padding: 0;
+	position: relative;
+}
+#exit-selection::after {
+	content: '+';
+	font-size: 1.5em;
+	display: block;
+	width: 100%;
+	height: 100%;
+	transform: rotate(45deg);
+}
+
+/* Star dropdown */
+#dd-star-display {
+	width: 100px;
+}
+#dd-star-display.l-1 {
+	color: #E2D06D;
+}
+#dd-star-display.l-2 {
+	color: #F19A5A;
+}
+#dd-star-display.l-3 {
+	color: tomato;
+}
+#dd-chapter-display {
+	width: 200px;
+}
+
+/* Label input */
+#add-label {
+	clear: none;
+}
+
+
+
+/*** Pagination ***/
+
+.pagination {
+	height: 26px;
+	line-height: 26px;
+	display: flex;
+	font-size: 13px;
+}
+.pagination a,
+.pagination span {
+	display: block;
+	padding: 0 5px;
+	min-width: 26px;
+	box-sizing: border-box;
+	text-align: center;
+	border-radius: 2px;
+}
+.pagination span:not(.sel) {
+	opacity: .3;
+}
+.pagination span.sel {
+	background: #F4E1E8;
+}
+.pagination.top {
+	margin-bottom: 10px;
+}
+.pagination.bottom {
+	margin-top: 20px;
+}
+
+
+
+/*** Month Overview Graph ***/
+
+#selected-month-overview,
+#selected-month-overview span,
+#selected-month-overview .bar {
+	float: right;
+	display: none;
+}
+#selected-month-overview .bar {
+	margin-right: 0;
+	margin-left: 10px;
+}

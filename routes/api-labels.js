@@ -1,12 +1,13 @@
 // Modules
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose');
 
 // Models
-const Chapter = require('../models/chapter');
 const Label = require('../models/label');
 const Tweet = require('../models/tweet');
+
+// Middleware
+const {auth} = require('../middleware/auth');
 
 // Helpers
 const {removeDupDocs, compareArrays} = require('../functions/general');
@@ -18,7 +19,7 @@ const {removeDupDocs, compareArrays} = require('../functions/general');
  */
 
 // Get all labels
-router.get('/', async (req, res) => {
+router.get('/', auth, async (req, res) => {
 	let labels = await Label.find().sort('-count value');
 	return res.send(labels);
 });
@@ -26,7 +27,7 @@ router.get('/', async (req, res) => {
 
 
 // Get labels values matching query
-router.get('/:query', async (req, res) => {
+router.get('/:query', auth, async (req, res) => {
 	// Sanitize query, remove special characters but allow dash
 	let { query} = req.params;
 	query = (query == '*') ? query : query.replace(/[^0-9a-zA-Z- ]/g, '');
@@ -56,7 +57,7 @@ router.get('/:query', async (req, res) => {
 
 
 // Create new label
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
 	let label;
 	let value = req.body.value.replace(/[^0-9a-zA-Z- ]/g, '').toLowerCase();
 	const {ids} = req.body;
@@ -96,7 +97,7 @@ router.post('/', async (req, res) => {
  */
 
 // Merge labels
-router.put('/merge', async (req, res) => {
+router.put('/merge', auth, async (req, res) => {
 	const {mainValue} = req.body; // Surviving label text
 	const {mainId} = req.body; // Surviving label id
 	const {mergeIds} = req.body; // Ids of labels to be merged
@@ -185,7 +186,7 @@ router.put('/merge', async (req, res) => {
 
 
 // Remove label from tweet
-router.put('/remove', async (req, res) => {
+router.put('/remove', auth, async (req, res) => {
 	console.log(req.body)
 	const {id} = req.body;
 	const {value} = req.body;
@@ -216,7 +217,7 @@ router.put('/remove', async (req, res) => {
 
 
 // Reset count for all labels
-router.put('/clean', async (req, res) => {
+router.put('/clean', auth, async (req, res) => {
 	// Get current list of registered labels so we can compare and detect differences
 	const ogLabels = await Label.find();
 	ogLabelValues = ogLabels.map(label => {
@@ -298,7 +299,7 @@ router.put('/clean', async (req, res) => {
 
 
 // Rename label
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
 	const value = req.body.value.replace(/[^0-9a-zA-Z- ]/g, '').toLowerCase();
 	const {ogValue} = req.body;
 
@@ -359,7 +360,7 @@ router.put('/:id', async (req, res) => {
  */
 
 // Delete label
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
 	// Delete label
 	let label = await Label.findByIdAndDelete(req.params.id);
 

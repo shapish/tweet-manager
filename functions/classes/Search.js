@@ -1,9 +1,10 @@
 const moment = require('moment');
 const {padNr} = require('../general-global');
-const Pg = require('./Pagination');
 
 
 /**	
+ *	Handles all the search logic
+ * 
  *	Search Hierarchy:
  *	- - - - - - - - -
  *	1. STRICT: "Quoted phrases" (Handled by Mongoose)
@@ -29,26 +30,23 @@ const Pg = require('./Pagination');
  **/
 
 function Search(query) {
-	// Query, Year, Month, Sort, Page
-	const {q, y, m, s, p} = query;
+	// Query, Sort, Page, Type, Year, Month, Starred, Labeled, Assigned, Archived
+	const {q, s, p, t, y, m, st, la, as, ar} = query;
+	this.query = query;
 
 	// Organize search terms into loose/strict/literal arrays
 	this.terms = this.parseQuery(q);
-	console.log('terms: ', this.terms);
+	// console.log('terms: ', this.terms);
 
-	// Get search parameters
+	// Construct db search parameters
 	const searchParams = this.translateQuery(this.terms, q, y, m);
 
 	// Get sort parameters
 	const sort = this.getSort(s);
 
-	// Set pagination parameters
-	const pg = new Pg(p);
-
 	return {
 		search: this,
 		searchParams: searchParams,
-		pg: pg,
 		sort: sort
 	}
 }
@@ -71,7 +69,7 @@ Search.prototype.parseQuery = function(q) {
 
 	if (q.match(reRegEx)) {
 		// If a regex is passed, we'll ignore all the rest
-		regexQuery = new RegExp(q.replace(reRegEx, '$1'), q.replace(reRegEx, '$2'));
+		regexQuery = new RegExp(q.replace(reRegEx, '($1)'), q.replace(reRegEx, '$2'));
 	} else {
 		// Catch strict terms ("like this" -> handled by Mongo)
 		strict = q.match(reStrict);
@@ -106,11 +104,17 @@ Search.prototype.parseQuery = function(q) {
 
 
 // Translate req.query to a database query
-Search.prototype.translateQuery = function(terms, q, y, m) {
-	const searchParams = {};
-	if (q) _translateSearchQuery(searchParams);
-	if (y || m) _translateDateQuery(searchParams, y, m);
+Search.prototype.translateQuery = function(terms) {
+	const {q, t, y, m, st, la, as, ar} = this.query;
 
+	const searchParams = {};
+	if (q) _filterSearch(searchParams);
+	if (y || m) _filterDate(searchParams, y, m);
+	if (t || st || la || as || ar) _filterGeneral(searchParams);
+
+
+
+	// DISABLED:
 	// // In case regular search returns nothing, we try for a literal search 
 	// let backupParams = null;
 	// if (!terms.literal.length && (terms.strict.length || terms.loose.length)) backupParams =  _setBackupParams();
@@ -119,10 +123,19 @@ Search.prototype.translateQuery = function(terms, q, y, m) {
 	return searchParams;
 
 
+	// The easy filters
+	function _filterGeneral(searchParams) {
+		if (t)	searchParams.is_retweet = (t == 'og') ? false : true;
+		if (st) searchParams.stars = (st == 1) ? { $gte: 1 } : 0;
+		if (la) searchParams.labels = (la == 1) ? { $not: { $size: 0 } } : { $size: 0 };
+		// if (as) searchParams.chapter = (as == 1) ? { $not: null } : null;
+		if (ar) searchParams.archived = (ar == 1) ? true : false;
+	}
+
 	// Adds to query:
 	// $text: { $search: 'golf' },
 	// text: { '$regex': /golf/, '$options': 'gi' }
-	function _translateSearchQuery(searchParams) {
+	function _filterSearch(searchParams) {
 		// RegEx -> Assemble $regex and ignore loose/strict/literal
 		if (terms.regexQuery) {
 			searchParams.text = { $regex: terms.regexQuery };
@@ -142,13 +155,14 @@ Search.prototype.translateQuery = function(terms, q, y, m) {
 		}
 	}
 
+
 	
 	// Adds to query:
 	// created_at: {
 	// 	'$gte': '2020-05-01T00:00:00-04:00',
 	// 	'$lt': '2020-06-01T00:00:00-04:00'
 	// }
-	function _translateDateQuery(searchParams, y, m) {
+	function _filterDate(searchParams, y, m) {
 		// Month & year query
 		const today = new Date();
 		const beginMonth = m ? m : 1;
@@ -201,7 +215,7 @@ Search.prototype.highlightText = function(tweets) {
 
 	// RegEx Literal: /(literal|literal)/gi
 	// First clean out regex special characters or it can break the html
-	let cleanLiteral = literal.map(str => str.replace(/[\/^$?.*{}\][]/gi, ''))
+	let cleanLiteral = literal.map(str => str.replace(/[\/^$?.*{}\][]/gi, ''));
 	const regexLiteral = new RegExp('(' + cleanLiteral.join('|') + ')', 'gi');
 	
 	// Add highlights

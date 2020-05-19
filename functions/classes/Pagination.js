@@ -1,6 +1,6 @@
 /*
 
-Pagination Object
+Creates Pagination Object
 - - -
 
 {
@@ -13,12 +13,14 @@ Pagination Object
 
 */
 
-module.exports = function Pg(p) {
-	const _listPages = 30; // Page numbers visible
-
-	// Public properties
-	this.pageSize = 10; // Results per page
+module.exports = function Pg(p, user) {
+	console.log(user)
+	// No. of pages listed in pagination
+	const _listPages = user.s_listPages;
+	// Number of tweets per page
+	this.pageSize = user.s_pageSize;
 	this.pageNumber = p ? parseInt(p) : 1,
+	
 	// Updated after db query:
 	this.totalPages = 0,
 	this.paginationStart = 0,

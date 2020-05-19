@@ -6,6 +6,8 @@ const mongoose = require('mongoose');
 // Models
 const Chapter = require('../models/chapter');
 
+// Middleware
+const { auth, isAdmin1 } = require('../middleware/auth');
 
 
 
@@ -15,7 +17,7 @@ const Chapter = require('../models/chapter');
  */
 
 // Add/update and delete chapters
-router.put('/', async (req, res) => {
+router.put('/', [auth, isAdmin1], async (req, res) => {
 	let { chapters } = req.body;
 	let { deletedChapterIds } = req.body;
 

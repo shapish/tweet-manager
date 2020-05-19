@@ -49,7 +49,7 @@
 			// Update suggestions
 			$ip.updateSC = function(next) {
 				// Position
-				_positionSC();
+				_positionSC($ip);
 
 				// Update content
 				$ip.sc.show();
@@ -108,39 +108,6 @@
 					$ip.lastVal = '\n';
 					$ip.trigger('keyup.autocomplete');
 				});
-			}
-
-			// Position suggestion container
-			function _positionSC() {
-				$ip.sc.css({
-					top: $ip.offset().top + $ip.outerHeight(),
-					left: $ip.offset().left,
-					width: $ip.outerWidth()
-				});
-			}
-
-			// Suggest results
-			function suggest(data) {
-				let val = $ip.val();
-				val = val.replace(/[^0-9a-zA-Z- ]/g, ''); // Sanitize
-				$ip.cache[val] = data;
-				let string = '';
-				if (data.length && val.length >= o.minChars) {
-					for (let i=0; i<data.length; i++) {
-						string += o.renderItem(data[i], val);
-					}
-				}
-				// Offer to add unknown terms (prefix with add: )
-				if (!data.includes(val) && val.length > 1) {
-					console.log('prefix', val);
-					string += o.renderItem(val, val, true);
-				}
-				if (string.length) {
-					$ip.sc.html(string);
-					$ip.updateSC(0);
-				} else {
-					$ip.sc.hide();
-				}
 			}
 			
 			// Keyboard events UX
@@ -205,7 +172,41 @@
 					}
 				}
 			});
+
+			// Suggest results
+			function suggest(data) {
+				let val = $ip.val();
+				val = val.replace(/[^0-9a-zA-Z- ]/g, ''); // Sanitize
+				$ip.cache[val] = data;
+				let string = '';
+				if (data.length && val.length >= o.minChars) {
+					for (let i=0; i<data.length; i++) {
+						string += o.renderItem(data[i], val);
+					}
+				}
+				// Offer to add unknown terms (prefix with add: )
+				if (!data.includes(val) && val.length > 1) {
+					console.log('prefix', val);
+					string += o.renderItem(val, val, true);
+				}
+				if (string.length) {
+					$ip.sc.html(string);
+					$ip.updateSC(0);
+				} else {
+					$ip.sc.hide();
+				}
+			}
 		});
+
+		// Position suggestion container
+		function _positionSC($ip) {
+			$ip.sc.css({
+				top: $ip.offset().top + $ip.outerHeight(),
+				left: $ip.offset().left,
+				width: $ip.outerWidth()
+			});
+		}
+
 	}
 
 	// Default options

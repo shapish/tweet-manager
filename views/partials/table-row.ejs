@@ -1,4 +1,4 @@
-<div class="table-row<% if (archived) { %> archived<% } %><% if (star !== null) { %> l-<%= star %>" data-star="<%= star %><% } %> " data-id="<%= _id %>">
+<div class="table-row<% if (archived) { %> archived<% } %><% if (stars !== null) { %> l-<%= stars %>" data-star="<%= stars %><% } %> " data-id="<%= _id %>">
 	<div class="table-cell cb">
 		<input type="checkbox">
 	</div>
@@ -8,7 +8,7 @@
 	<div class="table-cell tweet">
 		<span><%- text %></span><br>
 		<div class="meta"><%= created_at.getHours() + ':' + padNr(created_at.getMinutes(), 2) %> &nbsp;&nbsp;•&nbsp;&nbsp; &#9825; RT <%= prettyNr(retweet_count) %> &nbsp;&nbsp;•&nbsp;&nbsp; &#9825; <%= prettyNr(favorite_count) %> &nbsp;&nbsp;•&nbsp;&nbsp; Source: <%= source %></div>
-		<div class="label-wrap">
+		<div class="label-wrap<% if (labels.length) { %> pad<% } %>">
 			<%
 			if (typeof labels !== 'undefined') {
 				labels.forEach((val) => { %>

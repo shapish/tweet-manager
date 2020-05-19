@@ -2,6 +2,7 @@
 
 Color Palette
 - - -
+(0,0,0,.75)				text
 #C76B8B - purple		links & primary buttons
 #9F556F - dark purple	links & primary buttons hover
 #E2D06D - gold			secondary button + star l-1
@@ -27,6 +28,7 @@ rgba(255,0,0,.3)		header line
 body {
 	margin: 0;
 	font-family: 'Roboto', sans-serif;
+	/* font-family: 'Source Sans Pro', sans-serif; */
 	font-size: 15px;
 	font-weight: 400;
 	color: rgba(0,0,0,.75);
@@ -56,6 +58,9 @@ a {
 a:hover {
 	color: tomato;
 }
+p {
+	margin: 0 0 10px 0;
+}
 
 
 
@@ -68,6 +73,14 @@ a:hover {
 form {
 	display: inline-block;
 }
+.input-wrap {
+	float: left;
+	clear: left;
+	display: flex;
+	flex-direction: column;
+}
+
+/* General */
 input,
 select,
 button {
@@ -81,23 +94,113 @@ button {
 	float: left;
 	padding: 0 14px;
 	box-sizing: border-box;
-	margin-right: 10px;
+	margin: 0 10px 20px 0;
 	min-width: 80px;
 }
-input[type=text]:focus {
+
+/* Text inputs */
+input[type=text],
+input[type=email],
+input[type=password],
+textarea {
+	width: 250px;
+	clear: left;
+}
+
+/* Focus state */
+input[type=text]:not(:read-only):focus,
+input[type=email]:not(:read-only):focus,
+input[type=password]:not(:read-only):focus,
+textarea:not(:read-only):focus {
 	border: solid 1px #333;
 }
+
+/* Read-only state */
+input:read-only,
+textarea:read-only {
+	/* border: dashed 1px rgba(0,0,0,.1); */
+	/* border-bottom: solid 1px #333; */
+	border-style: dashed;
+}
+
+/* Disabled state */
+input:disabled,
+textarea:disabled,
+button:disabled {
+	opacity: .3;
+	cursor: default;
+}
+
+/* Error state */
+input.err,
+input:focus.err {
+	border-color: #d00;
+	color: #d00;
+}
+
+/* Error & info msg */
+form .info-msg,
+form .err-msg,
+form .field-err-msg {
+	font-size: 13px;
+	float: left;
+	clear: left;
+}
+form .info-msg,
+form .err-msg {
+	margin: -5px 0 15px 0;
+}
+form .field-err-msg {
+	margin: -15px 0 15px 0;
+}
+form .err-msg,
+form .field-err-msg {
+	color: #d00;
+}
+
+/* Buttons */
 button,
 input[type=button],
 input[type=submit] {
 	border: none;
 	border-radius: 2px;
 	cursor: pointer;
+	min-width: 90px;
+	clear: none;
 }
 button,
 input[type=button] {
 	background: #E2D06D;
 }
+button.clear,
+input[type=button].clear,
+input[type=submit].clear {
+	clear: left;
+}
+
+/* Hover state */
+button:not(:disabled):hover,
+input[type=button]:not(:disabled):hover {
+	background: #CBBB62;
+	/* color: #fff; */
+}
+
+/* Submit button */
+button[type=submit] {
+	background: #C76B8B;
+	color: #fff;
+}
+button[type=submit]:not(:disabled):hover {
+	background: #9F556F;
+}
+
+/* Checkbox */
+input[type=checkbox] {
+	height: auto;
+	float: none;
+}
+
+/* Toggle button */
 button.toggle {
 	position: relative;
 }
@@ -113,43 +216,12 @@ button.toggle::after {
 	border-radius: 2px;
 	opacity: .8;
 }
-button:not(:disabled):hover,
-input[type=button]:not(:disabled):hover {
-	background: #CBBB62;
-	/* color: #fff; */
-}
-button[type=submit],
-input[type=submit] {
-	background: #C76B8B;
-	color: #fff;
-}
-button[type=submit]:not(:disabled):hover,
-input[type=submit]:not(:disabled):hover {
-	background: #9F556F;
-}
-input[type=checkbox] {
-	height: auto;
-	float: none;
-}
-input:disabled,
-button:disabled {
-	opacity: .3;
-	cursor: default;
-}
+
+/* Dropdown */
 select {
 	height: 40px;
 	padding: 0 15px;
 	outline: none;
-}
-.float-wrap {
-	display: inline-block;
-}
-
-/* Error state */
-input.error,
-input:focus.error {
-	border-color: #d00;
-	color: #d00;
 }
 
 /* Dropdowns */
@@ -197,30 +269,4 @@ input:focus.error {
 	position: relative;
 	z-index: 1;
 	opacity: 0;
-}
-
-
-
-
-
-/**
- * Control Buttons
- */
-
- #button-wrap {
-	margin-bottom: 30px;
-	overflow: auto;
-}
-#btn-cancel {
-	display: none;
-}
-#btn-save {
-	display: none;
-}
-#button-wrap.cm-editing #btn-edit {
-	display: none;
-}
-#button-wrap.cm-editing #btn-save,
-#button-wrap.cm-editing #btn-cancel {
-	display: block;
 }

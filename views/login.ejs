@@ -1,0 +1,53 @@
+<%- include('partials/head.ejs', {
+	page: 'login',
+	title: 'Login',
+	css: [
+		'login.css'
+	],
+	js: [
+		'form-handler.js'
+	],
+	jsDefer: [
+		'login.js'
+	]
+}) %>
+
+<div id="nav" class="nav">
+	<a href="#login" class="a-login<% if (page == 'login') { %> sel<% } %>">Login</a>
+	<div class="sep"></div>
+	<a href="#signup" class="a-signup<% if (page == 'signup') { %> sel<% } %>">Signup</a>
+</div>
+
+<form id="form-login"<% if (page == 'signup') { %> class="hide"<% } %> novalidate>
+	<div class="input-wrap">
+		<input type="email" name="email" placeholder="email" autocomplete="email" autofocus>
+		<div class="field-err-msg"></div>
+	</div>
+	<div class="input-wrap">
+		<input type="password" name="password" placeholder="password" autocomplete="current-password">
+		<div class="field-err-msg"></div>
+	</div>
+	<div class="err-msg"></div>
+	<button type="submit" class="clear">Login</button>
+</form>
+
+<form id="form-signup"<% if (page == 'login') { %> class="hide"<% } %> novalidate>
+	<div class="input-wrap">
+		<input type="text" name="name" placeholder="name" autocomplete="name" autofocus>
+		<div class="field-err-msg"></div>
+	</div>
+	<div class="input-wrap">
+		<input type="email" name="email" placeholder="email" autocomplete="email">
+		<div class="field-err-msg"></div>
+	</div>
+	<div class="input-wrap">
+		<input type="password" name="password" placeholder="password" autocomplete="password">
+		<div class="field-err-msg"></div>
+	</div>
+	<div class="err-msg"></div>
+	<button type="submit" class="clear">Create Account</button>
+</form>
+
+<br><br>
+
+<%- include('partials/foot.ejs') %>
