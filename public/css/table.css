@@ -1,5 +1,4 @@
 .table {
-	display: table;
 	width: 100%;
 	border-bottom: none;
 	border-top: none;
@@ -25,14 +24,20 @@ body.loading .table {
 .table-header .sort.dec::after {
 	content: '\2191';
 }
+.table-header .table-cell:first-child {
+	border-left: solid 1px transparent;
+}
+.table-header .table-cell:last-child {
+	border-right: solid 1px transparent;
+}
 
 
 /**
   * Table Row
   */
 .table-row {
-	display: table-row;
-	height: 40px;
+	display: flex;
+	min-height: 40px;
 	line-height: 40px;
 }
 .table-row:not(.table-header).sel {
@@ -98,9 +103,10 @@ body.loading .table {
   * Table Cell
   */
 .table-cell {
-	display: table-cell;
 	border-bottom: solid 1px rgba(0,0,0,.2);
 	padding: 0 15px;
+	flex-shrink: 0;
+	flex-grow: 0;
 }
 .table-row:not(.table-header) .table-cell {
 	cursor: pointer;
@@ -122,7 +128,7 @@ body.loading .table {
 	margin: 0;
 }
 
-/* Star & starred state */
+/* Star */
 .table-cell.star {
 	padding: 0;
 	text-align: center;
@@ -147,6 +153,8 @@ body.loading .table {
 .table-cell.tweet {
 	line-height: 20px;
 	padding: 10px 15px 10px 0;
+	flex-shrink: 1;
+	flex-grow: 1;
 }
 .table-cell.tweet i {
 	color: blue;
@@ -168,12 +176,11 @@ body.loading .table {
 	color: #8AA07A
 }
 
-/* UI settings */
+/* Tweet --> UI settings */
 #tweet-table.clip-tweets .table-cell.tweet {
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
-	max-width: 1328px; /* 100% - 530 */
 }
 #tweet-table:not(.show-labels) .label-wrap {
 	display: none;
@@ -182,7 +189,7 @@ body.loading .table {
 	display: none;
 }
 
-/* Labels */
+/* Tweet --> Labels */
 .meta + .label-wrap.pad {
 	margin-top: 5px;
 }
@@ -224,13 +231,11 @@ body.loading .table {
 .label:hover .bg {
 	background: #657E54;
 }
-
-/* Hold state (waiting for server) */
-.label.hold {
+.label.hold { /* (waiting for server) */
 	opacity: .3;
 }
 
-/* Delete UI */
+/* Tweet --> Labels --> Delete UI */
 .label.remove {
 	padding-right: 20px;
 }
@@ -259,13 +264,13 @@ body.loading .table {
 	background: red;
 }
 
-/* Chapter dropdown */
-.table-cell.select {
+/* Chapter */
+.table-cell.chapter {
 	padding: 0;
 	position: relative;
 	width: 120px;
 }
-.table-cell.select select {
+.table-cell.chapter select {
 	width: 100%;
 	position: relative;
 	z-index: 1;
@@ -274,10 +279,10 @@ body.loading .table {
 	opacity: 0;
 	cursor: pointer;
 }
-.table-cell.select select:hover + a {
+.table-cell.chapter select:hover + a {
 	color: tomato;
 }
-.table-cell.select a {
+.table-cell.chapter a {
 	width: 100%;
 	text-align: left;
 	padding: 0 15px;
@@ -285,20 +290,24 @@ body.loading .table {
 	position: absolute;
 	top: 0;
 	left: 0;
-}
 
-/* Shared styles */
-.table-cell.no-wrap {
-	width: 10px; /* This stretches, meant to make it as small as possible */
-	white-space: nowrap;
-}
-.table-cell .clip-100 {
+	/* Truncate */
 	max-width: 150px;
   	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
 
+/* Date */
+.table-cell.date {
+	width: 120px;
+}
+
+/* Copy / archive */
+.table-cell.copy,
+.table-cell.archive {
+	width: 80px;
+}
 
 /* No results */
 #no-results {

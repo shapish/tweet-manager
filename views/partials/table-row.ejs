@@ -19,7 +19,7 @@
 			%>
 		</div>
 	</div>
-	<div class="table-cell select">
+	<div class="table-cell chapter">
 		<select>
 			<option hidden selected></option>
 			<option value="chapter-a">Chapter A</option>
@@ -28,13 +28,13 @@
 		</select>
 		<a href="#" class="clip-100">- move -</a>
 	</div>
-	<a href="https://twitter.com/realDonaldTrump/status/<%= id_str %>" target="_blank" class="table-cell no-wrap">
+	<a href="https://twitter.com/realDonaldTrump/status/<%= id_str %>" target="_blank" class="table-cell date">
 		<% if (created_at) { %><%= monthNames.split(',')[created_at.getMonth()] + ' ' + created_at.getDate() + ', ' + created_at.getFullYear() %><% } %>
 	</a>
-	<a href="#" class="table-cell no-wrap btn-copy">
+	<a href="#" class="table-cell copy">
 		copy
 	</a>
-	<a href="#" class="table-cell no-wrap btn-archive">
+	<a href="#" class="table-cell archive">
 		<% if (archived) { %>restore<% } else { %>archive<% } %>
 	</a>
 </div>

@@ -14,7 +14,6 @@ Creates Pagination Object
 */
 
 module.exports = function Pg(p, user) {
-	console.log(user)
 	// No. of pages listed in pagination
 	const _listPages = user.s_listPages;
 	// Number of tweets per page

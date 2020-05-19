@@ -262,14 +262,15 @@ router.put('/clean', auth, async (req, res) => {
 	};
 	
 	// Detect restored and removed values
-	console.log('ogLabelValues', ogLabelValues)
-	console.log('trueLabelValues', trueLabelValues)
 	const compare = compareArrays(ogLabelValues, trueLabelValues);
 	const removedLabels = compare.diff1;
 	const restoredLabels = compare.diff2;
-	console.log(compare)
-	console.log('removedLabels: ' + removedLabels);
-	console.log('restoredLabels: ' + restoredLabels);
+	
+	// console.log('ogLabelValues', ogLabelValues)
+	// console.log('trueLabelValues', trueLabelValues)
+	// console.log(compare)
+	// console.log('removedLabels: ' + removedLabels);
+	// console.log('restoredLabels: ' + restoredLabels);
 
 	// Remove labels to be removed
 	const p = removedLabels.map(value => {
