@@ -1,9 +1,15 @@
-const { auth, isAdmin2 } = require('../middleware/auth');
-const bcrypt = require('bcrypt');
-const _ = require('lodash');
-const { User, validate } = require('../models/user');
+// Modules
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcrypt');
+const _ = require('lodash');
+
+// Models
+const { User, validate } = require('../models/user');
+
+// Middleware & functions
+const { auth, isAdmin2 } = require('../middleware/auth');
+const { createPath } = require('../functions/general');
 
 
 // Create new user
@@ -28,6 +34,7 @@ router.post('/', async (req, res) => {
 	
 	// Create new user record
 	user = new User(_.pick(req.body, ['name', 'email', 'password', 'isAdmin']));
+	user.path = createPath(user.name);
 	
 	// Encrypt password
 	const salt = await bcrypt.genSalt(10);
@@ -56,10 +63,11 @@ router.put('/', auth, async (req, res) => {
 			const message = error.details[i].message;
 			errorList[path] = message;
 		}
+		console.log(errorList)
 		res.status(400).send(errorList);
 		return;
 	}
-
+	
 	// Encrypt password
 	const salt = await bcrypt.genSalt(10);
 	const password = await bcrypt.hash(req.body.password, salt);
@@ -67,6 +75,7 @@ router.put('/', auth, async (req, res) => {
 	// Look up user by email
 	let user = await User.findOneAndUpdate({ email: req.body.email }, {
 		name: req.body.name,
+		path: createPath(req.body.name),
 		password: password
 	});
 	

@@ -26,4 +26,4 @@
 </head>
 <body>
 <%- include('header.ejs', { sel: page }) %>
-<div id="body">
+<div id="body"<% if (typeof user != 'undefined') { %> data-is-admin="<%= user.isAdmin %>"<% } %>>

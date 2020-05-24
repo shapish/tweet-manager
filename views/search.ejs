@@ -4,16 +4,18 @@
 	css: [
 		'search.css',
 		'table.css',
+		'search-table.css',
 		'jquery.auto-complete.css'
 	],
 	js: [
-		'search-bar.js',
-		'search-filters.js',
-		'search-settings.js',
-		'search-table.js',
+		'search--bar.js',
+		'search--filters.js',
+		'search--settings.js',
+		'table.js',
 		'jquery.auto-complete.js',
 	],
 	jsDefer: [
+		'search--table.js',
 		'search.js'
 	]
 }) %>
@@ -80,31 +82,26 @@
 	<div class="select-ui">
 		<button id="exit-selection"></button>
 		<button id="btn-archive">archive</button>
-		<div id="dd-star-display" class="dd-display">
-			<div class="dsp">- star -</div>
-			<select id="dd-stars">
+		<div id="dd-stars" class="dropdown">
+			<select>
 				<option hidden selected></option>
 				<option value="0" data-display-value="-">- whatever</option>
 				<option value="1" data-display-value="&#x2605;">&#x2605; noteworthy</option>
 				<option value="2" data-display-value="&#x2605;&#x2605;">&#x2605;&#x2605; great tweet</option>
 				<option value="3" data-display-value="&#x2605;&#x2605;&#x2605;">&#x2605;&#x2605;&#x2605; top content</option>
 			</select>
+			<div class="dsp">- star -</div>
 		</div>
 		<input id="add-label" type="text" placeholder="+ add label">
-		<div id="dd-chapter-display" class="dd-display">
-			<div class="dsp">- move -</div>
-			<select id="dd-chapter">
-				<option value="">move</option>
-				<option value="chapter-a">Chapter A</option>
-				<option value="chapter-b">Chapter B</option>
-				<option value="chapter-c">Chapter C With Very Long Title</option>
-			</select>
+		<div id="dd-chapter" class="dropdown">
+			<%- include('partials/chapter-dropdown.ejs') %>
+			<div class="dsp">- select chapter -</div>
 		</div>
 	</div>
 </div>
 
 <div id="table-wrap">
-<%- include('partials/table.ejs') %>
+<%- include('search--table.ejs') %>
 </div>
 
 <%- include('partials/foot.ejs') %>

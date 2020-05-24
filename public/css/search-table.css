@@ -1,0 +1,198 @@
+/**
+ * Table Row
+ */
+
+/* Archived state */
+.table-row.archived .table-cell {
+	background: rgba(0,0,0,.03);
+}
+.table-row.archived .table-cell span {
+	text-decoration: line-through;
+}
+.table-row.archived .table-cell,
+.table-row.archived a {
+	color: rgba(0,0,0,.3);
+}
+.table-row.archived .table-cell .label {
+	color: #fff;
+	opacity: .3;
+}
+.table-row.archived .table-cell.main .meta {
+	text-decoration: none;
+	color: rgba(0,0,0,.3);
+}
+.table-row.archived .table-cell.star,
+.table-row.archived.star .table-cell.star,
+.table-row.archived .table-cell.star:hover {
+	color: transparent;
+	text-decoration: none;
+}
+
+/* Copied state */
+.table-row.copied .table-cell:not(.star),
+.table-row.copied a {
+	color: darkgreen;
+	animation: copy-blink 100ms 2;
+}
+
+
+
+/**
+ * Table Cell
+ */
+
+.table-cell.main b { /* Regular highlight */
+	color: crimson;
+}
+.table-cell.main em {  /* Literal highlight */
+	font-style: normal;
+	color: crimson;
+	text-decoration: underline;
+}
+.table-cell.main .meta {
+	clear: left;
+	margin-top: 5px;
+	font-size: 11px;
+	line-height: 13px;
+	color: rgba(0,0,0,.3);
+	color: #8AA07A
+}
+
+/* Tweet --> UI settings */
+#tweet-table.clip-tweets .table-cell.main {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+#tweet-table:not(.show-labels) .table-row:not(.sel) .label-wrap {
+	display: none;
+}
+#tweet-table:not(.show-meta) .meta {
+	display: none;
+}
+
+/* Tweet --> Labels */
+.meta + .label-wrap.pad {
+	margin-top: 5px;
+}
+.label-wrap.pad {
+	overflow: auto;
+	margin-top: 2px;
+}
+.label {
+	text-transform: uppercase;
+	height: 15px;
+	line-height: 16px;
+	font-size: 10px;
+	font-weight: 600;
+	padding: 0 5px;
+	float: left;
+	color: #fff;
+	margin-right: 3px;
+	margin-top: 3px;
+	max-width: 90px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	position: relative;
+	z-index: 0;
+}
+.label .bg {
+	width: 100%;
+	height: 100%;
+	background: #8AA07A;
+	border-radius: 2px;
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: -1;
+}
+.label:hover {
+	color: #fff;
+}
+.label:hover .bg {
+	background: #657E54;
+}
+.label.hold { /* (waiting for server) */
+	opacity: .3;
+}
+
+/* Tweet --> Labels --> Delete UI */
+.label.remove {
+	padding-right: 20px;
+}
+.label.remove .x {
+	width: 15px;
+	height: 15px;
+	position: absolute;
+	top: 0;
+	right: 0;
+	border-radius: 0 2px 2px 0;
+}
+.label.remove .x::after {
+	content: '';
+	font-size: 16px;
+	font-weight: 400;
+	text-align: center;
+	line-height: 15px;
+	width: 100%;
+	height: 100%;
+	background: url(/img/x-small-10.svg) center center no-repeat;
+	background-size: 75%;
+	position: absolute;
+	
+}
+.label.remove .x:hover + .bg {
+	background: red;
+}
+
+/* Chapter */
+.table-cell.chapter {
+	padding: 0;
+	position: relative;
+	width: 150px;
+}
+.table-cell.chapter select {
+	width: 100%;
+	position: relative;
+	z-index: 1;
+	float: none;
+	margin: 0;
+	opacity: 0;
+	cursor: pointer;
+}
+.table-cell.chapter select:hover + a {
+	color: tomato;
+}
+.table-cell.chapter a {
+	width: 100%;
+	text-align: left;
+	padding: 0 15px;
+	box-sizing: border-box;
+	position: absolute;
+	top: 0;
+	left: 0;
+
+	/* Truncate */
+	max-width: 150px;
+  	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* Date */
+.table-cell.date {
+	width: 100px;
+	padding: 0;
+}
+
+/* Copy / archive */
+.table-cell.btn-copy,
+.table-cell.btn-archive {
+	width: 80px;
+	text-align: center;
+	padding: 0;
+}
+.table-cell.btn-copy {
+	width: 60px;
+}

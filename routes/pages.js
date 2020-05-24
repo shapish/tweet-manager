@@ -1,16 +1,14 @@
 // Modules
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
-const config = require('config');
 
 // Models
-const Chapter = require('../models/chapter');
 const Label = require('../models/label');
-const {User} = require('../models/user');
+const { User } = require('../models/user');
 
-// Middleware
+// Middleware & functions
 const {auth} = require('../middleware/auth');
+
 
 
 
@@ -22,28 +20,6 @@ router.get('/', auth, (req, res) => { res.redirect('/search') });
 // Overview
 router.get('/overview', auth, async (req, res) => {
 	res.render('overview', {
-		user: req.user
-	});
-});
-
-
-
-// Chapters
-router.get('/chapters', auth, async (req, res) => {
-	const chapters = await Chapter.find().sort('sortIndex');
-
-	return res.render('chapters', {
-		chapters: chapters,
-		user: req.user
-	});
-});
-
-// Chapters Index
-router.get('/chapters/index', auth, async (req, res) => {
-	const chapters = await Chapter.find().sort('sortIndex');
-
-	return res.render('chapters-index', {
-		chapters: chapters,
 		user: req.user
 	});
 });
@@ -82,6 +58,7 @@ router.get('/users', auth, async (req, res) => {
 // Me
 router.get('/me', auth, async (req, res) => {
 	const user = await User.findById(req.user._id).select('-password');
+	console.log(req.user)
 	res.render('me', {
 		user: req.user,
 		me: user

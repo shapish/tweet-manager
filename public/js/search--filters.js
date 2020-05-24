@@ -76,7 +76,6 @@ SearchFilters.prototype.dispatch = function(action, state) {
 	const $monthSel = $('#nav-cal .months a.sel');
 	const isDateSelected = ($yearSel.length + $monthSel.length === 0);
 	const actionName = action.match(/^m-(\d{1,2})$/) ? 'month' : action;
-	console.log(action)
 
 	switch (actionName) {
 		case 'settings':

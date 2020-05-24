@@ -5,18 +5,17 @@ const mongoose = require('mongoose');
 
 // Models
 const Chapter = require('../models/chapter');
+const { User } = require('../models/user');
+const Tweet = require('../models/tweet');
 
-// Middleware
+// Middleware & functions
 const { auth, isAdmin1 } = require('../middleware/auth');
+const {createPath} = require('../functions/general');
 
 
 
 
-/**
- * Chapters
- */
-
-// Add/update and delete chapters
+// Add/update and delete from chapter index
 router.put('/', [auth, isAdmin1], async (req, res) => {
 	let { chapters } = req.body;
 	let { deletedChapterIds } = req.body;
@@ -27,10 +26,11 @@ router.put('/', [auth, isAdmin1], async (req, res) => {
 	deletedChapterIds = deletedChapterIds ? deletedChapterIds : [];
 
 	// Add & update requests
-	const updatePromises = chapters.map(item => {
-		let { _id } = item;
+	const updatePromises = chapters.map(doc => {
+		let { _id } = doc;
 		_id = _id ? _id : new mongoose.mongo.ObjectID(); // Add id for new chapters
-		return Chapter.findByIdAndUpdate(_id, item, { upsert: true, new: true, runValidators: true });
+		doc.path = createPath(doc.title);
+		return Chapter.findByIdAndUpdate(_id, doc, { upsert: true, new: true, runValidators: true });
 	});
 
 	// Delete requests
@@ -43,6 +43,40 @@ router.put('/', [auth, isAdmin1], async (req, res) => {
 
 	const result = await Promise.all(allPromises);
 	res.send(result);
+});
+
+
+// Batch update chapter type
+router.put('/batch', [auth, isAdmin1], async (req, res) => {
+	const { ids, type, writerId, stage, wordCount } = req.body;
+	const updates = {}
+
+	if (type) updates.type = type;
+	if (writerId) updates.writer = await User.findById(writerId).select('name path');
+	if (stage) updates.stage = stage;
+	if (wordCount) updates.wordCount = wordCount;
+
+	const chapters = await Chapter.updateMany({
+		_id: { $in: ids }
+	}, updates);
+	res.send(chapters);
+});
+
+
+// Update chapter detail
+router.put('/:id', [auth, isAdmin1], async (req, res) => {
+	// Update chapter
+	const updates = {};
+	for (const field in req.body) {
+		updates[field] = req.body[field];
+		if (field == 'title') updates.path = createPath(req.body.title);
+		if (field == 'writer') {
+			updates.writer = await User.findById(req.body.writer);
+		}
+	
+	}
+	await Chapter.findByIdAndUpdate(req.params.id, updates);
+	res.send(updates);
 });
 
 

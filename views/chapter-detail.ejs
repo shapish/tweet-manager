@@ -2,50 +2,121 @@
 	page: 'chapters',
 	title: 'Chapters',
 	css: [
-		'chapters-overview.css'
+		'chapter-detail.css'
+	],
+	js: [
+		'form-handler.js'
 	],
 	jsDefer: [
-		'chapters-overview.js'
+		'chapter-detail.js'
 	]
 }) %>
 
-<div id="links">
-	<a href="/chapters">Back</a>
-	Prev: <a href="#">2. 2016 Election</a>
-	Next: <a href="#">4. 2016 Election</a>
-</div>
-<br>
-<h2><span>3.</span>First 100 Days</h2>
-<b>Writer:</b> unassigned<br>
-<b>Alternative titles:</b> The History of Trump<br>
-<b>Description:</b> The story of Donald Trump before he became president.<br>
+<%- include('chapter-detail--links.ejs', { pos: 'top' }) %>
 
-<div class="sep"></div>
-<div id="content">
-	<div class="tweets">
-		<p><b>Tweets:</b></p>
-		<div class="tweet">So nice to see this great honor. Thank you (but haven’t played golf in a long time)! https://t.co/FfJyUmRdGi</div>
-		<div class="tweet">Going well despite the Fake News! https://t.co/WXqcomjahx</div>
-		<div class="tweet">RT @realDonaldTrump: Concast (@NBCNews) and Fake News @CNN are going out of their way to say GREAT things about China. They are Chinese pup…</div>
-		<div class="tweet">So nice to see this great honor. Thank you (but haven’t played golf in a long time)! https://t.co/FfJyUmRdGi</div>
-		<div class="tweet">Going well despite the Fake News! https://t.co/WXqcomjahx</div>
-		<div class="tweet">RT @realDonaldTrump: Concast (@NBCNews) and Fake News @CNN are going out of their way to say GREAT things about China. They are Chinese pup…</div>
-		<div class="tweet">So nice to see this great honor. Thank you (but haven’t played golf in a long time)! https://t.co/FfJyUmRdGi</div>
-		<div class="tweet">Going well despite the Fake News! https://t.co/WXqcomjahx</div>
-		<div class="tweet">RT @realDonaldTrump: Concast (@NBCNews) and Fake News @CNN are going out of their way to say GREAT things about China. They are Chinese pup…</div>
+<form id="form-chapter" data-id="<%= chapter._id %>"> <!-- class="edit" -->
+	<h2 id="chapter-title"><span><%= chapter.index %>.</span><%= chapter.title %></h2>
+	<button type="button" id="btn-edit">Edit</button>
+	<button type="button" id="btn-cancel">Cancel</button>
+	<button type="submit" id="btn-save">Save</button>
+	<div class="err-msg"></div>
+	<div id="info">
+		<b>Alternative titles:</b> <% if (chapter.altTitles.length) { %><%= chapter.altTitles %><% } else { %><a href="#" class="shortcut" name="altTitles">Add alt title</a><% } %><br>
+		<b>Description:</b> <% if (chapter.description.length) { %><%= chapter.description %><% } else { %><a href="#" class="shortcut" name="description">Add description</a><% } %><br>
+		- -<br>
+		<b>Type:</b> <% if (chapter.type.length) { %><%= chapter.type %><% } else { %><a href="#" class="shortcut" name="type">Set type</a><% } %><br>
+		<b>Writer:</b> <% if (chapter.writer) { %><%= chapter.writer.name %><% } else { %><a href="#" class="shortcut" name="writer">Select writer</a><% } %><br>
+		<b>Stage:</b> <%= stages[chapter.stage] %><br>
 	</div>
-	<div class="text">
-		<p><b>Text:</b></p>
-		<p>President Barack Obama and President-elect Donald Trump once sat together in the Oval Office. “I was immediately struck by Trump’s body language,” wrote journalist Jon Karl in his memoir Front Row at The Trump Show. “I was seeing a side of him I had never seen. He seemed, believe it or not, humbled.”</p>
-		<p>It was November 2016 and, just for once, Trump was not in charge of the room, Karl recalls. Obama was still president, directing the action and setting the tone. His successor “seemed a little dazed” and “a little freaked out”. What the two men discussed in their meeting that day, only they know.</p>
-		<p>But what became clear in the next three and a half years is that Obama remains something of an obsession for Trump; the subject of a political and personal inferiority complex.</p>
-		<p>Observers point to a mix of anti-intellectualism, racism, vengeance and primitive envy over everything from Obama’s Nobel peace prize to the scale of his inauguration crowd and social media following.</p>
-		<p>Ben Rhodes, a former Obama national security aide, tweeted this week: “Trump’s fact-free fixation on Obama dating back to birtherism is so absurd and stupid that it would be comic if it wasn’t so tragic.”</p>
-		<p>“Birtherism” was a conspiracy theory that Trump started pushing in 2011 (“He doesn’t have a birth certificate. He may have one but there is something on that birth certificate – maybe religion, maybe it says he’s a Muslim, I don’t know.”) . Nine years later, he has come full circle with “Obamagate”, which accuses his predecessor of working in league with the “deep state” to frame Trump for colluding with Russia to win the 2016 election.</p>
-		<p>There is zero evidence for this claim. Indeed, a case could be made that the supposed “deep state” did more to help Trump than hurt him when the FBI reopened an investigation into his opponent, Hillary Clinton, just before election day. When questioned by reporters, Trump himself has struggled to articulate what “Obamagate” means. Ned Price, a former CIA analyst, dubbed it “a hashtag in search of a scandal”.</p>
+	<div id="info-edit">
+		<div class="input-wrap">
+			<label>Title</label>
+			<input type="text" placeholder="Chapter title" name="title" value="<%= chapter.title %>" required>
+		</div>
+		<div class="input-wrap">
+			<label>Alternative Titles</label>
+			<input type="text" placeholder="Alternative titles" name="altTitles" value="<%= chapter.altTitles %>">
+		</div>
+		<div class="input-wrap">
+			<label>Description</label>
+			<input type="text" placeholder="What this chapter is about" name="description" value="<%= chapter.description %>">
+		</div>
+		<div class="input-wrap short clear">
+			<label>Type</label>
+			<div class="dropdown">
+				<select name="type">
+					<option hidden data-display-value="- select chapter type -"<% if (!chapter.type) { %> selected<% } %>></option>
+					<option value="Light"<% if (chapter.type == 'Light') { %> selected<% } %>>Light</option>
+					<option value="Heavy"<% if (chapter.type == 'Heavy') { %> selected<% } %>>Heavy</option>
+				</select>
+				<div class="dsp"><% if (chapter.type) { %><%= chapter.type %><% } else { %>- select chapter type -<% } %></div>
+			</div>
+		</div>
+		<div class="input-wrap short">
+			<label>Writer</label>
+			<div class="dropdown">
+				<select name="writer">
+					<option hidden data-display-value="- select writer -"<% if (!chapter.writer) { %> selected<% } %>></option>
+					<% for (const i in writers) { %>
+					<option value="<%= writers[i]._id %>"<% if (chapter.writer && String(chapter.writer._id) == String(writers[i]._id)) { %> selected<% } %>><%= writers[i].name %></option>
+					<% } %>
+				</select>
+				<div class="dsp"><% if (chapter.writer) { %><%= chapter.writer.name %><% } else { %>- select writer -<% } %></div>
+			</div>
+		</div>
+		<div class="input-wrap short">
+			<label>Stage</label>
+			<div class="dropdown">
+				<select name="stage">
+					<% for (const i in stages) { %>
+					<option value="<%= i %>"<% if (i == chapter.stage) { %> selected<% } %>><%= stages[i] %></option>
+					<% } %>
+				</select>
+				<div class="dsp"><%= stages[chapter.stage] %></div>
+			</div>
+		</div>
 	</div>
-</div>
-<br>
-<p><a href="/chapters">Back</a> &nbsp;&nbsp;|&nbsp;&nbsp; <a href="#">prev</a> &nbsp;&nbsp;|&nbsp;&nbsp; <a href="#">next</a></p>
+
+	<div id="content">
+		<div class="tweets">
+			<p><b>Tweets:</b></p>
+			<% if (!chapter.tweets.length) { %>
+			No tweets yet
+			<% } else { %>
+			<% for (const i in chapter.tweets) { %>
+			<div class="tweet"><%= chapter.tweets[i].text %></div>
+			<% } %>
+			<% } %>
+		</div>
+		<div class="text">
+			<p><b>Text:</b></p>
+			<% if (chapter.wordCount) { %>Word count: ~<%= chapter.wordCount %><% } else { %><a href="#" class="shortcut" name="wordCount">Set word count</a><% } %>
+			&nbsp;&nbsp;/&nbsp;&nbsp;
+			<% if (chapter.textLink) { %><a href="<%= chapter.textLink %>" target="_blank">Google Doc</a> (123 words)<% } else { %><a href="#" class="shortcut" name="textLink">Add text</a><% } %>
+			<% if (chapter.textLink) { %>
+			<br>- - -<br>
+			<span>
+				Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam facilisis turpis aliquam, dictum enim et, varius ex. Praesent risus lectus, vulputate volutpat fermentum id, pretium vel sapien. Nulla vel justo at libero congue consequat. Nullam quam diam, suscipit in nisl vel, hendrerit lobortis lectus. Praesent sagittis efficitur varius. Nam malesuada, nunc vitae dignissim fringilla, purus quam vehicula ex, sit amet sodales ipsum mauris in lectus. Nulla sed vulputate velit. Mauris at ante et est ullamcorper faucibus. Aenean vel magna finibus, porta lorem in, auctor lorem. Quisque justo arcu, sodales eget bibendum sed, tincidunt quis libero. Aenean condimentum elit leo, eu gravida urna sodales nec. Sed nisi ante, rhoncus nec eros id, rhoncus finibus sem.
+				Nunc ipsum arcu, consequat in massa eget, vulputate varius ligula. Duis bibendum nunc id metus interdum, vel ultricies metus rhoncus. Pellentesque odio neque, dapibus volutpat consequat sed, sagittis accumsan nibh. Morbi rutrum ante mi, ac porta ex tincidunt a. Aliquam fringilla porta nulla, vitae euismod eros laoreet sit amet. Donec ac sem eget lacus rhoncus fringilla. Pellentesque erat orci, molestie a aliquet non, aliquam quis nibh. In posuere neque non arcu interdum, nec blandit urna rhoncus. Nam cursus suscipit nibh, consectetur vehicula risus blandit vitae. Etiam fringilla aliquam est, sed viverra tellus sollicitudin eu. Sed tincidunt imperdiet sollicitudin. Phasellus dictum purus a purus viverra, sit amet volutpat lacus hendrerit.
+				Nullam ut gravida nulla. Ut metus libero, ornare non ex nec, viverra cursus justo. Nulla venenatis sodales scelerisque. Aenean consectetur diam vel magna tempus dignissim. In imperdiet sem rutrum, tempus ante egestas, facilisis nisl. Quisque molestie aliquam nisi, vestibulum maximus mauris accumsan eu. Integer et metus vitae dui imperdiet rhoncus. Integer mollis mattis vehicula.
+				Praesent a gravida lectus. In id pellentesque leo, a rutrum eros. Nulla facilisi. In volutpat auctor lacus ac congue. Etiam pellentesque tristique erat, in gravida urna venenatis non. Nunc sed consequat augue, a blandit magna. Sed quis pulvinar quam. Vivamus sit amet magna malesuada elit egestas volutpat euismod quis massa. In commodo justo mi, id tristique leo facilisis vel. Nam vel blandit sem, a mattis nulla. In luctus arcu neque, id semper ligula dictum sed. Sed vitae lacus diam. Fusce convallis a mi non fermentum.
+				Morbi id fringilla magna, a commodo arcu. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut pretium mauris porta, semper ante eget, sagittis tellus. Donec rutrum magna ligula, in posuere nulla lobortis in. Morbi tempor auctor augue, in convallis lacus iaculis a. Phasellus venenatis augue dui, id interdum lorem consequat non. Curabitur dignissim diam nisi, at lobortis felis mollis ut. Quisque ut nulla odio. Suspendisse feugiat lacinia sapien ac blandit. Mauris vel feugiat justo, vitae fermentum massa. Proin cursus, nisi non bibendum pellentesque, sem ipsum feugiat ante, eu euismod purus nunc sed mauris.
+			</span>
+			<% } %>
+		</div>
+		<div class="text-edit">
+			<div class="input-wrap text-link">
+				<label>Text</label>
+				<input type="text" placeholder="Google Doc link" name="textLink" value="<%= chapter.textLink %>">
+			</div>
+			<div class="input-wrap word-count">
+				<label>Word Count</label>
+				<input type="text" placeholder="Word count" name="wordCount" value="<%= chapter.wordCount %>">
+			</div>
+		</div>
+	</div>
+</form>
+
+<%- include('chapter-detail--links.ejs', { pos: 'bottom' }) %>
 
 <%- include('partials/foot.ejs') %>

@@ -25,6 +25,7 @@ function getDateNav() {
 // Link URLs and @usernames in plain text
 function linkText(tweets) {
 	tweets = tweets.map(tweet => {
+		tweet.plainText = tweet.text;
 		tweet.text = linkURLs(tweet.text);
 		tweet.text = linkUserNames(tweet.text);
 		return tweet;

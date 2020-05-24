@@ -9,6 +9,9 @@ const tweetSchema = new mongoose.Schema({
 	is_retweet: Boolean,
 	id_str: String,
 	labels: Array,
+	chapter: new mongoose.Schema({
+		title: String
+	}),
 	stars: {
 		type: Number,
 		min: 0,

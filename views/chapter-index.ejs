@@ -3,7 +3,7 @@
 	title: 'Chapters',
 	css: [
 		'chapter-manager.css',
-		'chapters-index.css'
+		'chapter-index.css'
 	],
 	js3p: [
 		'sortablejs/Sortable.min.js',
@@ -13,13 +13,13 @@
 		'chapter-manager.js'
 	],
 	jsDefer: [
-		'chapters-index.js'
+		'chapter-index.js'
 	]
 }) %>
 
 <h2>Chapters</h2>
 
-<%- include('partials/chapters-nav.ejs', { page: 'index' }) %>
+<%- include('chapters--nav.ejs', { page: 'index' }) %>
 
 <% if (user.isAdmin) { %>
 	<div id="button-wrap">
@@ -62,7 +62,7 @@
 				<div class="block"></div>
 				<div class="move" title="move chapter up or down"></div>
 				<span class="index"><%= chapters[i].index %></span>
-				<span class="title"><%= chapters[i].title %></span>
+				<span class="title"><a href="/chapters/<%= chapters[i].path %>"><%= chapters[i].title %></a></span>
 				<div class="cm-actions">
 					<div class="adopt" title="adopt next"></div>
 					<div class="rename" title="rename"></div>

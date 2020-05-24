@@ -1,6 +1,6 @@
 /*
 	
-	v2.1
+	v2.2
 	
 	// Application:
 	const form =  new HandleForm({
@@ -34,6 +34,7 @@ function HandleForm(options) {
 	this.id = '#' + options.id; // Mandatory
 	this.url = options.url; // Mandatory
 	this.type = options.type ? options.type : 'POST';
+	this.onSubmit = options.onSubmit ? options.onSubmit : () => {};
 	this.onSuccess = options.onSuccess ? options.onSuccess : this._onSuccessDefault;
 	this.onDuplicate = options.onDuplicate ? options.onDuplicate : this._onDuplicateDefault;
 	this.instantFeedback = options.instantFeedback ? options.instantFeedback : this._instantFeedbackDefault;
@@ -43,13 +44,18 @@ function HandleForm(options) {
 	this.clearError = options.clearError ? options.clearError : this._clearErrorDefault;
 	this.onReset = options.onReset ? options.onReset : () => {};
 	this.ajaxHeaders = options.ajaxHeaders ? options.ajaxHeaders : {};
+	this.submitAllFields = options.submitAllFields ? options.submitAllFields : false;
 	this.debug = options.debug ? true : false;
 	
 	// Initialize
 	this.$form = $(this.id);
 	this.$form.submit($.proxy(this._onsubmit, this));
+	this.$inputs = this.$form.find('input:not(:button):not(:submit), select');
+	this.$inputs.each((i, elm) => {
+		// Store initial values
+		$(elm).data('og-val', $(elm).val());
+	});
 }
-
 
 
 
@@ -65,14 +71,17 @@ function HandleForm(options) {
 HandleForm.prototype._onsubmit = function(e) {
 	this._debug('_onSubmit');
 	this.instantFeedback();
+	this.onSubmit();
 	
 	// Construct JSON with all form data
 	let formData = {};
-	this.$form.find('input').each(function(i, elm) {
-		const isDataInput = !$(elm).is('input:button') && !$(elm).is('input:submit');
-		if (isDataInput) {
-			formData[$(elm).attr('name')] = $(elm).val();
+	this.$inputs.each((i, ip) => {
+		// Only submit changed fields, unless submitAllFields is set true
+		if (this.submitAllFields || $(ip).val() != $(ip).data('og-val')) {
+			formData[$(ip).attr('name')] = $(ip).val();
+			console.log(formData)
 		}
+		// console.log($(ip).attr('name') + ': ' + $(ip).data('og-val') + '-->' + $(ip).val());
 	});
 
 	// We don't want UI to flash when the server is too fast,
@@ -239,8 +248,8 @@ HandleForm.prototype._instantFeedbackDefault = function() {
 		originalValue = $submitBtn.val();
 		this.$form.find('input[type=submit]').eq(0).val('Submitting...').data('original-value', originalValue);
 	} else if ($submitBtn.is('button')) {
-		originalValue = $submitBtn.html();
-		this.$form.find('button[type=submit]').eq(0).html('Submitting...').data('original-value', originalValue);
+		originalValue = $submitBtn.text();
+		this.$form.find('button[type=submit]').eq(0).text('Submitting...').data('original-value', originalValue);
 	}
 };
 

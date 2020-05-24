@@ -146,8 +146,8 @@ form .field-err-msg {
 	float: left;
 	clear: left;
 }
-form .info-msg,
-form .err-msg {
+form .info-msg:not(:empty),
+form .err-msg:not(:empty) {
 	margin: -5px 0 15px 0;
 }
 form .field-err-msg {
@@ -223,9 +223,7 @@ select {
 	padding: 0 15px;
 	outline: none;
 }
-
-/* Dropdowns */
-.dd-display {
+.dropdown {
 	background: #fafafa;
 	border: solid 1px rgba(0,0,0,.1);
 	border-radius: 2px;
@@ -237,7 +235,10 @@ select {
 	height: 40px;
 	position: relative;
 }
-.dd-display .dsp {
+.dropdown:focus-within {
+	border: solid 1px rgba(0,0,0,.75);
+}
+.dropdown .dsp {
 	position: absolute;
 	left: 0;
 	right: 0;
@@ -251,7 +252,7 @@ select {
 	font-size: 15px;
 	box-sizing: border-box;
 }
-.dd-display::after {
+.dropdown::after {
 	content: '';
 	width: 30px;
 	height: 40px;
@@ -262,7 +263,7 @@ select {
 	opacity: .75;
 	pointer-events: none;
 }
-.dd-display select {
+.dropdown select {
 	margin: 0;
 	width: 100%;
 	height: 100%;

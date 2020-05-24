@@ -70,6 +70,12 @@ function linkUserNames(text) {
 	return text.replace(/(^|[^@\w])@(\w{1,15})\b/gi, '$1<a target="_blank" href="https://twitter.com/$2">@$2</a>');
 }
 
+// Create url path from Title
+function createPath(title) {
+	return title.toLowerCase().trim().replace(/\s+/g, '-').replace(/&/g, 'and').replace(/[^\w-]/g, '');
+	// return title.toLowerCase().trim().replace(/\s+/g, '-').replace(/&/g, 'and').replace(/[?#<>\\\/.,!:`~^;''""=\[\]\(\)]/g, '');
+}
+
 
 
 
@@ -79,3 +85,4 @@ exports.removeDupDocs = removeDupDocs;
 exports.compareArrays = compareArrays;
 exports.linkURLs = linkURLs;
 exports.linkUserNames = linkUserNames;
+exports.createPath = createPath;

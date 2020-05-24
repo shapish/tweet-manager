@@ -1,0 +1,26 @@
+<div class="table-row" data-id="<%= _id %>">
+	<% if (+user.isAdmin) { %><div class="table-cell cb">
+		<input type="checkbox">
+	</div><% } %>
+	<div class="table-cell index">
+		<%= index %>
+	</div>
+	<div class="table-cell main">
+		<a href="/chapters/<%= path %>"><%= title %></a>
+	</div>
+	<div class="table-cell tweets">
+		<%= tweets.length %>
+	</div>
+	<div class="table-cell type">
+		<% if (type) { %><%= type %><% } else { %>-<% } %>
+	</div>
+	<div class="table-cell writer">
+		<% if (writer) { %><%= writer.name %><% } else { %>-<% } %>
+	</div>
+	<div class="table-cell word-count">
+		<% if (wordCount) { %><%= prettyNr(wordCount) %><% } else { %>-<% } %>
+	</div>
+	<div class="table-cell stage">
+		<%= stages[stage] %>
+	</div>
+</div>

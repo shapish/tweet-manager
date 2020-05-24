@@ -1,3 +1,20 @@
+/**
+ * Controls
+ */
+#controls {
+	height: 40px;
+	margin-bottom: 20px;
+	transition: all 100ms ease-in-out;
+	font-size: 0; /* To guarantee exact height */
+}
+#controls:not(.select) .select-ui,
+#controls:not(.reselect) .reselect-ui,
+#settings.show ~ #controls .select-ui,
+#settings.show ~ #controls .reselect-ui {
+	display: none;
+}
+
+
 .table {
 	width: 100%;
 	border-bottom: none;
@@ -11,8 +28,8 @@ body.loading .table {
 
 
 /**
-  * Table Header
-  */
+ * Table Header
+ */
 .table-header {
 	font-weight: bold;
 }
@@ -32,6 +49,7 @@ body.loading .table {
 }
 
 
+
 /**
   * Table Row
   */
@@ -44,71 +62,38 @@ body.loading .table {
 	background: cornsilk;
 }
 .table-row:not(.sel):not(.table-header):hover {
-	background: #f6f6f6;
-}
-
-/* Archived state */
-.table-row.archived .table-cell {
 	background: rgba(0,0,0,.03);
 }
-.table-row.archived .table-cell span {
-	text-decoration: line-through;
-}
-.table-row.archived .table-cell,
-.table-row.archived a {
-	color: rgba(0,0,0,.3);
-}
-.table-row.archived .table-cell .label {
-	color: #fff;
-	opacity: .3;
-}
-.table-row.archived .table-cell.tweet .meta {
-	text-decoration: none;
-	color: rgba(0,0,0,.3);
-}
-.table-row.archived .table-cell.star,
-.table-row.archived.star .table-cell.star,
-.table-row.archived .table-cell.star:hover {
-	color: transparent;
-	text-decoration: none;
-}
 
-/* Copied state */
-.table-row.copied .table-cell:not(.star),
-.table-row.copied a {
-	color: darkgreen;
-	animation: copy-blink 100ms 2;
+/* Focus state */
+.table-row.focus {
+	position: relative;
+	background: rgba(219,227, 213,.2); /* Soft green */
 }
-@keyframes copy-blink {
-	0% {
-		color: transparent;
-	}
-	49.9% {
-		color: transparent;
-	}
-	50% {
-		color: darkgreen;
-	}
-	99.9% {
-		color: darkgreen;
-	}
-	100% {
-		color: transparent;
-	}
+.table-row.focus::after {
+	content: '';
+	display: block;
+	position: absolute;
+	left: 0;
+	top: -1px;
+	z-index: 1;
+	width: 3px;
+	height: calc(100% + 1px);
+	background: #8AA07A;
 }
 
 
 
 /**
-  * Table Cell
-  */
+ * Table Cell
+ */
 .table-cell {
 	border-bottom: solid 1px rgba(0,0,0,.2);
 	padding: 0 15px;
 	flex-shrink: 0;
 	flex-grow: 0;
 }
-.table-row:not(.table-header) .table-cell {
+.table:not(.no-click) .table-row:not(.table-header) .table-cell {
 	cursor: pointer;
 }
 .table-row:not(.table-header) .table-cell:first-child {
@@ -116,6 +101,11 @@ body.loading .table {
 }
 .table-row:not(.table-header) .table-cell:last-child {
 	border-right: solid 1px rgba(0,0,0,.2);
+}
+
+/* Error state */
+.table-cell.err {
+	color: #d00;
 }
 
 /* Checkbox */
@@ -150,166 +140,18 @@ body.loading .table {
 }
 
 /* Tweet */
-.table-cell.tweet {
+.table-cell.main {
 	line-height: 20px;
 	padding: 10px 15px 10px 0;
 	flex-shrink: 1;
 	flex-grow: 1;
 }
-.table-cell.tweet i {
-	color: blue;
-}
-.table-cell.tweet b { /* Regular highlight */
-	color: crimson;
-}
-.table-cell.tweet em {  /* Literal highlight */
-	font-style: normal;
-	color: crimson;
-	text-decoration: underline;
-}
-.table-cell.tweet .meta {
-	clear: left;
-	margin-top: 5px;
-	font-size: 11px;
-	line-height: 13px;
-	color: rgba(0,0,0,.3);
-	color: #8AA07A
-}
 
-/* Tweet --> UI settings */
-#tweet-table.clip-tweets .table-cell.tweet {
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-#tweet-table:not(.show-labels) .label-wrap {
-	display: none;
-}
-#tweet-table:not(.show-meta) .meta {
-	display: none;
-}
 
-/* Tweet --> Labels */
-.meta + .label-wrap.pad {
-	margin-top: 5px;
-}
-.label-wrap.pad {
-	overflow: auto;
-	margin-top: 2px;
-}
-.label {
-	text-transform: uppercase;
-	height: 15px;
-	line-height: 16px;
-	font-size: 10px;
-	font-weight: 600;
-	padding: 0 5px;
-	float: left;
-	color: #fff;
-	margin-right: 3px;
-	margin-top: 3px;
-	max-width: 90px;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	position: relative;
-	z-index: 0;
-}
-.label .bg {
-	width: 100%;
-	height: 100%;
-	background: #8AA07A;
-	border-radius: 2px;
-	position: absolute;
-	top: 0;
-	left: 0;
-	z-index: -1;
-}
-.label:hover {
-	color: #fff;
-}
-.label:hover .bg {
-	background: #657E54;
-}
-.label.hold { /* (waiting for server) */
-	opacity: .3;
-}
 
-/* Tweet --> Labels --> Delete UI */
-.label.remove {
-	padding-right: 20px;
-}
-.label.remove .x {
-	width: 15px;
-	height: 15px;
-	position: absolute;
-	top: 0;
-	right: 0;
-	border-radius: 0 2px 2px 0;
-}
-.label.remove .x::after {
-	content: '';
-	font-size: 16px;
-	font-weight: 400;
-	text-align: center;
-	line-height: 15px;
-	width: 100%;
-	height: 100%;
-	background: url(/img/x-small-10.svg) center center no-repeat;
-	background-size: 75%;
-	position: absolute;
-	
-}
-.label.remove .x:hover + .bg {
-	background: red;
-}
-
-/* Chapter */
-.table-cell.chapter {
-	padding: 0;
-	position: relative;
-	width: 120px;
-}
-.table-cell.chapter select {
-	width: 100%;
-	position: relative;
-	z-index: 1;
-	float: none;
-	margin: 0;
-	opacity: 0;
-	cursor: pointer;
-}
-.table-cell.chapter select:hover + a {
-	color: tomato;
-}
-.table-cell.chapter a {
-	width: 100%;
-	text-align: left;
-	padding: 0 15px;
-	box-sizing: border-box;
-	position: absolute;
-	top: 0;
-	left: 0;
-
-	/* Truncate */
-	max-width: 150px;
-  	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-/* Date */
-.table-cell.date {
-	width: 120px;
-}
-
-/* Copy / archive */
-.table-cell.copy,
-.table-cell.archive {
-	width: 80px;
-}
-
-/* No results */
+/**
+ * No results
+ */
 #no-results {
 	padding-left: 65px;
 	height: 100px;

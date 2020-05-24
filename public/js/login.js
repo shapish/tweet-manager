@@ -38,7 +38,7 @@ const signupForm =  new HandleForm({
 	url: 'api/users', // Mandatory
 	onSuccess: goHome,
 	onDuplicate: function() {
-		$('#form-signup .error-msg').html('This email has already been registered.');
+		$('#form-signup .err-msg').html('This email has already been registered.');
 	},
 	debug: false
 });
@@ -69,9 +69,10 @@ function goHome() {
 		$('<a href="#"></a>')
 			.text(type)
 			.click(e => {
-				$('#form-signup input[type=text]').val('Timothy Tester');
+				const r = Math.round(Math.random()*100);
+				$('#form-signup input[type=text]').val('Timothy Tester ' + r);
 				$('#form-signup input[type=password]').val((type == 'valid') ? 123456 : 123);
-				$('#form-signup input[type=email]').val('test' + Math.round(Math.random()*100) + '@gmail.com');
+				$('#form-signup input[type=email]').val('test' + r + '@gmail.com');
 				e.preventDefault();
 			}).appendTo(parent);
 		$(parent).append('<br>');

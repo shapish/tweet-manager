@@ -1,0 +1,33 @@
+/**
+ * Table Row
+ */
+
+
+
+
+/**
+ * Table Cell
+ */
+.table-cell {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.table-cell.index {
+	width: 40px;
+}
+.table-cell.tweets {
+	width: 70px;
+}
+.table-cell.type {
+	width: 60px;
+}
+.table-cell.writer {
+	width: 150px;
+}
+.table-cell.word-count {
+	width: 60px;
+}
+.table-cell.stage {
+	width: 70px;
+}

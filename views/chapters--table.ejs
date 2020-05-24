@@ -1,0 +1,34 @@
+<div id="chapter-table" class="table<% if (!+user.isAdmin) { %> no-click<% } %>">
+
+	<%# <!-- Table header --> %>
+	<div class="table-row table-header">
+		<% if (+user.isAdmin) { %><div class="table-cell cb"></div><% } %>
+		<div class="table-cell index <%= sel.index %>">
+			<a href="#" data-sort="<% if (!query.s) { %>-<% } %>index" class="sort-link">Idx</a>
+		</div>
+		<div class="table-cell main <%= sel.title %>">
+			<a href="#" data-sort="<% if (query.s == 'title') { %>-<% } %>title" class="sort-link">Title</a>
+		</div>
+		<div class="table-cell tweets <%= sel.tweets %>">
+			<a href="#" data-sort="<% if (query.s == 'tweets') { %>-<% } %>tweets" class="sort-link">Tweets</a>
+		</div>
+		<div class="table-cell type <%= sel.type %>">
+			<a href="#" data-sort="<% if (query.s == 'type') { %>-<% } %>type" class="sort-link">Type</a>
+		</div>
+		<div class="table-cell writer <%= sel.writer %>">
+			<a href="#" data-sort="<% if (query.s == 'writer') { %>-<% } %>writer" class="sort-link">Writer</a>
+		</div>
+		<div class="table-cell word-count <%= sel.wordCount %>">
+			<a href="#" data-sort="<% if (query.s == 'wordcount') { %>-<% } %>wordcount" class="sort-link">Words</a>
+		</div>
+		<div class="table-cell stage <%= sel.stage %>">
+			<a href="#" data-sort="<% if (query.s == 'stage') { %>-<% } %>stage" class="sort-link">Stage</a>
+		</div>
+	</div>
+
+	<%# <!-- Table row --> %>
+	<% for (let i=0; i<chapters.length; i++) { %>
+	<%- include('chapters--table-row.ejs', chapters[i]) %>
+	<% } %>
+	
+</div>

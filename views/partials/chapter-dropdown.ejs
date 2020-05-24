@@ -1,0 +1,9 @@
+<% if (typeof chapter == 'undefined') { chapter = null } // Batch dropdown doesn't have chapter %>
+<select>
+	<option value="" data-text="- select -"<% if (!chapter) { %> selected<% } %>>(unassigned)</option>
+	<% for (let i=0; i<chapters.length; i++) { %>
+	<option value="<%= chapters[i]._id %>" data-text="<%= chapters[i].title %>"<% if (chapter && String(chapter._id) == String(chapters[i]._id)) { %> selected<% } %>>
+		<% chapters[i].index.split('.').splice(1).forEach(function() { %>&nbsp;&nbsp;&nbsp;<% }); %><%= chapters[i].title %> - <%= chapters[i].index %>
+	</option>
+	<% } %>
+</select>

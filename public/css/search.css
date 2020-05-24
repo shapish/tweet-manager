@@ -82,49 +82,20 @@ input#search {
 
 /*** Controls ***/
 
-#controls {
-	height: 40px;
-	margin-bottom: 20px;
-	transition: all 100ms ease-in-out;
-	font-size: 0; /* To guarantee exact height */
-}
-#controls:not(.select) .select-ui,
-#controls:not(.reselect) .reselect-ui,
-#settings.show ~ #controls .select-ui,
-#settings.show ~ #controls .reselect-ui {
-	display: none;
-}
-
-/* Exit button */
-#exit-selection {
-	min-width: 40px;
-	width: 40px;
-	padding: 0;
-	position: relative;
-}
-#exit-selection::after {
-	content: '+';
-	font-size: 1.5em;
-	display: block;
-	width: 100%;
-	height: 100%;
-	transform: rotate(45deg);
-}
-
 /* Star dropdown */
-#dd-star-display {
+#dd-stars {
 	width: 100px;
 }
-#dd-star-display.l-1 {
+#dd-stars.l-1 {
 	color: #E2D06D;
 }
-#dd-star-display.l-2 {
+#dd-stars.l-2 {
 	color: #F19A5A;
 }
-#dd-star-display.l-3 {
+#dd-stars.l-3 {
 	color: tomato;
 }
-#dd-chapter-display {
+#dd-chapter {
 	width: 200px;
 }
 

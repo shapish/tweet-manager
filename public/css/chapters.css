@@ -1,0 +1,36 @@
+#controls-wrap {
+	height: 40px;
+	margin-bottom: 20px;
+}
+#controls {
+	float: left;
+}
+#controls input {
+	width: 150px;
+	clear: none;
+}
+#controls.select + #filters {
+	display: none;
+}
+#filters {
+	float: right;
+}
+#filters .dropdown {
+	margin-right: 0;
+	margin-left: 10px;
+}
+
+
+@media only screen and (max-width: 1270px) {
+	/* #controls-wrap {
+		height: 90px;
+	}
+	#filters {
+		float: left;
+		margin-bottom: 10px;
+	}
+	#filters .dropdown {
+		margin-left: 0;
+		margin-right: 10px;
+	} */
+}

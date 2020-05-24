@@ -2,17 +2,92 @@
 	page: 'chapters',
 	title: 'Chapters',
 	css: [
-		'chapters-overview.css'
+		'table.css',
+		'chapters.css',
+		'chapters--table.css'
+	],
+	js: [
+		'table.js'
 	],
 	jsDefer: [
-		'chapters-overview.js'
+		'chapters.js'
 	]
 }) %>
 
 <h2>Chapters</h2>
 
-<%- include('partials/chapters-nav.ejs', { page: 'overview' }) %>
+<%- include('chapters--nav.ejs', { page: 'overview' }) %>
 
-Coming soon.
+<div id="controls-wrap">
+
+	<div id="controls" data-stages="<%= stages %>">
+		<div class="reselect-ui">
+			<button id="btn-reselect">reselect</button>
+		</div>
+		<div class="select-ui">
+			<button id="exit-selection"></button>
+			<div class="dropdown">
+				<select id="dd-type" name="type">
+					<option hidden data-display-value="- set type -" selected></option>
+					<option value="Light">Light</option>
+					<option value="Heavy">Heavy</option>
+				</select>
+				<div class="dsp">- set type -</div>
+			</div>
+			<div class="dropdown">
+				<select id="dd-writer" name="writer">
+					<option data-display-value="- set writer -" selected>(unassign)</option>
+					<% for (const i in writers) { %>
+					<option value="<%= writers[i]._id %>"><%= writers[i].name %></option>
+					<% } %>
+				</select>
+				<div class="dsp">- set writer -</div>
+			</div>
+			<div class="dropdown">
+				<select id="dd-stage" name="stage">
+					<option hidden data-display-value="- set stage -"></option>
+					<% for (const i in stages) { %>
+					<option value="<%= i %>"><%= stages[i] %></option>
+					<% } %>
+				</select>
+				<div class="dsp">- set stage -</div>
+			</div>
+			<input id="word-count" type="text" placeholder="set word count">
+		</div>
+	</div>
+	<div id="filters">
+		<div class="dropdown">
+			<select id="dd-filter-type" name="type">
+				<option value="*" data-display-value="All types"<% if (!query.type) { %> selected<% } %>>All types</option>
+				<option value="Light"<% if (query.type == 'light') { query.type = 'Light'; %> selected<% } %>>Light</option>
+				<option value="Heavy"<% if (query.type == 'heavy') { query.type = 'Heavy'; %> selected<% } %>>Heavy</option>
+			</select>
+			<div class="dsp"><% if (query.type) { %><%= query.type %><% } else { %>All types<% } %></div>
+		</div>
+		<div class="dropdown">
+			<select id="dd-filter-writer" name="writer">
+				<option value="*" data-display-value="All writers"<% if (!query.writer) { %> selected<% } %>>All writers</option>
+				<% for (const i in writers) { %>
+				<option value="<%= writers[i].path %>"<% if (query.writer == writers[i].path) { query.writer = writers[i].name %> selected<% } %>><%= writers[i].name %></option>
+				<% } %>
+			</select>
+			<div class="dsp"><% if (query.writer) { %><%= query.writer %><% } else { %>All writers<% } %></div>
+		</div>
+		<div class="dropdown">
+			<select id="dd-filter-stage" name="stage">
+				<option value="*" data-display-value="All stages"<% if (!query.stage) { %> selected<% } %>>All stages</option>
+				<% for (const i in stages) { %>
+				<option value="<%= i %>"<% if (query.stage == i) { %> selected<% } %>><%= stages[i] %></option>
+				<% } %>
+			</select>
+			<div class="dsp"><% if (query.stage) { %><%= stages[query.stage] %><% } else { %>All stages<% } %></div>
+		</div>
+	</div>
+
+</div>
+
+<div id="table-wrap">
+<%- include('chapters--table.ejs') %>
+</div>
 
 <%- include('partials/foot.ejs') %>

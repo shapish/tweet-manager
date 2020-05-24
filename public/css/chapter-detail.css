@@ -1,0 +1,113 @@
+/* General */
+.input-wrap label {
+	font-weight: 700;
+	margin-bottom: 10px;
+}
+
+/* Prev / Next Links */
+.links.top {
+	margin-bottom: 60px
+}
+.links.bottom {
+	margin-top: 60px
+}
+.links a,
+.links span {
+	margin-right: 30px;
+}
+.links span {
+	color: rgba(0,0,0,.3);
+}
+.links a.prev:not(:hover) ~ .show-prev,
+.links a.next:not(:hover) ~ .show-next {
+	display: none
+}
+
+
+/* Title */
+h2 span {
+	color: indianred;
+	margin-right: 10px;
+}
+
+/* Form */
+#form-chapter.edit #info,
+#form-chapter.edit #content .text,
+#form-chapter.edit #btn-edit,
+#form-chapter:not(.edit) #info-edit,
+#form-chapter:not(.edit) #content .text-edit,
+#form-chapter:not(.edit) #btn-cancel,
+#form-chapter:not(.edit) #btn-save {
+	display: none;
+}
+#form-chapter .err-msg {
+	
+}
+
+/* Info */
+#info,
+#info-edit {
+	clear: left;
+	/* background: pink; */
+	overflow: hidden;
+}
+.dropdown {
+	margin-bottom: 30px;
+	width: 100%;
+}
+#info-edit input {
+	width: 100%;
+	margin-bottom: 30px;
+}
+#info-edit .input-wrap.short {
+	margin-right: 40px;
+	width: 320px;
+}
+#info-edit .input-wrap.short:not(.clear) {
+	clear: none;
+}
+#info-edit .input-wrap {
+	width: 100%;
+	max-width: 1040px;
+}
+
+/* Content Section */
+#content {
+	display: flex;
+	flex-direction: row;
+	margin-top: 40px;
+}
+#content > .tweets {
+	width: 400px;
+	margin-right: 40px;
+	flex-shrink: 2;
+}
+#content > .text,
+#content > .text-edit {
+	width: 600px;
+	flex-shrink: 1;
+}
+#content .input-wrap.text-link {
+	margin-right: 40px;
+}
+#content .input-wrap.text-link,
+#content .input-wrap.text-link input {
+	width: 440px;
+}
+#content .input-wrap.word-count,
+#content .input-wrap.word-count input {
+	width: 120px;
+	clear: none;
+}
+.tweet {
+	min-height: 20px;
+	line-height: 20px;
+	background: #F3EBE5;
+	border-radius: 2px;
+	margin-bottom: 5px;
+	padding: 10px 15px;
+}
+.tweets a {
+	height: 40px;
+	line-height: 40px;
+}

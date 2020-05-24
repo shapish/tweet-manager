@@ -1,0 +1,7 @@
+<div class="links <%= pos %>">
+	<a href="/chapters">Back</a>
+	<% if (prevNext[0]) { %><a href="/chapters/<%= prevNext[0].path %>" class="prev">Prev</a><% } else { %><span>Prev</span><% } %>
+	<% if (prevNext[1]) { %><a href="/chapters/<%= prevNext[1].path %>" class="next">Next</a><% } else { %><span>Next</span><% } %>
+	<% if (prevNext[0]) { %><span class="show-prev">&larr;&nbsp; <%= prevNext[0].index %>.&nbsp; <%= prevNext[0].title %></span><% } %>
+	<% if (prevNext[1]) { %><span class="show-next">&rarr;&nbsp; <%= prevNext[1].index %>.&nbsp; <%= prevNext[1].title %></span><% } %>
+</div>

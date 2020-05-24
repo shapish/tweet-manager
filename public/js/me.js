@@ -6,7 +6,7 @@ const meForm =  new HandleForm({
 	url: 'api/users', // Mandatory
 	type: 'PUT',
 	onSuccess: disableForm,
-	debug: false
+	submitAllFields: true
 });
 
 function enableForm() {

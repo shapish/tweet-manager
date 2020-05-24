@@ -10,6 +10,7 @@ function SearchBar(options) {
 
 SearchBar.prototype.init = function() {
 	this.$search.on('keyup', this.keyUp.bind(this));
+	this.$search.on('focus', () => { $('.table-row.focus').removeClass('focus') });
 	this.$clearBtn.on('click', this.clear.bind(this));
 	this.$formSearch.on('submit', this.submit.bind(this));
 };
@@ -36,9 +37,9 @@ SearchBar.prototype.submit = function(e) {
 	loading();
 
 	// Submit query
-	let val = encodeURI(this.$search.val()).replace(/^\/|\/$/g, '%2F');
-	console.log(val)
+	let val = this.$search.val() ? encodeURI(this.$search.val()).replace(/^\/|\/$/g, '%2F') : '*';
 	let urlQuery = window.location.search; // Gets refreshed on server
+	
 	$.ajax({
 		type: 'POST',
 		url: '/search/q/' + val + urlQuery,
@@ -50,6 +51,7 @@ SearchBar.prototype.submit = function(e) {
 };
 
 SearchBar.prototype.keyUp = function(e) {
+	return;
 	// console.log(e.which);
 	if (e.which == 27) {
 		// ESC

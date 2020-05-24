@@ -7,6 +7,7 @@ const ejs = require('ejs');
 // Models
 const Tweet = require('../models/tweet');
 const { User } = require('../models/user');
+const Chapter = require('../models/chapter');
 const Dup = require('../models/dup');
 
 // Functions
@@ -15,7 +16,6 @@ const Pg = require('../functions/classes/Pagination');
 const {getDateNav, linkText} = require('../functions/search');
 const {url} = require('../functions/general-global');
 const {auth} = require('../middleware/auth');
-const getUserData = require('../middleware/get-user-data');
 
 
 
@@ -26,7 +26,11 @@ router.get('/', auth, display);
 // Search query
 router.post('/q/:query', auth, (req, res) => {
 	const {query} = req.params;
-	req.query.q = decodeURI(query).replace(/^%2F|%2F$/g, '/');
+	if (query == '*') {
+		delete req.query.q;
+	} else {
+		req.query.q = decodeURI(query).replace(/^%2F|%2F$/g, '/');
+	}
 	req.renderFile = true;
 	display(req, res);
 });
@@ -63,6 +67,7 @@ router.post('/p/:nr', auth, (req, res) => {
 // Filter
 router.post('/filter/:action/:state', auth, (req, res) => {
 	let {action, state} = req.params;
+	
 	
 	// Parse month/year input
 	const regexYear = /^y-(\d{4})$/;
@@ -181,18 +186,23 @@ async function display(req, res) {
 	const p1 = Tweet.find(searchParams)
 		.sort(sort)
 		.limit(pg.pageSize)
-		.skip((pg.pageNumber - 1) * pg.pageSize);
+		.skip((pg.pageNumber - 1) * pg.pageSize)
+		// .lean(); // So we can maniuplate the data --> add chapter title
 	const p2 = Tweet.find(searchParams).count();
-	const [tweets, resultCount] = await Promise.all([p1, p2]);
-
+	let [tweets, resultCount] = await Promise.all([p1, p2]);
+	
 	// Complete pagination parameters
 	pg.complete(resultCount);
 
 	// Link URLs and usernames
 	linkText(tweets);
+	// console.log(tweets[0])
 
 	// Highlight results
 	if (req.query.q) search.highlightText(tweets);
+
+	// Load chapters list
+	const chapters = await Chapter.find({}).select('title index').sort('sortIndex');
 	
 	// Data to send
 	let data = {
@@ -204,14 +214,15 @@ async function display(req, res) {
 		query: req.query,
 		user: user,
 		sel: _getSelClass(req.query),
-		tableClass: tableClass
+		tableClass: tableClass,
+		chapters: chapters
 	};
 	
 	if (req.renderFile) {
 		// Render table data
 		let html = '';
 		const renderData = { ...data, ...req.app.locals };
-		ejs.renderFile('views/partials/table.ejs', renderData, (err, str) => {
+		ejs.renderFile('views/search--table.ejs', renderData, (err, str) => {
 			if (err) {
 				logger.error('Error rendering table data', err);
 			} else {

@@ -596,6 +596,7 @@ ChapterManager.prototype._saveToServer = function() {
 		let sortIndex = index.split('.');
 		sortIndex.forEach((nr, i, arr) => arr[i] = +nr+10000);
 		sortIndex = sortIndex.join('-');
+
 		const chapter = {
 			_id: $(elm).attr('data-id'),
 			title: $(elm).find('.title').text(),
