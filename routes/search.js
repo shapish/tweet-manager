@@ -138,7 +138,7 @@ router.post('/filter/:action/:state', auth, (req, res) => {
 });
 
 
-// Change settings
+// Change settings // ## should be in api-user
 router.put('/settings', auth, async (req, res) => {
 	// Read settings
 	const settings = {};
@@ -158,6 +158,13 @@ router.put('/settings', auth, async (req, res) => {
 });
 
 
+// Search tips
+router.get('/tips', auth, async (req, res) => {
+	req.bodyClasses = ['show-tips'];
+	display(req,res);
+});
+
+
 // Search & display tweets
 async function display(req, res) {
 	// Whenever data changes, pagination is reset
@@ -167,8 +174,12 @@ async function display(req, res) {
 	const dateNav = getDateNav();
 	
 	// Gather all parameters to run search
-	const {search, searchParams, sort} = new Search(req.query);
+	const {search, terms, searchParams, sort} = new Search(req.query);
 	// console.log('searchParams:', searchParams);
+	// console.log('terms:', terms);
+
+	// Reset hash characters for front-end display
+	const q = req.query.q ? req.query.q.replace(/::/g, '#') : null;
 
 	// Load user settings
 	const user = await User.findById(req.user._id)
@@ -187,7 +198,6 @@ async function display(req, res) {
 		.sort(sort)
 		.limit(pg.pageSize)
 		.skip((pg.pageNumber - 1) * pg.pageSize)
-		// .lean(); // So we can maniuplate the data --> add chapter title
 	const p2 = Tweet.find(searchParams).count();
 	let [tweets, resultCount] = await Promise.all([p1, p2]);
 	
@@ -212,10 +222,13 @@ async function display(req, res) {
 		pagination: pg,
 		dateNav: dateNav,
 		query: req.query,
+		q: q,
+		terms: terms,
 		user: user,
 		sel: _getSelClass(req.query),
 		tableClass: tableClass,
-		chapters: chapters
+		chapters: chapters,
+		bodyClasses: req.bodyClasses ? req.bodyClasses : []
 	};
 	
 	if (req.renderFile) {
@@ -224,15 +237,24 @@ async function display(req, res) {
 		const renderData = { ...data, ...req.app.locals };
 		ejs.renderFile('views/search--table.ejs', renderData, (err, str) => {
 			if (err) {
-				logger.error('Error rendering table data', err);
+				logger.error('Error rendering search--table.ejs', err);
 			} else {
 				html += str;
+			}
+		});
+		let queryDataHtml = '';
+		// Note: empty options need to be passed here, otherwise the "strict" property of terms is confused with the strict option
+		ejs.renderFile('views/search--query-data.ejs', terms, {}, (err, str) => {
+			if (err) {
+				logger.error('Error rendering search--query-data.ejs', err);
+			} else {
+				queryDataHtml += str;
 			}
 		});
 		res.send({
 			html: html,
 			resultCount: resultCount,
-			q: req.query.q,
+			queryDataHtml: queryDataHtml,
 			urlQuery: url(req.query, null, null, req.keepPagination)
 		});
 	} else {

@@ -36,8 +36,8 @@ SearchBar.prototype.submit = function(e) {
 	e.preventDefault();
 	loading();
 
-	// Submit query
-	let val = this.$search.val() ? encodeURI(this.$search.val()).replace(/^\/|\/$/g, '%2F') : '*';
+	// Submit query – replace slashes and hashes into url-friendly strings
+	let val = this.$search.val() ? encodeURI(this.$search.val()).replace(/^\/|\/$/g, '%2F').replace(/#/g, '::') : '*';
 	let urlQuery = window.location.search; // Gets refreshed on server
 	
 	$.ajax({

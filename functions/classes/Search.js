@@ -24,7 +24,7 @@ const {padNr} = require('../general-global');
  *	- - - - - - - - - - - - - - - - -
  *	A. Quoted phrase + unquoted words
  *		-> Quoted phrase defines results
- *		-> Unqouted words influende the relevance order, but no extra results
+ *		-> Unquoted words influende the relevance order, but no extra results
  *	B. Quotes/unquoted query + literal
  *		-> Returns the literal query within the results of the regular query
  **/
@@ -36,6 +36,7 @@ function Search(query) {
 
 	// Organize search terms into loose/strict/literal arrays
 	this.terms = this.parseQuery(q);
+	// console.log('query: ', this.query);
 	// console.log('terms: ', this.terms);
 
 	// Construct db search parameters
@@ -46,6 +47,7 @@ function Search(query) {
 
 	return {
 		search: this,
+		terms: this.terms,
 		searchParams: searchParams,
 		sort: sort
 	}
@@ -54,52 +56,64 @@ function Search(query) {
 
 // Break down query and return { loose, strict, literal } search terms
 Search.prototype.parseQuery = function(q) {
-	if (!q) return null;
+	const terms = {
+		loose: [], // working people
+		looseStems: [], // work people
+		strict: [], // "work people"
+		literal: [], // =work people=
+		labelsOR: [], // #work #people
+		labelsAND: [], // #work! #people!
+		regexQuery: null // /work(?:ing)? p[eo]ple/
+	}
 
-	let loose = []; // working people
-	let looseStems = []; // work people
-	let strict = []; // "work people"
-	let literal = []; // =work people=
-	let regexQuery = null; // /work(?:ing)? p[eo]ple/
+	if (!q) return terms;
 
 	// RegEx formulas:
-	const reStrict = /".*?"/gi; // Filter phrases wrapped in "quotes"
-	const reLiteral = /=.*?=/gi; // Filter literals wrapped in =equal signs=
+	const reStrict = /".*?"/g; // Filter phrases wrapped in "quotes"
+	const reLiteral = /=.*?=/g; // Filter literals wrapped in =equal signs=
+	const reLabelAND = /::\b\S+\b!/g; // Filter labels preceded by #hashtag! and ending with #exclamation!
+	const reLabelOR = /::\b\S+\b(?!!)/g; // Filter labels preceded by #hashtag not ending with exclamation
 	const reRegEx = /^\/(.*)\/([gmixXsuUAJD]{0,11}$)/; // Detects regex search
 
 	if (q.match(reRegEx)) {
 		// If a regex is passed, we'll ignore all the rest
-		regexQuery = new RegExp(q.replace(reRegEx, '($1)'), q.replace(reRegEx, '$2'));
+		terms.regexQuery = new RegExp(q.replace(reRegEx, '($1)'), q.replace(reRegEx, '$2'));
 	} else {
 		// Catch strict terms ("like this" -> handled by Mongo)
-		strict = q.match(reStrict);
-		strict = strict ? strict.map(phrase => { return phrase.replace(/"/g, '') }) : [];
+		terms.strict = q.match(reStrict);
+		terms.strict = terms.strict ? terms.strict.map(phrase => { return phrase.replace(/"/g, '') }) : [];
 
 		// Catch literal terms (=like this= -> handled by regex)
-		literal = q.match(reLiteral);
-		literal = literal ? literal.map(str => { return str.replace(/=/g, '') }) : [];
+		terms.literal = q.match(reLiteral);
+		terms.literal = terms.literal ? terms.literal.map(str => { return str.replace(/=/g, '') }) : [];
+		
+		// Catch OR labels (#like-this -> handled by regex)
+		terms.labelsOR = q.match(reLabelOR);
+		terms.labelsOR = terms.labelsOR ? terms.labelsOR.map(label => { return label.replace(/^::/, '') }) : [];
+
+		// Catch AND labels (#like-this -> handled by regex)
+		terms.labelsAND = q.match(reLabelAND);
+		terms.labelsAND = terms.labelsAND ? terms.labelsAND.map(label => { return label.replace(/^::(.+)!$/, '$1') }) : []; // ## This should be made consistent to however we pasre the labels
 
 		// Catch & trim loose words
 		let step1 = q.split(reStrict); // Remove strict phrases
 		let step2 = [];
+		let step3 = [];
+		let step4 = [];
 		step1.forEach((chunk, i) => step2.push(...chunk.split(reLiteral))); // Remove literals
-		loose = step2
+		step2.forEach((chunk, i) => step3.push(...chunk.split(reLabelAND))); // Remove AND literals
+		step3.forEach((chunk, i) => step4.push(...chunk.split(reLabelOR))); // Remove OR labels
+		terms.loose = step4
 			.map(word => word.trim()) // Trim whitespace 
 			.join(' ').split(' ') // Split into separate words
 			.filter(word => !!word.length); // Remove empty values
 
-		// Create stems: slice off (ing|s|ly|sy) is result is > 2 characters
+		// Create stems: slice off (ing|s|ly|sy) if result is > 2 characters
 		// https://regex101.com/r/rLxSFZ/1
-		looseStems = loose.map(word => word.replace(/(?<!\b\w)(ing|s|ly|sy)\b/, ''));
+		terms.looseStems = terms.loose.map(word => word.replace(/(?<!\b\w)(ing|s|ly|sy)\b/, ''));
 	}
 
-	return {
-		loose: loose,
-		looseStems: looseStems,
-		strict: strict,
-		literal: literal,
-		regexQuery: regexQuery
-	}
+	return terms;
 };
 
 
@@ -128,7 +142,7 @@ Search.prototype.translateQuery = function(terms) {
 		if (t)	searchParams.is_retweet = (t == 'og') ? false : true;
 		if (st) searchParams.stars = (st == 1) ? { $gte: 1 } : 0;
 		if (la) searchParams.labels = (la == 1) ? { $not: { $size: 0 } } : { $size: 0 };
-		// if (as) searchParams.chapter = (as == 1) ? { $not: null } : null;
+		if (as) searchParams.chapter = (as == 1) ? { $not: null } : null;
 		if (ar) searchParams.archived = (ar == 1) ? true : false;
 	}
 
@@ -148,10 +162,26 @@ Search.prototype.translateQuery = function(terms) {
 			query += terms.loose.length ? (terms.strict.length ? ' ' : '') + terms.loose.join(' ') : '';
 			searchParams.$text = { $search: query };
 		}
+		
 		// Literal -> Assemble $regex parameters
 		if (terms.literal.length) {
 			const re = new RegExp(terms.literal.join('|'));
 			searchParams.text = { $regex: re, $options: 'gi' };
+		}
+
+		// // OR Labels -> assemble label search parameters
+		if (terms.labelsOR.length) {
+			searchParams.labels = { $in: terms.labelsOR }
+		}
+
+		// AND Labels -> assemble label search parameters
+		if (terms.labelsAND.length) {
+			const conditions = terms.labelsAND.map(label => {
+				return {
+					labels: label
+				};
+			});
+			searchParams.$and = conditions;
 		}
 	}
 

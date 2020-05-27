@@ -129,7 +129,6 @@
 					// Esc
 					$ip.val($ip.lastVal).sc.hide();
 				} else if (e.which == 13 || e.which == 9) {
-					console.log(2)
 					// Enter / Tab
 					const sel = $('.autocomplete-suggestion.selected', $ip.sc);
 					if (sel.length && $ip.sc.is(':visible')) {
@@ -186,7 +185,6 @@
 				}
 				// Offer to add unknown terms (prefix with add: )
 				if (!data.includes(val) && val.length > 1) {
-					console.log('prefix', val);
 					string += o.renderItem(val, val, true);
 				}
 				if (string.length) {

@@ -25,9 +25,10 @@
 </template>
 
 <form id="form-search">
-	<input id="search" type="text" placeholder="Search" value="<%= query.q %>" tabindex="1" autocomplete="off" autofocus>
+	<input id="search" type="text" placeholder="Search" value="<%= q %>" tabindex="1" autocomplete="off" autofocus>
 	<button type="button" id="search-clear" title="Clear search"></button>
-	<button id="search-submit" type="submit">Search</button>
+	<button type="submit">Search</button>
+	<button id="btn-search-tips">?</button>
 	<div id="search-results-count"><%= resultCount %> results</div>
 </form>
 
@@ -98,10 +99,13 @@
 			<div class="dsp">- select chapter -</div>
 		</div>
 	</div>
+	<%- include('search--query-data.ejs', terms) _%>
 </div>
 
 <div id="table-wrap">
 <%- include('search--table.ejs') %>
 </div>
+
+<%- include('search--tips.ejs') %>
 
 <%- include('partials/foot.ejs') %>

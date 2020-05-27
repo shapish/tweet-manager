@@ -5,7 +5,8 @@
 	height: 40px;
 	margin-bottom: 20px;
 	transition: all 100ms ease-in-out;
-	font-size: 0; /* To guarantee exact height */
+	/* font-size: 0; */
+	 /* To guarantee exact height */
 }
 #controls:not(.select) .select-ui,
 #controls:not(.reselect) .reselect-ui,

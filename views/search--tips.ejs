@@ -1,0 +1,84 @@
+<div id="search-tips">
+	<div class="col-left">
+		<h2>Advanced Search Methods</h2>
+		<p>The five search methods are:</p>
+		<ul>
+			<li>
+				<b>Word Search (or)</b><br>
+				<a href="/search?q=americans%20working" class="example">americans working</a>
+				This searches for any tweets with either <span class="word">americans</span> <u>or</u> <span class="word">working</span>.<br>
+				› Words are stemmed: variations of the same word will be included (eg. America, work, works, worked, etc.)<br>
+				› Common words are ignored (eg. the, on, for, etc.)
+			</li>
+			<li>
+				<b>Phrase Search (and)</b>
+				<a href='/search?q="americans working"%20"jobs"' class="example">"americans working" "jobs"</a>
+				This looks for tweets with the exact phrases <span class="word">"americans working"</span> <u>and</u> <span class="word">"jobs"</span>.<br>
+				› Phrases need to consist of full words.
+			</li>
+			<li>
+				<b>Exact Search</b>
+				<a href="/search?q==notadoctor=" class="example">=notadoctor=</a>
+				This looks for exact letter combinations even within words. You won't need this much.<br>
+				› Compare <a class="word" href='/search?q="notadoctor"'>"notadoctor"</a> vs <a class="word" href="/search?q==notadoctor=">=notadoctor=</a>.<br>
+				› When combined, it functions as an <u>or</u> search.
+			</li>
+			<li>
+				<b>Label Search</b>
+				<a href="/search?q=::obama%20::biden" class="example">#obama #biden</a>
+				This looks for all tweets with the labels <span class="word">#obama</span> <u>or</u> <span class="word">#biden</span>.<br>
+				<br>
+				<a href="/search?q=::obama!%20::biden!" class="example">#obama! #biden!</a>
+				This looks for all tweets with the labels <span class="word">#obama</span> <u>and</u> <span class="word">#biden</span>.<br>
+				› Command-clicking a label will AND-search for this label.<br>
+				<br>
+				<a href="/search?q=::obama!%20::biden!%20::iran%20::china" class="example">#obama! #biden! #iran #china</a>
+				This looks for all tweets with the labels <span class="word">#obama</span> <u>and</u> <span class="word">#biden</span>, plus <span class="word">#iran</span> <u>or</u> <span class="word">#china</span>.
+			</li>
+			<li>
+				<b>RegEx Search</b>
+				<a href="/search?q=%2F#\b\w+\b%2F" class="example">/#\b\w+\b/gi</a>
+				If you're familiar with regular expressions, this is a powerful way to search for patterns.<br>
+				› Check <a href="http://regex101.com">regex101.com</a> for more.
+			</li>
+		</ul>
+	</div>
+	
+	<div class="col-right">
+		<h2>Search Hierarchy</h2>
+		<p>Search methods have a hierarchy when combined:</p>
+		<ol>
+			<li><b>=exact=</b></li>
+			<li><b>"phrase" / word</b></li>
+			<li><b>#label</b></li>
+		</ol>
+		<p>RegEx searches have to start and end with a slash and can't be combined with anything else.</p>
+		<br><br><br>
+		<h2>Rating Guidelines</h2>
+		<p>Whene rating tweets, please keep this benchmark in mind:</p>
+		<br>
+		<div id="star-benchmark">
+			<p>
+				<b><span>&#9733; &#9733; &#9733;</span> Three Stars</b><br>
+				Top tweets that absolutely must make it into the book.
+			</p>
+			<p>
+				<b><span>&#9733; &#9733;</span> Two Stars</b><br>
+				Anything from good to great.
+			</p>
+			<p>
+				<b><span>&#9733;</span> One Stars</b><br>
+				Noteworthy tweet that deserves to be considered.
+			</p>
+			<p>
+				<b>Zero Stars</b><br>
+				Not interesting enough to consider it for any chapter.
+			</p>
+		</div>
+		<p>When in doubt, give it a star or it might be forgotten.</p>
+	</div>
+</div>
+
+
+
+

@@ -1,4 +1,6 @@
-/*** Search Bar ***/
+/**
+ * Search Bar
+ */
 
 #form-search {
 	position: relative;
@@ -8,6 +10,10 @@
 #form-search button {
 	clear: none;
 	margin-bottom: 0;
+}
+#btn-search-tips {
+	min-width: 0;
+	width: 40px;
 }
 input#search {
 	width: 700px;
@@ -52,7 +58,9 @@ input#search {
 
 
 
-/*** Search Settings ***/
+/**
+ * Search Settings
+ */
 
 #settings {
 	position: absolute;
@@ -63,7 +71,9 @@ input#search {
 
 
 
-/*** Year/Month Nav ***/
+/**
+ * Year/Month Nav
+ */
 
 #nav-cal {
 	height: 60px;
@@ -80,7 +90,9 @@ input#search {
 
 
 
-/*** Controls ***/
+/**
+ * Controls
+ */
 
 /* Star dropdown */
 #dd-stars {
@@ -106,7 +118,42 @@ input#search {
 
 
 
-/*** Pagination ***/
+/**
+ * Query data
+ */
+ #query-data {
+	font-size: 13px;
+	line-height: 16px;
+	/* background: pink; */
+	overflow: auto;
+	position: relative;
+	top: 12px;
+}
+#query-data .type {
+	float: left;
+}
+#query-data .type + .type {
+	margin-left: 20px;
+}
+#query-data .type + .type::before {
+	content: '|';
+	margin-right: 20px;
+}
+#query-data div:not(.type) {
+	display: inline-block;
+	height: 100%;
+	margin: 0 2px;
+	background: #eee;
+	border-radius: 2px;
+	padding: 0 4px;
+}
+
+
+
+
+/**
+ * Pagination
+ */
 
 .pagination {
 	height: 26px;
@@ -138,7 +185,9 @@ input#search {
 
 
 
-/*** Month Overview Graph ***/
+/**
+ * Month Overview Graph
+ */
 
 #selected-month-overview,
 #selected-month-overview span,
@@ -149,4 +198,60 @@ input#search {
 #selected-month-overview .bar {
 	margin-right: 0;
 	margin-left: 10px;
+}
+
+
+
+/**
+ * Tips
+ */
+#body.show-tips #controls,
+#body.show-tips #table-wrap,
+#body:not(.show-tips) #search-tips {
+	display: none;
+}
+#search-tips {
+	display: none;
+	margin-top: 60px;
+	display: flex;
+	flex-direction: row;
+}
+#search-tips .col-left {
+	flex-grow: 1;
+	max-width: 700px;
+	margin-right: 40px;
+}
+#search-tips .col-right {
+	width: 400px;
+	flex-shrink: 1;
+}
+#search-tips ul li {
+	margin-bottom: 30px;
+}
+#search-tips .example {
+	width: 250px;
+	height: 30px;
+	line-height: 30px;
+	padding: 0 12px;
+	margin: 5px 0 10px 0;
+	border: solid 1px rgba(0,0,0,.2);
+	display: block;
+}
+#search-tips .word {
+	/* color: #8AA07A; */
+	/* font-weight: bold; */
+	font-family: monospace;
+	background: #eee;
+}
+#star-benchmark p {
+	margin-bottom: 20px;
+}
+#star-benchmark p span.three {
+	color: #FF6347
+}
+#star-benchmark p span.two {
+	color: #F19A5A
+}
+#star-benchmark p span.one {
+	color: #E2D06D
 }

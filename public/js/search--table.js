@@ -8,6 +8,7 @@ const tweetTable = new Table('tweet-table', {
 	initExternal: function() {
 		initControls.bind(this)();
 		initLabels.bind(this)();
+		initLabelClick.bind(this)();
 		
 		// Hook up dropdowns
 		this.$dropdowns = this.$table.find('select');
@@ -23,6 +24,7 @@ const tweetTable = new Table('tweet-table', {
 	onPopState: (data) => { $('#search').val(data.q) },
 	onUpdateTable: (data) => {
 		$('#search-results-count').text(data.resultCount + ' results');
+		$('#query-data').replaceWith(data.queryDataHtml);
 	}
 });
 
@@ -107,6 +109,24 @@ function initLabels() {
 		const $row = $(e.target).closest('.table-row');
 		const $label = $(e.target).closest('.label');
 		this._removeLabel($row, $label);
+		e.preventDefault();
+	});
+
+	// Replace spaces with dashes when typing/pasting label
+	this.$ipAddLabel.on('keydown', e => {
+		if (e.which == 32) {
+			// Space
+			this.$ipAddLabel.val(this.$ipAddLabel.val() + '-');
+			e.preventDefault();
+		}
+	}).on('paste', e => {
+		// Get pasted data via clipboard API
+		clipboardData = e.originalEvent.clipboardData || window.clipboardData;
+		pastedData = clipboardData.getData('text').replace(/\s+/g, '-');
+
+		// Replace spaces
+		this.$ipAddLabel.val(pastedData);
+		e.preventDefault();
 	});
 
 	// Autocomplete labels
@@ -168,13 +188,43 @@ function initLabels() {
 	});
 }
 
+// Initialize label clicks
+function initLabelClick() {
+	this.$table.find('.label').click(e => {
+		if ($(e.target).hasClass('x')) return;
+		const label = $(e.target).text();
+		const labelsAND = $('#query-data').attr('data-labels-and').split(',');
+		const labelsOR = $('#query-data').attr('data-labels-or').split(',');
+		let q = $('#search').val();
+
+		// Hold shift or command to add label to query instead of replace query
+		const suffix = e.metaKey ? '!' : '';
+		if (e.shiftKey) {
+			if (!labelsAND.includes(label) && !labelsOR.includes(label)) {
+				// Add label to query
+				q += ' #' + label + suffix
+			} else {
+				// Change label from OR to AND
+				const re = new RegExp('#' + label + '\\b!{0,1}', 'i');
+				q = q.replace(re, '#' + label + suffix);
+			}
+		} else {
+			// Replace query
+			q = '#' + label + suffix;
+		}
+
+		$('#search').val(q).parent().trigger('submit');
+		e.preventDefault();
+	});
+}
+
 // Initialize local keyboard events
 // Return false --> blocks default keyhandler from executing
 function localKeys(e) {
 	if ((e.which >= 65 && e.which <= 90) || e.which >= 97 && e.which <= 122) {
 		// Any letter: focus search/label input
 		if (this.selected.length) {
-			if (!$('#add-label').is(':focus')) {
+			if (!$('input').is(':focus')) {
 				$('#add-label').val('').focus();
 			}
 		} else {

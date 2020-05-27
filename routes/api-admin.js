@@ -1,6 +1,7 @@
 // Modules
 const express = require('express');
 const router = express.Router();
+const ejs = require('ejs');
 
 const Tweet = require('../models/tweet');
 const Chapter = require('../models/chapter');
@@ -101,5 +102,21 @@ router.post('/seed/:filename', async (req, res) => {
 	
 	res.send([`successfully added ${seedData.length} documents`]);
 });
+
+router.post('/test', async (req, res) => {
+	let terms = {
+		loose: ['a', 'b', 'c'],
+		fix: 'ABCD'
+	}
+	terms = {
+		strict: 'ABCD'
+	}
+	let html = '';
+	ejs.renderFile('views/test.ejs', terms, {}, (err, str) => {
+		html = str;
+	});
+	res.send(html);
+});
+
 
 module.exports = router;
