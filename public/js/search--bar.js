@@ -37,12 +37,17 @@ SearchBar.prototype.submit = function(e) {
 	loading();
 
 	// Submit query – replace slashes and hashes into url-friendly strings
-	let val = this.$search.val() ? encodeURI(this.$search.val()).replace(/^\/|\/$/g, '%2F').replace(/#/g, '::') : '*';
+	let val = this.$search.val() ? this.$search.val() : '*';
 	let urlQuery = window.location.search; // Gets refreshed on server
-	
+	console.log(val)
 	$.ajax({
 		type: 'POST',
-		url: '/search/q/' + val + urlQuery,
+		url: '/search/q' + urlQuery,
+		data: {
+			q: val
+		},
+		dataType: 'json',
+		encode: true,
 		error: (err) => {
 			console.error('Couldn\'t run query.', err);
 		},

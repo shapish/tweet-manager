@@ -18,7 +18,9 @@ function initShowTips() {
 	const $btn = $('#btn-search-tips');
 	$btn.click(_clickHandler);
 	$('#form-search').submit(() => {
-		_off();
+		if ($('#body').hasClass('show-tips')) {
+			_off();
+		}
 	});
 
 	function _clickHandler(e) {

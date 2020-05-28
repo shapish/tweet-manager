@@ -24,12 +24,12 @@ router.get('/', auth, display);
 
 
 // Search query
-router.post('/q/:query', auth, (req, res) => {
-	const {query} = req.params;
-	if (query == '*') {
+router.post('/q', auth, (req, res) => {
+	const {q} = req.body;
+	if (q == '*') {
 		delete req.query.q;
 	} else {
-		req.query.q = decodeURI(query).replace(/^%2F|%2F$/g, '/');
+		req.query.q = decodeURI(q);
 	}
 	req.renderFile = true;
 	display(req, res);
@@ -178,9 +178,6 @@ async function display(req, res) {
 	// console.log('searchParams:', searchParams);
 	// console.log('terms:', terms);
 
-	// Reset hash characters for front-end display
-	const q = req.query.q ? req.query.q.replace(/::/g, '#') : null;
-
 	// Load user settings
 	const user = await User.findById(req.user._id)
 		.select('s_showLabels s_showMeta s_clipTweets s_pageSize s_listPages isAdmin');
@@ -222,7 +219,7 @@ async function display(req, res) {
 		pagination: pg,
 		dateNav: dateNav,
 		query: req.query,
-		q: q,
+		q: req.query.q,
 		terms: terms,
 		user: user,
 		sel: _getSelClass(req.query),

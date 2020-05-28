@@ -17,8 +17,13 @@
 
 
 /* Edit / Done */
-#btn-done {
+#btn-done,
+.cm-editing #btn-edit {
 	display: none;
+}
+#btn-edit,
+.cm-editing #btn-done {
+	display: block;
 }
 #button-wrap .note,
 #button-wrap .data {
@@ -26,6 +31,7 @@
 	float: left;
 	clear: left;
 }
+
 
 /* Stats */
 #button-wrap .data {
@@ -41,9 +47,6 @@
 #button-wrap .note,
 #button-wrap.cm-editing .data {
 	display: none;
-}
-#button-wrap.cm-editing #btn-done {
-	display: block;
 }
 #button-wrap.cm-editing .note {
 	display: block;
@@ -171,6 +174,7 @@ h3:first-child {
 	clear: left;
 	box-sizing: border-box;
 	position: relative;
+	color: rgba(0,0,0,.75);
 }
 .label .block {
 	position: absolute;
@@ -201,6 +205,12 @@ h3:first-child {
 }
 
 /* Hover state */
+.label:hover {
+	color: rgba(0,0,0,.75);
+}
+#labels-wrap:not(.cm-editing) .label:hover .block {
+	background: #CBD6C3;
+}
 .cm-editing .label:hover .block {
 	border: solid 2px rgba(0,0,0,.3);
 }

@@ -7,19 +7,21 @@
 	data-labels-or="<%= labelsOR.join(',') %>"
 	data-labels-and="<%= labelsAND.join(',') %>"
 	data-regex="<% if (regexQuery) { %><%= regexQuery %><% } %>">
-	<% if (loose.length) { %><div class="type"><b>Loose words:</b> <div><%- loose.join('</div><div>') %></div></div><% } %>
-	<% if (strict.length) { %><div class="type"><b>Phrases:</b> <div><%- strict.join('</div><div>') %></div></div><% } %>
-	<% if (literal.length) { %><div class="type"><b>Literals:</b> <div><%- literal.join('</div><div>') %></div></div><% } %>
-	<% if (labelsAND.length || labelsOR.length) { %>
-	<div class="type">
-	<b>Labels:</b>
-		<div>
-		<%- labelsAND.join('</div> + <div>') %>
-		<% if (labelsAND.length && labelsOR.length) { %>
-			</div> + (<div>
-		<% } %>
-		<%- labelsOR.join('</div> or <div>') %>
-		</div><% if (labelsAND.length && labelsOR.length) { %>)<% } %>
-	</div><% } %>
-	<% if (regexQuery) { %><div class="type"><b>RegEx:</b> <div><%= regexQuery %></div></div><% } %>
+	<% if (strict.length || literal.length || labelsAND.length || labelsOR.length || regexQuery) { %>
+		<% if (loose.length) { %><div class="type"><b>Loose words:</b> <div><%- loose.join('</div><div>') %></div></div><% } %>
+		<% if (strict.length) { %><div class="type"><b>Phrases:</b> <div><%- strict.join('</div><div>') %></div></div><% } %>
+		<% if (literal.length) { %><div class="type"><b>Literals:</b> <div><%- literal.join('</div><div>') %></div></div><% } %>
+		<% if (labelsAND.length || labelsOR.length) { %>
+		<div class="type">
+		<b>Labels:</b>
+			<div>
+			<%- labelsAND.join('</div> + <div>') %>
+			<% if (labelsAND.length && labelsOR.length) { %>
+				</div> + (<div>
+			<% } %>
+			<%- labelsOR.join('</div> or <div>') %>
+			</div><% if (labelsAND.length && labelsOR.length) { %>)<% } %>
+		</div><% } %>
+		<% if (regexQuery) { %><div class="type"><b>RegEx:</b> <div><%= regexQuery %></div></div><% } %>
+	<% } %>
 </div>

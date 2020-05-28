@@ -21,9 +21,10 @@ function Table(id, options, callbacks) {
 	// History back button
 	$(window).on('popstate', (e) => {
 		const data = e.originalEvent.state;
+		console.log('popstate', data)
 		if (data) {
 			this.updateTable(data, true);
-			this.callbacks.onPopState(data);
+			// this.callbacks.onPopState(data);
 		} else {
 			location.reload();
 		}
@@ -143,12 +144,12 @@ Table.prototype._initKeys = function() {
 			case 40: // Down
 				_focusDown.bind(this)(e, $focus);
 				if (!e.metaKey) e.preventDefault();
-				$('input:focus').blur();
+				$(':focus').blur();
 				break;
 			case 38: // Up
 				_focusUp.bind(this)(e, $focus);
 				if (!e.metaKey) e.preventDefault();
-				$('input:focus').blur();
+				$(':focus').blur();
 				break;
 			case 13: // Enter
 				// Select first row unless input is in focus
@@ -446,6 +447,7 @@ Table.prototype.ajax = function(params) {
 
 // This is called whenever a search operation returns result
 Table.prototype.updateTable = function(data, noUrl) {
+	if (noUrl !== true) console.log('pushState', data)
 	if (noUrl !== true) history.pushState(data, '', this.path + data.urlQuery);
 	$('#table-wrap').html(data.html);
 	this.init();

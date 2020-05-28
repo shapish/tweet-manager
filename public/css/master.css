@@ -4,9 +4,9 @@ Color Palette
 - - -
 (0,0,0,.75)				text
 #C76B8B - purple		links & primary buttons
-#9F556F - dark purple	links & primary buttons hover
+#9F556F - dark purple	links & primary buttons hover (+20% black)
 #E2D06D - gold			secondary button + star l-1
-#CBBB62 - dark gold		secondary button hover
+#CBBB62 - dark gold		secondary button hover (+10% black)
 #FFF8DC - 'cornsilk'	selected rows
 #8AA07A - dark green	labels (chapter green multiplied x4)
 #657E54 - dark green+	labels hover (chapter green multiplied x6)
@@ -15,6 +15,20 @@ Color Palette
 #FF6347	- 'tomato'		star l-3
 #D00	- dark red		errors
 rgba(255,0,0,.3)		header line
+
+
+Chapter Manager & related
+- - -
+#DBE3D5 - default green
+#CBD6C3 - default green hover (multiplied x 1.5)
+#ECECDD - hierarchy level 1 - light green
+#F3EBE5 - hierarchy level 2 - beige
+#F9F1F6 - hierarchy level 3 - pink
+#F1F1F9 - hierarchy level 4 - blue
+#F5F5F5 - hierarchy level 5+ - light grey
+#DABCC5 - red selected
+#E5B0B6 - blinking darker red when moving
+
 
 */
 
@@ -95,6 +109,8 @@ button {
 	padding: 0 14px;
 	box-sizing: border-box;
 	margin: 0 10px 20px 0;
+}
+button {
 	min-width: 80px;
 }
 

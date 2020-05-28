@@ -2,7 +2,7 @@
 	<div class="col-left">
 		<h2>Advanced Search Methods</h2>
 		<p>The five search methods are:</p>
-		<ul>
+		<ul class="wide">
 			<li>
 				<b>Word Search (or)</b><br>
 				<a href="/search?q=americans%20working" class="example">americans working</a>
@@ -25,14 +25,14 @@
 			</li>
 			<li>
 				<b>Label Search</b>
-				<a href="/search?q=::obama%20::biden" class="example">#obama #biden</a>
+				<a href="/search?q=#obama%20#biden" class="example">#obama #biden</a>
 				This looks for all tweets with the labels <span class="word">#obama</span> <u>or</u> <span class="word">#biden</span>.<br>
 				<br>
-				<a href="/search?q=::obama!%20::biden!" class="example">#obama! #biden!</a>
+				<a href="/search?q=#obama!%20#biden!" class="example">#obama! #biden!</a>
 				This looks for all tweets with the labels <span class="word">#obama</span> <u>and</u> <span class="word">#biden</span>.<br>
 				› Command-clicking a label will AND-search for this label.<br>
 				<br>
-				<a href="/search?q=::obama!%20::biden!%20::iran%20::china" class="example">#obama! #biden! #iran #china</a>
+				<a href="/search?q=#obama!%20#biden!%20#iran%20#china" class="example">#obama! #biden! #iran #china</a>
 				This looks for all tweets with the labels <span class="word">#obama</span> <u>and</u> <span class="word">#biden</span>, plus <span class="word">#iran</span> <u>or</u> <span class="word">#china</span>.
 			</li>
 			<li>
@@ -76,6 +76,14 @@
 			</p>
 		</div>
 		<p>When in doubt, give it a star or it might be forgotten.</p>
+		<br><br><br>
+		<h2>Keyboard Shortcuts</h2>
+		<ul>
+			<li><b>Up/down arrows:</b> Move row focus</li>
+			<li><b>Enter:</b> Select row in focus</li>
+			<li><b>Shift + up/down arrows:</b> Expand row (de)selection</li>
+			<li><b>0-1-2-3 (x2):</b> Rate tweet (to be implemented)</li>
+		</ul>
 	</div>
 </div>
 

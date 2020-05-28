@@ -35,22 +35,20 @@ LabelManager.prototype._initButtons = function() {
 // Initialize labels
 LabelManager.prototype._initlabels = function() {
 	this.$wrap.find('.label').each((i, elm) => {
-		$(elm).off('click');
-		$(elm).click((e) => {
+		$(elm).off('click').on('click', e => {
 			$label = $(e.target).closest('.label');
 			if ($(e.target).is('.delete')) {
-				console.log(this)
 				this._deleteLabel($label);
+				e.preventDefault();
 			} else if ($(e.target).is('.rename')) {
 				this._rename($label);
+				e.preventDefault();
 			} else if ($label.closest('#labels-wrap').is('.cm-editing')) {
 				this._toggleSelect($label);
+				e.preventDefault();
 			}
 		});
 	});
-	
-	// $('#labels-wrap .label').eq(3).trigger('click');
-	// $('#labels-wrap .label').eq(4).trigger('click'); // ##
 };
 
 

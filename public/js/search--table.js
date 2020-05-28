@@ -243,9 +243,6 @@ function localKeys(e) {
 		} else if (!this.selected.length) {
 			$('#search').focus();
 		}
-	} else if (e.which == 13) {
-		// Enter will focus on search
-		// $('#search').select();
 	}
 	return true;
 }

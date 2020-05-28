@@ -71,8 +71,8 @@ Search.prototype.parseQuery = function(q) {
 	// RegEx formulas:
 	const reStrict = /".*?"/g; // Filter phrases wrapped in "quotes"
 	const reLiteral = /=.*?=/g; // Filter literals wrapped in =equal signs=
-	const reLabelAND = /::\b\S+\b!/g; // Filter labels preceded by #hashtag! and ending with #exclamation!
-	const reLabelOR = /::\b\S+\b(?!!)/g; // Filter labels preceded by #hashtag not ending with exclamation
+	const reLabelAND = /#\b\S+\b!/g; // Filter labels preceded by #hashtag! and ending with #exclamation!
+	const reLabelOR = /#\b\S+\b(?!!)/g; // Filter labels preceded by #hashtag not ending with exclamation
 	const reRegEx = /^\/(.*)\/([gmixXsuUAJD]{0,11}$)/; // Detects regex search
 
 	if (q.match(reRegEx)) {
@@ -89,11 +89,11 @@ Search.prototype.parseQuery = function(q) {
 		
 		// Catch OR labels (#like-this -> handled by regex)
 		terms.labelsOR = q.match(reLabelOR);
-		terms.labelsOR = terms.labelsOR ? terms.labelsOR.map(label => { return label.replace(/^::/, '') }) : [];
+		terms.labelsOR = terms.labelsOR ? terms.labelsOR.map(label => { return label.replace(/^#/, '') }) : [];
 
 		// Catch AND labels (#like-this -> handled by regex)
 		terms.labelsAND = q.match(reLabelAND);
-		terms.labelsAND = terms.labelsAND ? terms.labelsAND.map(label => { return label.replace(/^::(.+)!$/, '$1') }) : []; // ## This should be made consistent to however we pasre the labels
+		terms.labelsAND = terms.labelsAND ? terms.labelsAND.map(label => { return label.replace(/^#(.+)!$/, '$1') }) : []; // ## This should be made consistent to however we pasre the labels
 
 		// Catch & trim loose words
 		let step1 = q.split(reStrict); // Remove strict phrases
@@ -142,7 +142,7 @@ Search.prototype.translateQuery = function(terms) {
 		if (t)	searchParams.is_retweet = (t == 'og') ? false : true;
 		if (st) searchParams.stars = (st == 1) ? { $gte: 1 } : 0;
 		if (la) searchParams.labels = (la == 1) ? { $not: { $size: 0 } } : { $size: 0 };
-		if (as) searchParams.chapter = (as == 1) ? { $not: null } : null;
+		if (as) searchParams.chapter = (as == 1) ? { $ne: null } : null;
 		if (ar) searchParams.archived = (ar == 1) ? true : false;
 	}
 

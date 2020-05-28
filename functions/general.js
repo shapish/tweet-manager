@@ -76,13 +76,17 @@ function createPath(title) {
 	// return title.toLowerCase().trim().replace(/\s+/g, '-').replace(/&/g, 'and').replace(/[?#<>\\\/.,!:`~^;''""=\[\]\(\)]/g, '');
 }
 
+// Create date 2 years into the future for cookies to expire
+function cookieDate(y) {
+	y = y ? y : 2;
+	const CookieDate = new Date;
+	CookieDate.setFullYear(CookieDate.getFullYear() + y);
+	return CookieDate;
+}
 
 
 
 
 
-exports.removeDupDocs = removeDupDocs;
-exports.compareArrays = compareArrays;
-exports.linkURLs = linkURLs;
-exports.linkUserNames = linkUserNames;
-exports.createPath = createPath;
+
+module.exports = { removeDupDocs, compareArrays, linkURLs, linkUserNames, createPath, cookieDate }

@@ -94,6 +94,11 @@ input#search {
  * Controls
  */
 
+/* Reselect button */
+#btn-reselect {
+	margin-right: 30px;
+}
+
 /* Star dropdown */
 #dd-stars {
 	width: 100px;
@@ -128,6 +133,10 @@ input#search {
 	overflow: auto;
 	position: relative;
 	top: 12px;
+}
+#settings.show + #controls > #query-data,
+#controls.select #query-data {
+	display: none;
 }
 #query-data .type {
 	float: left;
@@ -225,7 +234,7 @@ input#search {
 	width: 400px;
 	flex-shrink: 1;
 }
-#search-tips ul li {
+#search-tips ul.wide li {
 	margin-bottom: 30px;
 }
 #search-tips .example {
