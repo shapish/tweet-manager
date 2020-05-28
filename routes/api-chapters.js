@@ -6,7 +6,6 @@ const mongoose = require('mongoose');
 // Models
 const Chapter = require('../models/chapter');
 const { User } = require('../models/user');
-const Tweet = require('../models/tweet');
 
 // Middleware & functions
 const { auth, isAdmin1 } = require('../middleware/auth');
@@ -19,7 +18,7 @@ const {createPath} = require('../functions/general');
 router.put('/', [auth, isAdmin1], async (req, res) => {
 	let { chapters } = req.body;
 	let { deletedChapterIds } = req.body;
-
+	
 	// Empty arrays come in as undefined,
 	// so need to be redefined as arrays
 	chapters = chapters ? chapters : [];
@@ -30,6 +29,12 @@ router.put('/', [auth, isAdmin1], async (req, res) => {
 		let { _id } = doc;
 		_id = _id ? _id : new mongoose.mongo.ObjectID(); // Add id for new chapters
 		doc.path = createPath(doc.title);
+		// Upsert skips Mongoose default magic so we gotta set these here
+		doc.tweets = doc.tweets ? doc.tweets : [];
+		doc.wordCount = doc.wordCount ? doc.wordCount : null;
+		doc.type = doc.type ? doc.type : null;
+		doc.writer = doc.writer ? doc.writer : null;
+		doc.stage = doc.stage ? doc.stage : 0;
 		return Chapter.findByIdAndUpdate(_id, doc, { upsert: true, new: true, runValidators: true });
 	});
 

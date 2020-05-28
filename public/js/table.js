@@ -8,8 +8,16 @@ function Table(id, options, callbacks) {
 
 	// Read static options
 	this.path = options.path ? options.path : '/'; // Path of the page with table
+	// Blocks table rows from being selectable
 	this.noSelect = options.noSelect ? options.noSelect : false;
+	// Page specific keyboard events
 	this.localKeys = options.localKeys ? options.localKeys : () => { return true };
+	// Queryselector indicating what children you can click to select a row
+	this.rowSelectable = this.options.rowSelectable ? this.options.rowSelectable : null;
+	// Initialize external functions
+	this.initExternal = this.options.initExternal ? this.options.initExternal : () => {};
+	// Handle additional row click events
+	this.onRowClick = this.options.onRowClick ? this.options.onRowClick : () => {};
 	
 	// Set callbacks: onSelect / onDeselect / onPopState / onError
 	this.callbacks = {};
@@ -21,7 +29,6 @@ function Table(id, options, callbacks) {
 	// History back button
 	$(window).on('popstate', (e) => {
 		const data = e.originalEvent.state;
-		console.log('popstate', data)
 		if (data) {
 			this.updateTable(data, true);
 			// this.callbacks.onPopState(data);
@@ -39,13 +46,6 @@ Table.prototype.init = function() {
 	// Set options
 	this.$table = $('#' + this.id);
 	this.$pagination = $(this.options.paginationSelector);
-
-	// Queryselector indicating what children you can click to select a row
-	this.rowSelectable = this.options.rowSelectable ? this.options.rowSelectable : null;
-	// Handle additional row click events
-	this.onRowClick = this.options.onRowClick ? this.options.onRowClick : () => {};
-	// Initialize external functions
-	this.initExternal = this.options.initExternal ? this.options.initExternal : () => {};
 
 	// Set base variables
 	this.$header = this.$table.children().eq(0);
@@ -447,7 +447,6 @@ Table.prototype.ajax = function(params) {
 
 // This is called whenever a search operation returns result
 Table.prototype.updateTable = function(data, noUrl) {
-	if (noUrl !== true) console.log('pushState', data)
 	if (noUrl !== true) history.pushState(data, '', this.path + data.urlQuery);
 	$('#table-wrap').html(data.html);
 	this.init();

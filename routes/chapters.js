@@ -6,6 +6,7 @@ const ejs = require('ejs');
 
 // Models
 const Chapter = require('../models/chapter');
+// const Tweet = require('../models/tweet');
 const { User } = require('../models/user');
 
 // Middleware & functions

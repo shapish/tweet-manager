@@ -55,6 +55,11 @@ ChapterManager.prototype.edit = function() {
 	this._enableSort();
 	this.deletedChapterIds = [];
 
+	// When there's no chapters yet, show form
+	if (!this.$wrap.children().length) {
+		this._insertForm('first');
+	}
+
 	// Block accidental exit
 	if (!this.debug) {
 		window.onbeforeunload = function() { // ##
@@ -74,6 +79,11 @@ ChapterManager.prototype.cancel = function() {
 	const ogState = localStorage.getItem('ogSortState', this.$wrap.html());
 	this.$wrap.html(ogState);
 	this._storeInitialValues();
+
+	// When there's no chapters yet, hide form
+	if (this.$wrap.children().length == 1 && this.$wrap.children().eq(0).is('input')) {
+		this.$wrap.html('');
+	}
 };
 
 // Save
@@ -101,8 +111,15 @@ ChapterManager.prototype._disableEdit = function() {
 
 // Insert ADD form
 ChapterManager.prototype._insertForm = function(e) {
-	const $chapter = $(e.target).parent();
-	const $ip = $('<input type="text">').insertAfter($chapter).focus();
+	const $ip = $('<input type="text" placeholder="Chapter title">');
+	if (e == 'first') {
+		// Adding the very first chapter
+		$ip.appendTo(this.$wrap).focus();
+	} else {
+		const $chapter = $(e.target).parent();
+		$ip.insertAfter($chapter).focus();
+	}
+	
 	this.$wrap.addClass('no-insert');
 	this._disableSort();
 
@@ -639,7 +656,7 @@ ChapterManager.prototype._saveToServer = function() {
 	// Cycle through all open forms and submit them
 	function _submitForms() {
 		this.$wrap.find('input[type=text]').each((i, ip) => {
-			const isRenameForm = (!$(ip).prev().is(':visible'))
+			const isRenameForm = ($(ip).prev().length && !$(ip).prev().is(':visible'))
 			if (isRenameForm) {
 				const $chapter = $(ip).prev();
 				this._submitRenameForm($(ip), $chapter);
@@ -669,7 +686,6 @@ ChapterManager.prototype._saveToServer = function() {
 			titleIndex = missingIdTitles.indexOf(chapter.title);
 			if (indexIndex != -1 && (indexIndex == titleIndex)) {
 				missingIdChapters[indexIndex].attr('data-id', chapter._id);
-				console.log(missingIdChapters[indexIndex].get(0))
 			}
 		});
 	}

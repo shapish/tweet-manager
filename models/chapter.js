@@ -19,34 +19,44 @@ const Chapter = mongoose.model('chapter', new mongoose.Schema({
 		type: String,
 		maxlength: 250
 	},
-	tweets: [
-		new mongoose.Schema({
-			text: String,
-			stars: Number,
-			created_at: Date,
-			is_retweet: Boolean,
-			id_str: String,
-			order: Number
-		})
-	],
+	tweets: {
+		type: [
+			new mongoose.Schema({
+				text: String,
+				stars: Number,
+				created_at: Date,
+				is_retweet: Boolean,
+				id_str: String,
+				order: Number
+			})
+		],
+		default: []
+	},
 	textLink: {
 		type: String,
 		maxlength: 100
 	},
-	wordCount: Number,
+	wordCount: {
+		type: Number,
+		default: 0
+	},
 	type: {
 		type: String,
-		enum: ['light', 'heavy']
+		enum: [null, 'light', 'heavy'],
+		default: ''
 	},
-	writer: new mongoose.Schema({
-		name: String,
-		path: String
-	}),
+	writer: {
+		type: new mongoose.Schema({
+			name: String,
+			path: String
+		}),
+		default: null
+	},
 	stage: {
 		type: Number,
-		default: 0,
-		enum: [0,1,2,3,4,5,6]
-	},
+		enum: [0,1,2,3,4,5,6],
+		default: 0
+	}
 }));
 
 module.exports = Chapter;

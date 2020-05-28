@@ -6,7 +6,7 @@
 		<%= index %>
 	</div>
 	<div class="table-cell main">
-		<a href="/chapters/<%= path %>"><%= title %></a>
+		<% index.split('.').splice(1).forEach(function() { %>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% }); %><% if (index.split('.').length > 1) { %>› <% } %><a href="/chapters/<%= path %>"><%= title %></a>
 	</div>
 	<div class="table-cell tweets">
 		<%= tweets.length %>
