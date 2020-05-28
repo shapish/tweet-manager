@@ -16,7 +16,7 @@ const tweetSchema = new mongoose.Schema({
 		type: Number,
 		min: 0,
 		max: 3,
-		default: 0
+		default: null
 	},
 	archived: {
 		type: Boolean,

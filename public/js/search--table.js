@@ -6,7 +6,6 @@ const tweetTable = new Table('tweet-table', {
 	onRowClick:	onRowClick,
 	localKeys: localKeys,
 	initExternal: function() {
-		initControls.bind(this)();
 		initLabels.bind(this)();
 		initLabelClick.bind(this)();
 		
@@ -27,6 +26,8 @@ const tweetTable = new Table('tweet-table', {
 		$('#query-data').replaceWith(data.queryDataHtml);
 	}
 });
+
+initControls.bind(tweetTable)();
 
 // Handle additional row click events
 function onRowClick($row) {
@@ -52,23 +53,18 @@ function initControls() {
 	// Archive button
 	$('#btn-archive').off('click').on('click', (e) => {
 		this._toggleArchiveSelected($(e.currentTarget));
-		// _deselect.bind(this)();
 	});
 	
 	// Star dropdown
 	$('#dd-stars').off('change.local').on('change.local', (e) => {
 		const $target = $(e.currentTarget);
 		const level = $target.attr('data-value');
-		$target.removeClass('l-0 l-1 l-2 l-3').addClass('l-' + level);
 		this._starSelected(level);
-		// _deselect.bind(this)();
 	});
 	
 	// Chapter dropdown
 	$('#dd-chapter').off('change.local').on('change.local', () => {
-		console.log('B')
 		this._updateSelectedChapters();
-		// _deselect.bind(this)();
 	});
 	
 	// Exit selection
