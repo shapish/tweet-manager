@@ -31,7 +31,7 @@ const {padNr} = require('../general-global');
 
 function Search(query) {
 	// Query, Sort, Page, Type, Year, Month, Starred, Labeled, Assigned, Archived
-	const {q, s, p, t, y, m, st, la, as, ar} = query;
+	const {q, s, y, m} = query;
 	this.query = query;
 
 	// Organize search terms into loose/strict/literal arrays
@@ -69,8 +69,8 @@ Search.prototype.parseQuery = function(q) {
 	if (!q) return terms;
 
 	// RegEx formulas:
-	const reStrict = /".*?"/g; // Filter phrases wrapped in "quotes"
 	const reLiteral = /=.*?=/g; // Filter literals wrapped in =equal signs=
+	const reStrict = /".*?"/g; // Filter phrases wrapped in "quotes"
 	const reLabelAND = /#\b\S+\b!/g; // Filter labels preceded by #hashtag! and ending with #exclamation!
 	const reLabelOR = /#\b\S+\b(?!!)/g; // Filter labels preceded by #hashtag not ending with exclamation
 	const reRegEx = /^\/(.*)\/([gmixXsuUAJD]{0,11}$)/; // Detects regex search
@@ -79,31 +79,28 @@ Search.prototype.parseQuery = function(q) {
 		// If a regex is passed, we'll ignore all the rest
 		terms.regexQuery = new RegExp(q.replace(reRegEx, '($1)'), q.replace(reRegEx, '$2'));
 	} else {
-		// Catch strict terms ("like this" -> handled by Mongo)
-		terms.strict = q.match(reStrict);
-		terms.strict = terms.strict ? terms.strict.map(phrase => { return phrase.replace(/"/g, '') }) : [];
-
 		// Catch literal terms (=like this= -> handled by regex)
 		terms.literal = q.match(reLiteral);
 		terms.literal = terms.literal ? terms.literal.map(str => { return str.replace(/=/g, '') }) : [];
+		q = q.replace(reLiteral, '');
+
+		// Catch strict terms ("like this" -> handled by Mongo)
+		terms.strict = q.match(reStrict);
+		terms.strict = terms.strict ? terms.strict.map(phrase => { return phrase.replace(/"/g, '') }) : [];
+		q = q.replace(reStrict, '');
+
+		// Catch AND labels (#like-this! -> handled by regex)
+		terms.labelsAND = q.match(reLabelAND);
+		terms.labelsAND = terms.labelsAND ? terms.labelsAND.map(label => { return label.replace(/^#(.+)!$/, '$1') }) : []; // ## This should be made consistent to however we pasre the labels
+		q = q.replace(reLabelAND, '');
 		
 		// Catch OR labels (#like-this -> handled by regex)
 		terms.labelsOR = q.match(reLabelOR);
 		terms.labelsOR = terms.labelsOR ? terms.labelsOR.map(label => { return label.replace(/^#/, '') }) : [];
+		q = q.replace(reLabelOR, '');
 
-		// Catch AND labels (#like-this -> handled by regex)
-		terms.labelsAND = q.match(reLabelAND);
-		terms.labelsAND = terms.labelsAND ? terms.labelsAND.map(label => { return label.replace(/^#(.+)!$/, '$1') }) : []; // ## This should be made consistent to however we pasre the labels
-
-		// Catch & trim loose words
-		let step1 = q.split(reStrict); // Remove strict phrases
-		let step2 = [];
-		let step3 = [];
-		let step4 = [];
-		step1.forEach((chunk, i) => step2.push(...chunk.split(reLiteral))); // Remove literals
-		step2.forEach((chunk, i) => step3.push(...chunk.split(reLabelAND))); // Remove AND literals
-		step3.forEach((chunk, i) => step4.push(...chunk.split(reLabelOR))); // Remove OR labels
-		terms.loose = step4
+		// terms.loose = step4
+		terms.loose = q.split(' ')
 			.map(word => word.trim()) // Trim whitespace 
 			.join(' ').split(' ') // Split into separate words
 			.filter(word => !!word.length); // Remove empty values
@@ -119,12 +116,12 @@ Search.prototype.parseQuery = function(q) {
 
 // Translate req.query to a database query
 Search.prototype.translateQuery = function(terms) {
-	const {q, t, y, m, st, la, as, ar} = this.query;
+	const {q, t, y, m, st, la, as, ar, dl} = this.query;
 
 	const searchParams = {};
 	if (q) _filterSearch(searchParams);
 	if (y || m) _filterDate(searchParams, y, m);
-	if (t || st || la || as || ar) _filterGeneral(searchParams);
+	if (t || st || la || as || ar != 1 || dl != 1) _filterGeneral(searchParams);
 
 
 
@@ -140,10 +137,11 @@ Search.prototype.translateQuery = function(terms) {
 	// The easy filters
 	function _filterGeneral(searchParams) {
 		if (t)	searchParams.is_retweet = (t == 'og') ? false : true;
-		if (st) searchParams.stars = (st == 1) ? { $gte: 1 } : 0;
+		if (st) searchParams.stars = (st == 'all') ? { $gte: 1 } : st;
 		if (la) searchParams.labels = (la == 1) ? { $not: { $size: 0 } } : { $size: 0 };
 		if (as) searchParams.chapter = (as == 1) ? { $ne: null } : null;
-		if (ar) searchParams.archived = (ar == 1) ? true : false;
+		if (ar != 1) searchParams.archived = (ar == -1) ? true : false;
+		if (dl != 1) searchParams.deleted = (dl == -1) ? true : false;
 	}
 
 	// Adds to query:

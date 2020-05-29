@@ -9,12 +9,10 @@ const Joi = require('@hapi/joi');
 const { User, joiMsg } = require('../models/user');
 
 // Middleware & functions
-const {auth} = require('../middleware/auth');
 const {cookieDate} = require('../functions/general');
 
 // New login
 router.post('/', async (req, res) => {
-	console.log('login');
 	const { error } = validate(req.body);
 	if (error) {
 		let errorList = {};
@@ -23,7 +21,6 @@ router.post('/', async (req, res) => {
 			const message = error.details[i].message;
 			errorList[path] = message;
 		}
-		console.log(errorList)
 		res.status(400).send(errorList);
 		return;
 	}

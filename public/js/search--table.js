@@ -24,6 +24,7 @@ const tweetTable = new Table('tweet-table', {
 	onUpdateTable: (data) => {
 		$('#search-results-count').text(data.resultCount + ' results');
 		$('#query-data').replaceWith(data.queryDataHtml);
+		$('#search').val(data.q); // In case user removes query, can be confusing
 	}
 });
 
@@ -37,7 +38,7 @@ function onRowClick($row) {
 }
 
 function hideSettings() {
-	searchFilters.clickDyad($('#filters a').last(), 'settings', false);
+	$('#settings').removeClass('show');
 }
 
 
@@ -93,6 +94,7 @@ function initLabels() {
 
 	// Show remove UI on label hover
 	this.$table.find('.label-wrap').off('mouseenter').on('mouseenter', '.label', e => {
+		if ($(e.currentTarget).hasClass('deleted')) return;
 		setTimeout(() => {
 			if ($(e.currentTarget).is(':hover')) $(e.currentTarget).addClass('remove');
 		}, 500);

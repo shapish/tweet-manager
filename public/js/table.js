@@ -392,8 +392,12 @@ Table.prototype._cycleStar = function($row) {
 // Star
 Table.prototype._star = function($row, level, ajax) {
 	this.log('Table.star');
-	$row.removeClass('l-0 l-1 l-2 l-3 display').attr('data-star', level);
-	if (level || level === 0) setTimeout(() => { $row.addClass('display l-' + level) }, 1);
+	$row.removeClass('l-0 l-1 l-2 l-3').addClass('l-' + level).attr('data-star', level);
+	clearTimeout($row.data('to-display'));
+	if (level || level === 0) {
+		$row.addClass('display');
+		$row.data('to-display', setTimeout(() => { $row.removeClass('display') }, 1000));
+	}
 	
 	// Ajax
 	if (!ajax) return;

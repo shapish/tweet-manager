@@ -16,7 +16,8 @@ const {createPath} = require('../functions/general');
 router.put('/update-tweets', async (req, res) => {
 	const tweets = await Tweet.updateMany({}, {
 		// $unset: { archive: 1 },
-		stars: null
+		// stars: null
+		deleted: false
 	});
 
 	res.send(['done']);

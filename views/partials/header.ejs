@@ -2,8 +2,8 @@
 	<h1>The Forty Fifth's Twitter Archive</h1>
 	<% if (page != 'login') { %>
 	<div class="nav">
-		<a href="/"<% if (sel == 'tweets') { %> class="sel"<% } %>>Tweets</a>
-		<a href="/overview"<% if (sel == 'overview') { %> class="sel"<% } %>>Overview</a>
+		<a href="/"<% if (sel == 'search') { %> class="sel"<% } %>>Search</a>
+		<!-- <a href="/overview"<% if (sel == 'overview') { %> class="sel"<% } %>>Overview</a> -->
 		<a href="/labels"<% if (sel == 'labels') { %> class="sel"<% } %>>Labels</a>
 		<a href="/chapters"<% if (sel == 'chapters') { %> class="sel"<% } %>>Chapters</a>
 		<% if (user.isAdmin) { %><a href="/users"<% if (sel == 'users') { %> class="sel"<% } %>>Users</a><% } %>

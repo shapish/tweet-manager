@@ -7,9 +7,9 @@
 // Looks at all url query keys, throws out pagination
 // and overwrites whatever is being passed.
 // amp is option to return url query starting with '&'
-function url(q, key, value, keepPagination) {
+function url(query, key, value, keepPagination) {
 	// Close query object
-	const query = { ...q };
+	query = { ...query };
 
 	if (key && !value) {
 		// Remove key when value is null

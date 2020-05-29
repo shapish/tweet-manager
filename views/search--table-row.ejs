@@ -1,5 +1,5 @@
 <div
-	class="table-row<% if (archived) { %> archived<% } %><% if (stars !== null) { %> l-<%= stars %>"
+	class="table-row<% if (archived) { %> archived<% } %><% if (stars !== null) { %> l-<%= stars %><% if (deleted) { %> deleted<% } %>"
 	data-star="<%= stars %><% } %> "
 	data-id="<%= _id %>"
 	data-plain-text="<%= plainText %>"
@@ -14,6 +14,7 @@
 		<span><%- text %></span><br>
 		<div class="meta"><%= created_at.getHours() + ':' + padNr(created_at.getMinutes(), 2) %> &nbsp;&nbsp;•&nbsp;&nbsp; &#9825; RT <%= prettyNr(retweet_count) %> &nbsp;&nbsp;•&nbsp;&nbsp; &#9825; <%= prettyNr(favorite_count) %> &nbsp;&nbsp;•&nbsp;&nbsp; Source: <%= source %></div>
 		<div class="label-wrap<% if (labels.length) { %> pad<% } %>">
+			<% if (deleted) { %><a href="#" class="label deleted">deleted</a><% } %>
 			<% if (typeof labels !== 'undefined') { labels.forEach((val) => { %>
 			<%- include('partials/label.ejs', { val: val }) %>
 			<% })} %>

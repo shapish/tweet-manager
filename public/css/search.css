@@ -59,6 +59,28 @@ input#search {
 
 
 /**
+ * Search Filters
+ */
+#filters .starred::after {
+	content: 'starred';
+}
+#filters .starred.s-1::after {
+	content: 'one star';
+}
+#filters .starred.s-2::after {
+	content: 'two stars';
+}
+#filters .starred.s-3::after {
+	content: 'three stars';
+}
+#filters .starred.s-0::after {
+	content: 'zero stars';
+}
+
+
+
+
+/**
  * Search Settings
  */
 

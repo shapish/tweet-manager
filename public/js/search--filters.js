@@ -9,20 +9,19 @@ SearchFilters.prototype.init = function() {
 	// Capture nav clicks
 	$('#filters, #nav-cal').on('click', 'a', (e) => {
 		e.preventDefault();
-
-		const action = $(e.target).attr('href').slice(1);
-		let state;
 		if ($(e.target).hasClass('triad')) {
-			// Triple-state items
-			// 1: show (starred) tweets / -1: show (unstarred) tweets / 0: show both
-			state = $(e.target).hasClass('sel') ? $(e.target).hasClass('un') ? 0 : -1 : 1;
-			this.clickTriad($(e.target), action, state);
+			// Triple-state filters
+			this.clickTriad($(e.target));
+		} else if ($(e.target).hasClass('starred')) {
+			// Star filter
+			this.clickStarred($(e.target));
 		} else {
-			// Dual-state items
-			state = $(e.target).hasClass('sel') ? 0 : 1;
+			// Dual-state filters
 			// Highlighted items are not clickable
-			if (!state && !action.match(/^settings$|^cal$|^m-\d{1,2}$|^y-\d{4}$/)) { console.log('return'); return; }
-			this.clickDyad($(e.target), action, state);
+			const isSel = $(e.target).hasClass('sel');
+			const action = $(e.target).attr('href').slice(1);
+			if (isSel && !action.match(/^settings$|^cal$|^m-\d{1,2}$|^y-\d{4}$/)) { console.log('return'); return; }
+			this.clickDyad($(e.target));
 		}
 	});
 };
@@ -30,7 +29,9 @@ SearchFilters.prototype.init = function() {
 
 
 // Nav items with two states
-SearchFilters.prototype.clickDyad = function($elm, action, state) {
+SearchFilters.prototype.clickDyad = function($elm) {
+	const action = $elm.attr('href').slice(1);
+	const state = $elm.hasClass('sel') ? 0 : 1;
 	// handle mutually exclusive filters (type, year, month)
 	if ($elm.attr('name')) {
 		$elm.parent().children('[name=' + $elm.attr('name') + ']').removeClass('sel');
@@ -51,19 +52,82 @@ SearchFilters.prototype.clickDyad = function($elm, action, state) {
 };
 
 
+// // Nav items with three states
+// SearchFilters.prototype.clickTriad = function($elm) {
+// 	const action = $elm.attr('href').slice(1);
+// 	// 1: show (starred) tweets / -1: show (unstarred) tweets / 0: show both
+// 	const state = $elm.hasClass('sel') ? $elm.is('.un, .only') ? 0 : -1 : 1;
+// 	if (state == 1) {
+// 		// Including
+// 		$elm.addClass('sel');
+// 	} else if (state == -1) {
+// 		// Excluding
+// 		const c = $elm.hasClass('anti') ? 'only' : 'un';
+// 		$elm.addClass(c);
+// 	} else {
+// 		// Off
+// 		$elm.removeClass('un only sel');
+// 	}
+// 	this.dispatch(action, state);
+// }
+
+
 
 // Nav items with three states
-SearchFilters.prototype.clickTriad = function($elm, action, state) {
+SearchFilters.prototype.clickTriad = function($elm) {
+	const action = $elm.attr('href').slice(1);
+	let prevState = $elm.attr('data-state');
+	let state = (prevState == 'reset' || prevState == -1) ? 0 : prevState == 1 ? -1 : 1;
+	// state = $elm.hasClass('sel') ? $elm.is('.un, .only') ? 0 : -1 : 1;
+	// // 1: show (starred) tweets / -1: show (unstarred) tweets / 0: show both
+	// const state = $elm.hasClass('sel') ? $elm.is('.un, .only') ? 0 : -1 : 1;
 	if (state == 1) {
 		// Including
 		$elm.addClass('sel');
 	} else if (state == -1) {
 		// Excluding
-		$elm.addClass('un');
+		const c = $elm.hasClass('anti') ? 'only' : 'un';
+		$elm.addClass(c);
 	} else {
 		// Off
-		$elm.removeClass('un sel');
+		$elm.removeClass('un only sel');
 	}
+
+	// 1 sec timeframe to toggle states
+	$elm.attr('data-state', state);
+	clearTimeout($elm.data('to'));
+	if (state) $elm.data('to', setTimeout(() => { $elm.attr('data-state', 'reset') }, 1000));
+
+	this.dispatch(action, state);
+}
+
+
+
+// Nav items with more than states
+SearchFilters.prototype.clickStarred = function($elm) {
+	let state = $elm.attr('data-state');
+	const action = $elm.attr('href').slice(1);
+	const states = [null, 'all', '1', '2', '3', '0'];
+	// console.log('.', state)
+	if (!state) {
+		state = states[1];
+	} else if (state == 'reset') {
+		state = states[0];
+	} else {
+		const i = (states.indexOf(state) + 1) % states.length;
+		state = states[i];
+	}
+
+	// 1 sec timeframe to toggle states
+	$elm.attr('data-state', state).removeClass('s-' + states.join(' s-'));
+	if (state) {
+		$elm.addClass('sel s-' + state);
+	} else {
+		$elm.removeClass('sel');
+	}
+	clearTimeout($elm.data('to'));
+	if (state) $elm.data('to', setTimeout(() => { $elm.attr('data-state', 'reset') }, 1000));
+
 	this.dispatch(action, state);
 }
 

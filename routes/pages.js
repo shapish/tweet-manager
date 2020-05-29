@@ -1,6 +1,8 @@
 // Modules
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
+const config = require('config');
 
 // Models
 const Label = require('../models/label');
@@ -70,7 +72,13 @@ router.get('/me', auth, async (req, res) => {
 
 // Login
 router.get('/login', async (req, res) => {
-	res.render('login', { page: 'login' });
+	const token = req.cookies.authToken;
+	if (token) {
+		const decoded = jwt.verify(token, config.get('jwtPrivateKey'));
+		if (decoded) res.redirect('/search');
+	} else {
+		res.render('login', { page: 'login' });
+	}
 });
 
 

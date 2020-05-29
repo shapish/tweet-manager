@@ -173,21 +173,10 @@ body.loading .table {
 	color: #fff;
 	border-radius: 10px;
 	text-shadow: 0 0 4px rgba(0,0,0,.4);
-	opacity: 0;
+	display: none;
 }
 .table-row.display .icn-star .display {
-	animation: fade 1s linear;
-}
-@keyframes fade {
-	0% {
-		opacity: 1;
-	}
-	99.9% {
-		opacity: 1;
-	}
-	100% {
-		opacity: 0;
-	}
+	display: block;
 }
 .table-row.l-0 .icn-star .display {
 	background: #F8F8F8;

@@ -21,18 +21,26 @@
 	text-decoration: none;
 	color: rgba(0,0,0,.3);
 }
-.table-row.archived .table-cell.star,
-.table-row.archived.star .table-cell.star,
-.table-row.archived .table-cell.star:hover {
-	color: transparent;
-	text-decoration: none;
+.table-row.archived .icn-star {
+	opacity: .5;
 }
 
 /* Copied state */
-.table-row.copied .table-cell:not(.star),
-.table-row.copied a {
+.table-row.copied .main span,
+.table-row.copied .main span a {
 	color: darkgreen;
 	animation: copy-blink 100ms 2;
+}
+
+/* Deleted state */
+.table-row.deleted {
+	background: rgba(255,0,0,.07);
+}
+.table-row.deleted .main span {
+	color: #d00;
+}
+.table-row.deleted .main span a {
+	color: #a00;
 }
 
 
@@ -115,6 +123,10 @@
 }
 .label.hold { /* (waiting for server) */
 	opacity: .3;
+}
+.label.deleted {
+	background: #d00;
+	border-radius: 2px;
 }
 
 /* Tweet --> Labels --> Delete UI */

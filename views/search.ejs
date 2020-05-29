@@ -1,6 +1,6 @@
 <%- include('partials/head.ejs', {
-	page: 'tweets',
-	title: 'Tweets',
+	page: 'search',
+	title: 'Search',
 	css: [
 		'search.css',
 		'table.css',
@@ -39,10 +39,11 @@
 	<div class="sep"></div>
 	<a href="#cal" class="<%= sel.cal %>">By Month</a>
 	<div class="sep"></div>
-	<a href="#st" class="triad <%= sel.st %>">Starred</a>
-	<a href="#la" class="triad <%= sel.la %>">Labeled</a>
-	<a href="#as" class="triad <%= sel.as %>">Assigned</a>
-	<a href="#ar" class="triad <%= sel.ar %>">Archived</a>
+	<a href="#st" class="starred <%= sel.st %>"<% if (sel.st) { %> data-state="reset"<% } %>></a>
+	<a href="#la" class="triad <%= sel.la %>"<% if (sel.la) { %> data-state="reset"<% } %>>Labeled</a>
+	<a href="#as" class="triad <%= sel.as %>"<% if (sel.as) { %> data-state="reset"<% } %>>Assigned</a>
+	<a href="#ar" class="triad anti <%= sel.ar %>"<% if (sel.ar) { %> data-state="reset"<% } %>>Archived</a>
+	<a href="#dl" class="triad anti <%= sel.dl %>"<% if (sel.dl) { %> data-state="reset"<% } %>>Deleted</a>
 	<div class="sep"></div>
 	<a href="#settings">Settings</a>
 </div>

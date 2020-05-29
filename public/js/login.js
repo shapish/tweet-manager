@@ -44,7 +44,7 @@ const signupForm =  new HandleForm({
 });
 
 function goHome() {
-	window.location.href = '/me';
+	window.location.href = '/search';
 }
 
 (function testLinks(parent) {

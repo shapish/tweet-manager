@@ -21,6 +21,10 @@ const tweetSchema = new mongoose.Schema({
 	archived: {
 		type: Boolean,
 		default: false
+	},
+	deleted: {
+		type: Boolean,
+		default: false
 	}
 });
 tweetSchema.path('text').index({text : true});

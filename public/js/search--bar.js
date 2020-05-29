@@ -37,7 +37,7 @@ SearchBar.prototype.submit = function(e) {
 	loading();
 
 	// Submit query – replace slashes and hashes into url-friendly strings
-	let val = this.$search.val() ? this.$search.val() : '*';
+	let val = this.$search.val() ? encodeURIComponent(this.$search.val()) : '*';
 	let urlQuery = window.location.search; // Gets refreshed on server
 	console.log(val)
 	$.ajax({

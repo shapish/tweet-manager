@@ -29,7 +29,8 @@ router.post('/q', auth, (req, res) => {
 	if (q == '*') {
 		delete req.query.q;
 	} else {
-		req.query.q = decodeURI(q);
+		// Gets decoded later
+		req.query.q = q;
 	}
 	req.renderFile = true;
 	display(req, res);
@@ -67,7 +68,6 @@ router.post('/p/:nr', auth, (req, res) => {
 // Filter
 router.post('/filter/:action/:state', auth, (req, res) => {
 	let {action, state} = req.params;
-	
 	
 	// Parse month/year input
 	const regexYear = /^y-(\d{4})$/;
@@ -125,6 +125,13 @@ router.post('/filter/:action/:state', auth, (req, res) => {
 			break;
 
 		// Category filters
+		case 'st':
+			if (state == 'null') {
+				delete req.query[action];
+			} else {
+				req.query[action] = state;
+			}
+			break;
 		default:
 			if (state == '0') {
 				delete req.query[action];
@@ -167,6 +174,9 @@ router.get('/tips', auth, async (req, res) => {
 
 // Search & display tweets
 async function display(req, res) {
+	// Decode q
+	if (req.query.q) req.query.q = decodeURIComponent(req.query.q);
+	
 	// Whenever data changes, pagination is reset
 	if (req.renderFile && !req.keepPagination) delete req.query.p;
 
@@ -175,8 +185,13 @@ async function display(req, res) {
 	
 	// Gather all parameters to run search
 	const {search, terms, searchParams, sort} = new Search(req.query);
-	// console.log('searchParams:', searchParams);
+	console.log('searchParams:', searchParams);
 	// console.log('terms:', terms);
+
+	// Re-encode query.q once we're done with (so correct urlQuery is sent back)
+	if (req.query.q) req.query.q = encodeURIComponent(req.query.q);
+	const qDecoded = req.query.q ? decodeURIComponent(req.query.q) : '';
+
 
 	// Load user settings
 	const user = await User.findById(req.user._id)
@@ -219,7 +234,7 @@ async function display(req, res) {
 		pagination: pg,
 		dateNav: dateNav,
 		query: req.query,
-		q: req.query.q,
+		q: qDecoded,
 		terms: terms,
 		user: user,
 		sel: _getSelClass(req.query),
@@ -248,11 +263,13 @@ async function display(req, res) {
 				queryDataHtml += str;
 			}
 		});
+		console.log('&', url(req.query, null, null, req.keepPagination))
 		res.send({
 			html: html,
 			resultCount: resultCount,
 			queryDataHtml: queryDataHtml,
-			urlQuery: url(req.query, null, null, req.keepPagination)
+			urlQuery: url(req.query, null, null, req.keepPagination),
+			q: qDecoded
 		});
 	} else {
 		// Load page
@@ -271,10 +288,11 @@ async function display(req, res) {
 			cal: query.y || query.m ? 'sel' : '',
 
 			// Filters
-			st:  query.st == 1 ? 'sel' : query.st == -1 ? 'sel un' : false,
-			la:  query.la == 1 ? 'sel' : query.la == -1 ? 'sel un' : false,
-			as:  query.as == 1 ? 'sel' : query.as == -1 ? 'sel un' : false,
-			ar:  query.ar == 1 ? 'sel' : query.ar == -1 ? 'sel un' : false,
+			st: query.st ? 'sel s-' + query.st : '',
+			la: query.la == 1 ? 'sel' : query.la == -1 ? 'sel un' : '',
+			as: query.as == 1 ? 'sel' : query.as == -1 ? 'sel un' : '',
+			ar: query.ar == 1 ? 'sel' : query.ar == -1 ? 'sel only' : '',
+			dl: query.dl == 1 ? 'sel' : query.dl == -1 ? 'sel only' : '',
 
 			// Sort
 			chapter: query.s == 'chapter' ? 'sort' : query.s == '-chapter' ? 'sort dec' : '',

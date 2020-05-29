@@ -79,7 +79,6 @@ HandleForm.prototype._onsubmit = function(e) {
 		// Only submit changed fields, unless submitAllFields is set true
 		if (this.submitAllFields || $(ip).val() != $(ip).data('og-val')) {
 			formData[$(ip).attr('name')] = $(ip).val();
-			console.log(formData)
 		}
 		// console.log($(ip).attr('name') + ': ' + $(ip).data('og-val') + '-->' + $(ip).val());
 	});
