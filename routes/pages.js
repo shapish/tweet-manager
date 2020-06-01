@@ -61,7 +61,7 @@ router.get('/users', auth, async (req, res) => {
 // Scraper
 router.get('/scraper', auth, async (req, res) => {
 	const scraper = await ScrapeControl.findOne({ name: 'scrape-control' });
-	let data = {};
+	let data = { user: req.user };
 	if (scraper) {
 		const { gathering, extracting } = scraper;
 		data = {
