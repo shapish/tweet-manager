@@ -19,7 +19,7 @@ async function gatherAndStore(url, batchSize, p) {
 	p = p ? p : 1;
 
 	url = url ? url : 'https://twitter.com/realDonaldTrump';
-	const browser = await puppeteer.launch({ headless: false });
+	const browser = await puppeteer.launch({ headless: true });
 
 	// Scrape one batch
 	await _gatherLoop(url);
