@@ -120,7 +120,7 @@ router.put('/assign', auth, async (req, res) => {
 	if (newChapterId) {
 		const tweets = await Tweet.find({
 			_id: { $in: tweetIds }
-		}).select('text stars created_at is_retweet id_str');
+		}).select('text stars created_at isRT idTw');
 		promises.push(Chapter.findByIdAndUpdate(newChapterId, {
 			$addToSet: { tweets: tweets }
 		}));

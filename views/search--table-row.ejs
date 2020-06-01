@@ -12,7 +12,7 @@
 	</div>
 	<div class="table-cell main">
 		<span><%- text %></span><br>
-		<div class="meta"><%= created_at.getHours() + ':' + padNr(created_at.getMinutes(), 2) %> &nbsp;&nbsp;•&nbsp;&nbsp; &#9825; RT <%= prettyNr(retweet_count) %> &nbsp;&nbsp;•&nbsp;&nbsp; &#9825; <%= prettyNr(favorite_count) %> &nbsp;&nbsp;•&nbsp;&nbsp; Source: <%= source %></div>
+		<div class="meta"><%= date.getHours() + ':' + padNr(date.getMinutes(), 2) %> &nbsp;&nbsp;•&nbsp;&nbsp; &#9825; RT <%= prettyNr(extra.retweets) %> &nbsp;&nbsp;•&nbsp;&nbsp; &#9825; <%= prettyNr(extra.likes) %> &nbsp;&nbsp;•&nbsp;&nbsp; Source: <%= source %></div>
 		<div class="label-wrap<% if (labels.length) { %> pad<% } %>">
 			<% if (deleted) { %><a href="#" class="label deleted">deleted</a><% } %>
 			<% if (typeof labels !== 'undefined') { labels.forEach((val) => { %>
@@ -24,8 +24,8 @@
 		<a href="#" class="clip-100"><% if (chapter) { %><%= chapter.title %><% } else { %>- select -<% } %></a>
 		<%- include('partials/chapter-dropdown.ejs') %>
 	</div>
-	<a href="https://twitter.com/realDonaldTrump/status/<%= id_str %>" target="_blank" class="table-cell date">
-		<% if (created_at) { %><%= monthNames.split(',')[created_at.getMonth()] + ' ' + created_at.getDate() + ', ' + created_at.getFullYear() %><% } %>
+	<a href="https://twitter.com/realDonaldTrump/status/<%= idTw %>" target="_blank" class="table-cell date">
+		<% if (date) { %><%= monthNames.split(',')[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear() %><% } %>
 	</a>
 	<a href="#" class="table-cell btn-copy">
 		copy

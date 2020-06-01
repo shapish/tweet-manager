@@ -136,7 +136,7 @@ Search.prototype.translateQuery = function(terms) {
 
 	// The easy filters
 	function _filterGeneral(searchParams) {
-		if (t)	searchParams.is_retweet = (t == 'og') ? false : true;
+		if (t)	searchParams.isRT = (t == 'og') ? false : true;
 		if (st) searchParams.stars = (st == 'all') ? { $gte: 1 } : st;
 		if (la) searchParams.labels = (la == 1) ? { $not: { $size: 0 } } : { $size: 0 };
 		if (as) searchParams.chapter = (as == 1) ? { $ne: null } : null;

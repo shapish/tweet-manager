@@ -1,0 +1,51 @@
+.process {
+	margin-bottom: 40px;
+	clear: left;
+}
+.process button {
+	min-width: 150px;
+	margin-right: 30px;
+}
+.process .display {
+	float: left;
+	height: 40px;
+	line-height: 40px;
+	color: rgba(0,0,0,.3);
+}
+.process button.on + .display {
+	color: green;
+}
+
+/* Gathering */
+#gather::after {
+	content: 'Start Gathering';
+}
+#gather.on::after {
+	content: 'Stop Gathering';
+}
+#gather:not(.on) + .display::after {
+	content: 'Gathering off';
+}
+#gather.on + .display::after {
+	content: 'Gathering on!';
+}
+
+/* Extracting */
+#extract::after {
+	content: 'Start Extracting';
+}
+#extract.on::after {
+	content: 'Stop Extracting';
+}
+#extract:not(.on) + .display::after {
+	content: 'Extracting off';
+}
+#extract.on + .display::after {
+	content: 'Extracting on!';
+}
+
+/* Transferring */
+#transfer.init ~ #transfer-status::after {
+	content: 'Transfer initiated, check console.';
+	color: green;
+}

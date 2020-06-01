@@ -1,23 +1,46 @@
 const mongoose = require('mongoose');
 
 const tweetSchema = new mongoose.Schema({
-	source: String,
+	idTw: {
+		type: String,
+		unique: true
+	},
 	text: String,
-	created_at: Date,
-	retweet_count: Number,
-	favorite_count: Number,
-	is_retweet: Boolean,
-	id_str: String,
-	labels: Array,
-	chapter: new mongoose.Schema({
-		title: String
-	}),
+	author: String,
+	date: Date,
+	isRT: Boolean,
+	url: String,
+	location: {
+		name: String,
+		id: String
+	},
+	tagsTw: Array,
+	mentions: Array,
+	internalLinks: Array,
+	externalLinks: Array,
+	thread: {
+		prev: String,
+		next: String
+	},
+	extra: {
+		likes: Number,
+		replies: Number,
+		retweets: Number,
+		poll: String
+	},
+	source: String, // Scraper can't access source for now
+
+	// Internal fields
 	stars: {
 		type: Number,
 		min: 0,
 		max: 3,
 		default: null
 	},
+	labels: Array,
+	chapter: new mongoose.Schema({
+		title: String
+	}),
 	archived: {
 		type: Boolean,
 		default: false

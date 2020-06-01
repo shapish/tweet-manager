@@ -13,6 +13,7 @@ const apiLabels = require('../routes/api-labels');
 const apiTweets = require('../routes/api-search');
 const apiUsers = require('../routes/api-users');
 const apiLogin = require('../routes/api-login');
+const apiScraper = require('../routes/api-scraper');
 const apiPostman = require('../routes/api-postman');
 
 // Frontend Helpers
@@ -41,6 +42,7 @@ module.exports = function(app) {
 	app.use('/api/tweets', apiTweets);
 	app.use('/api/users', apiUsers);
 	app.use('/api/login', apiLogin);
+	app.use('/api/scraper', apiScraper);
 	app.use('/api/postman', apiPostman);
 	app.use(error);
 	

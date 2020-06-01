@@ -14,10 +14,11 @@ const {createPath} = require('../functions/general');
 
 // Update tweets
 router.put('/update-tweets', async (req, res) => {
-	const tweets = await Tweet.updateMany({}, {
-		// $unset: { archive: 1 },
-		// stars: null
-		deleted: false
+	await Tweet.updateMany({}, {
+		$unset: { 
+			id_str: 1,
+		},
+		idTw: '123456'
 	});
 
 	res.send(['done']);

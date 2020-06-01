@@ -7,6 +7,7 @@ const config = require('config');
 // Models
 const Label = require('../models/label');
 const { User } = require('../models/user');
+const ScrapeControl = require('../models/scrape-control');
 
 // Middleware & functions
 const {auth} = require('../middleware/auth');
@@ -53,6 +54,24 @@ router.get('/users', auth, async (req, res) => {
 		user: req.user,
 		users: users
 	});
+});
+
+
+
+// Scraper
+router.get('/scraper', auth, async (req, res) => {
+	const scraper = await ScrapeControl.findOne({ name: 'scrape-control' });
+	let data = {};
+	if (scraper) {
+		const { gathering, extracting } = scraper;
+		data = {
+			gathering: gathering,
+			extracting: extracting,
+			user: req.user
+		};
+	}
+	
+	res.render('scraper', data);
 });
 
 

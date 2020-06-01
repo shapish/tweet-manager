@@ -8,7 +8,6 @@ const ejs = require('ejs');
 const Tweet = require('../models/tweet');
 const { User } = require('../models/user');
 const Chapter = require('../models/chapter');
-const Dup = require('../models/dup');
 
 // Functions
 const Search = require('../functions/classes/Search');
@@ -301,52 +300,6 @@ async function display(req, res) {
 		}
 	}
 }
-
-
-
-
-
-
-
-
-
-// Fuzz2
-router.get('/fuzzy', auth, async (req, res) => {
-	// Get years & months to display
-	const dateNav = getDateNav();
-
-	// Search
-	const {search, searchParams, pg, sort} = new Search(req.query);
-	// console.log('searchParams:', searchParams);
-
-	// ## This can be done with one roundtrip:
-	// https://stackoverflow.com/a/61196254/2262741
-	const p1 = await Dup.fuzzySearch(req.query.q)
-		.sort(sort)
-		.limit(pg.pageSize)
-		.skip((pg.pageNumber - 1) * pg.pageSize);
-	const p2 = await Dup.fuzzySearch(req.query.q).count();
-	const [tweets, resultCount] = await Promise.all([p1, p2]);
-
-	// Complete pagination parameters
-	pg.complete(resultCount);
-
-	// Link URLs and usernames
-	linkText(tweets);
-
-	// Highlight results
-	search.highlightText(tweets);
-
-	// Render
-	res.render('index', {
-		tweets: tweets,
-		resultCount: resultCount,
-		sort: sort,
-		pagination: pg,
-		dateNav: dateNav,
-		query: req.query
-	});
-});
 
 
 module.exports = router;

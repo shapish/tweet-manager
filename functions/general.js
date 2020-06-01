@@ -84,9 +84,11 @@ function cookieDate(y) {
 	return CookieDate;
 }
 
+// Promisyfied timeout
+function timeout(time) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, time)
+    })
+}
 
-
-
-
-
-module.exports = { removeDupDocs, compareArrays, linkURLs, linkUserNames, createPath, cookieDate }
+module.exports = { removeDupDocs, compareArrays, linkURLs, linkUserNames, createPath, cookieDate, timeout }

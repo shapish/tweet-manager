@@ -1,0 +1,37 @@
+<%- include('partials/head.ejs', {
+	page: 'scraper',
+	title: 'Scraper',
+	css: [
+		'scraper.css'
+	],
+	jsDefer: [
+		'scraper.js'
+	]
+}) %>
+
+<a href="/api/scraper/init/" target="_blank">Initialize</a><br>
+<a href="/api/scraper/reset" target="_blank">Reset</a><br>
+<a href="/api/scraper/open-browser" target="_blank">Spoof browser</a><br>
+<a href="/api/scraper/test-payload/1246561509645352961" target="_blank">Test payload</a><br>
+<br><br>
+
+<% if (typeof gathering == 'undefined') { %>
+	Initialize controls to begin:<br>
+	<a href="/init/realdonaldtrump" target="_blank">Initialize</a>
+<% } else { %>
+	<div class="process">
+		<button id="gather" class="<% if (gathering) { %>on<% } %>"></button>
+		<div class="display"></div>
+	</div>
+	
+	<div class="process">
+		<button id="extract" class="<% if (extracting) { %>on<% } %>"></button>
+		<div class="display"></div>
+	</div>
+	
+	<div class="process">
+		<button id="transfer">Transfer Data</button>
+		<div class="display"></div>
+	</div>
+<% } %>
+<%- include('partials/foot.ejs') %>

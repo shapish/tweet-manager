@@ -24,9 +24,9 @@ const Chapter = mongoose.model('chapter', new mongoose.Schema({
 			new mongoose.Schema({
 				text: String,
 				stars: Number,
-				created_at: Date,
-				is_retweet: Boolean,
-				id_str: String,
+				date: Date,
+				isRT: Boolean,
+				idTw: String,
 				order: Number
 			})
 		],
