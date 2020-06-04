@@ -10,10 +10,10 @@ const { User } = require('../models/user');
 const Chapter = require('../models/chapter');
 
 // Functions
-const Search = require('../functions/classes/Search');
-const Pg = require('../functions/classes/Pagination');
-const {getDateNav, linkText} = require('../functions/search');
-const {url} = require('../functions/general-global');
+const Search = require('../helpers/classes/Search');
+const Pg = require('../helpers/classes/Pagination');
+const {getDateNav, linkText} = require('../helpers/search');
+const {url} = require('../helpers/general-global');
 const {auth} = require('../middleware/auth');
 
 

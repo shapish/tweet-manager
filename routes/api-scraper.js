@@ -9,11 +9,22 @@ const ScrapeControl = require('../models/scrape-control'); // Storing of options
 // Functions
 const { gatherAndStore, extractData, openBrowser } = require('../scraper/control');  // Control functions
 const request = require('../scraper/request');
+const extract = require('../scraper/extract');
+const cli = require('../helpers/cli-monitor');
 
 
 
 
-
+// Inspect tweet data
+// 1268023370425274368 // Deleted tweet
+// 1266740439740284928 // Thread
+// 1268006529678049281
+router.get('/tweet/:id', async (req, res) => {
+	const tweet = await extract(req.params.id);
+	console.log(tweet)
+	console.log(JSON.stringify(tweet, null, 4))
+	res.send(tweet);
+});
 
 
 // API: Toggle scraper
@@ -46,21 +57,15 @@ router.post('/gather/:state', async (req, res) => {
 // --> Loop through scraped ids and extract tweet data
 router.post('/extract/:state', async (req, res) => {
 	let state = +req.params.state;
-	let result;
 
 	if (state) {
-		console.log('- - - - - - - - - - - - - - - - -');
-		console.log('- - - - Start Extracting! - - - -');
-		console.log('- - - - - - - - - - - - - - - - -');
-		console.log('');
-
-		// Count how many tweets are left to extract
-		let count = await TweetScrape.find({ text: { $exists: false } }).count();
-		console.log('Tweets to extract: ' + count);
-		console.log('');
+		// Display START banner
+		const total = await TweetScrape.estimatedDocumentCount();
+		const done = await TweetScrape.countDocuments({ text: { $exists: true } });
+		cli.banner('Start Extracting');
+		cli.progress(done, total)
 
 		// Start scraping
-		// result = await extractData();
 		extractData();
 	}
 
@@ -77,7 +82,7 @@ router.post('/extract/:state', async (req, res) => {
 router.post('/transfer', async (req, res) => {
 	const batchSize = 500;
 	let batch = 0;
-	const total = await TweetScrape.count();
+	const total = await TweetScrape.count({ text: { $exists: true } });
 	res.send(`Transferring: ${total} tweets`);
 
 	// Remove previously old tweets
@@ -94,7 +99,7 @@ router.post('/transfer', async (req, res) => {
 
 	async function _transferLoop() {
 		console.log('Batch', batch)
-		const tweets = await TweetScrape.find()
+		const tweets = await TweetScrape.find({ text: { $exists: true } })
 			.skip(batch * batchSize)
 			.limit(batchSize)
 			.select('-_id -__v')
@@ -151,7 +156,8 @@ router.get('/init/:account', async (req, res) => {
 		gathering: false,
 		url: null,
 		account: req.params.account,
-		p: 1
+		p: 1,
+		total: 1
 	}, { upsert: true, new: true});
 
 	// Delete other scraped tweets
@@ -177,8 +183,9 @@ router.get('/reset', async (req, res) => {
 // Testing: inspect payload
 router.get('/test-payload/:id', async (req, res) => {
 	// eg. 1266741095561650176
-	let payload = await request('https://twitter.com/realdonaldtrump/status/' + req.params.id);
-	console.log(payload)
+	// let payload = await request('https://twitter.com/_/status/' + req.params.id);
+	let payload = await request('https://twitter.com/ferrebeekeeper/status/1159843489535758342');
+	
 	res.send(payload)
 });
 

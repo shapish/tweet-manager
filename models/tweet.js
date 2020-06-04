@@ -18,17 +18,14 @@ const tweetSchema = new mongoose.Schema({
 	mentions: Array,
 	internalLinks: Array,
 	externalLinks: Array,
-	thread: {
-		prev: String,
-		next: String
-	},
+	replyTo: String, // Previous tweet in thread
 	extra: {
 		likes: Number,
 		replies: Number,
 		retweets: Number,
-		poll: String
+		quotes: Number
 	},
-	source: String, // Scraper can't access source for now
+	source: String,
 
 	// Internal fields
 	stars: {

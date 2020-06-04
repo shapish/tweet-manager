@@ -1,158 +1,195 @@
-// twitter id -> { data: { ... }, media: { images, video} } 
-const moment = require('moment-timezone');
-const cheerio = require('cheerio')
-const he = require('he')
-const request = require('./request')
-const { extractUrls, extractHashtags, extractMentions } = require('twitter-text')
+const request = require('./request');
+const { extractUrls, extractHashtags, extractMentions } = require('twitter-text');
+const he = require('he');
+
+// Twitter authentication
+const BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA';
+const chromeUserAgent = { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36' };
+let _cachedGuestToken = null;
 
 /**
  * Extracts data from a Twitter tweet ID
- * @param {string} id Twitter ID
+ * @param {string} id Twitter IDx
  */
 async function extract(id) {
-	let payload;
-	let $;
-	let text;
-
-	// Sometimes Twitter won't properly load, so we try again a few times
-	let tries = 1;
-	let payloadOK = false;
-	await _loadLoop();
-	if (!payloadOK) return null;
-	async function _loadLoop() {
-		console.log('A')
-		payload = await request(`https://twitter.com/_/status/${id}`);
-		console.log('B')
-		
-		// Detect deleted tweets
-		if (payload.statusCode === 404) {
-			console.log(`https://twitter.com/_/status/${id} not found, probably deleted`)
-			return null;
-		}
-		
-		// Find tweet text
-		$ = cheerio.load(payload.body);
-		text = $('meta[property="og:description"]').attr('content');
-
-		// Log id + attempts
-		// console.log((tries > 1 ? ' +' + tries + ' ' : '') + id);
-		if (tries == 1) {
-			console.log('#'+tries + ' - ' + id);
-		} else {
-			console.log('#'+tries + ' ---- ' + id);
-		}
-
-		// No text, try again
-		if (!text) {
-			if (tries < 10) {
-				tries++;
-				await _loadLoop();
-			} else {
-				payloadOK = false;
-			}
-		} else {
-			payloadOK = true;
-		}
+	const tweet = await _fetchTweet(id);
+	if (tweet.errors) {
+		return tweet;
 	}
-
-	// TEXT
-	if (!text) {
-		console.log(`twitter.com/_/status/${id} not found, account probably suspended`)
-		return null;
-	}
-	text = he.decode(text.substring(1, text.length - 1)) // drop leading and trailing quotes, decode html entities
-	let tags = extractHashtags(text)
-	let mentions = extractMentions(text)
-
-	// IMAGES
-	let images = $('meta[property="og:image"]').get()
-		.map(meta => meta.attribs.content)
-		.filter(url => !url.includes('profile_images')) // remove profile images that show up in some cases
 	
-	// VIDEO
-	let video
-	if ($('meta[property="og:video:url"]').length == 0) {
-		video = null
-	} else {
-		// twitter video, unless invalidated below
-		video = { type: 'twitter-video', id }
-	}
+	// Tags, mentions (parse)
+	const _text = he.decode(tweet.full_text);
+	tweet.tags = extractHashtags(_text);
+	tweet.mentions = extractMentions(_text);
 
-	// USER
-	let user = $('div.permalink-header a.js-user-profile-link span.username b').text()
-	
-	// OTHER
-	let replies = parseInt($('div.permalink-tweet .ProfileTweet-action--reply span[data-tweet-stat-count]').attr('data-tweet-stat-count')) || 0
-	let retweets = parseInt($('div.permalink-tweet .ProfileTweet-action--retweet span[data-tweet-stat-count]').attr('data-tweet-stat-count')) || 0
-	let likes = parseInt($('div.permalink-tweet .ProfileTweet-action--favorite span[data-tweet-stat-count]').attr('data-tweet-stat-count')) || 0
-	let location = $('div.permalink-tweet [data-place-id]').text() || null
-	let locationId = $('div.permalink-tweet [data-place-id]').attr('data-place-id') || null
-	let timestamp = moment.unix($('.js-original-tweet [data-time]').attr('data-time'))
-		.tz('America/Los_Angeles').tz('Etc/GMT') // convert west coast usa time to gmt
-		.format()
-	let poll = null
-	let links = { internal: [], external: [] }
-	let dataCardUrl = $('[data-card-url]').attr('data-card-url')
-	if (dataCardUrl) {
-		if(dataCardUrl.startsWith('card://')) {
-			// Most likely a twitter poll, don't try to expand, record for later
-			poll = $('[data-card-url][data-src]').attr('data-src')
-
-		} else {
-			let expandedDataCardUrl = await request.expand(dataCardUrl)
-			if (!expandedDataCardUrl.startsWith('https://twitter.com'))
-				links.external.push(expandedDataCardUrl)
-		}
-	}
-
-	let quoteRetweetId = $('div.permalink-tweet a.QuoteTweet-link[data-conversation-id]').attr('data-conversation-id')
-	if (quoteRetweetId)
-		links.internal.push(quoteRetweetId)
-
-	let inlineLinks = extractUrls(text)
-	if (inlineLinks) {
-		for (const link of inlineLinks) {
-			let expandedLink = await request.expand(link)
-			// TODO is dropping trailing links overthinking it?
-			if (text.endsWith(link))
-				text = text.replace(link, '')
-			else
-				text = text.replace(link, expandedLink)
-			if (expandedLink.startsWith('https://twitter.com')) {
-				let statusMatch = expandedLink.match(/\/status\/([\d]+)/)
-				if (statusMatch) {
-					let tweetId = statusMatch[1]
-					if (!links.internal.includes(tweetId) && tweetId != id)
-						links.internal.push(tweetId)
-				} else {
-					let broadcastMatch = expandedLink.match(/\/broadcasts\/([^\/]+)/)
-					if (broadcastMatch) {
-						let broadcastId = broadcastMatch[1]
-						video = { type: 'twitter-live-video', id: broadcastId }
-					} else {
-						if (!links.external.includes(expandedLink))
-							links.external.push(expandedLink)
-					}
-				}
-			} else if (expandedLink.startsWith('https://www.pscp.tv') && expandedLink.match(/\/\w+\/([^\/]+)/)) {
-				let periscopeId = expandedLink.match(/\/\w+\/([^\/]+)/)[1]
-				video = { type: 'periscope-video', id: periscopeId }
+	// links (simplify)
+	let links = { internal: [], external: [] };
+	if (tweet.entities.urls) {
+		links = tweet.entities.urls.forEach(link => {
+			if (link.expanded_url.match(/\/status\/([\d]+)/)) {
+				links.internal.push(link.expanded_url);
 			} else {
-				if (!links.external.includes(expandedLink))
-					links.external.push(expandedLink)
+				links.external.push(link.expanded_url);
 			}
-		}
+		});
 	}
-	text = text.trim()
+	tweet.links = links;
 
-	let threadPreviousHref = $('#ancestors a.tweet-timestamp').last().attr('href')
-	let threadNextHref = $('#descendants a.tweet-timestamp').first().attr('href')
-	let thread = {
-		prev: threadPreviousHref ? threadPreviousHref.match(/(\d+)$/)[1] : null,
-		next: threadNextHref ? threadNextHref.match(/(\d+)$/)[1] : null
+	// Media (simplify)
+	let media;
+	if (tweet.entities.media) {
+		media = tweet.entities.media.forEach(m => {
+			return {
+				id: m.id_str,
+				media_url: m.media_url,
+				url: m.url,
+				type: m.type, // Note: tweets are videos with type:image
+				size: m.original_info
+			}
+		});
 	}
+	tweet.media = media;
 
-	return { images, video, id, user, links, text, timestamp, retweets, likes, replies, location, locationId, tags, mentions, thread, poll }
+	// Source (parse)
+	tweet.source = tweet.source.match(/">(.+)<\//)[1];
+
+	// Clean – remove this if you need to access more data
+	delete tweet.entities
+	delete tweet.card
+
+	return tweet;
 }
 
-module.exports = extract
+
+
+// Fetch tweet data object from Twitter API
+async function _fetchTweet(id) {
+	if (!_cachedGuestToken) await updateCachedGuestToken();
+
+	const authOptions = {
+		headers: {
+			authorization: `Bearer ${BEARER_TOKEN}`,
+			Referrer: `https://twitter.com/realDonaldTrump/status/${id}`,
+			'x-csrf-token': 'undefined',
+			'x-guest-token': _cachedGuestToken,
+			'x-twitter-client-language': 'en',
+			...chromeUserAgent
+		}
+	}
+	
+	let params = {
+		tweet_mode: 'extended', // To get non-truncated full_text
+		include_reply_count: 1,
+		simple_quoted_tweet: true,
+		include_quote_count: true,
+		include_cards: 1, // Polls A
+		cards_platform: 'Web-12', // Polls B
+
+		// Ful range of opions:
+		// - - - -
+		// include_profile_interstitial_type: 1,
+		// include_blocking: 1,
+		// include_blocked_by: 1,
+		// include_followed_by: 1,
+		// include_want_retweets: 1,
+		// include_mute_edge: 1,
+		// include_can_dm: 1,
+		// include_can_media_tag: 1,
+		// skip_status: 1,
+		// include_ext_alt_text: true,
+		// include_entities: true,
+		// include_user_entities: true,
+		// include_ext_media_color: true,
+		// include_ext_media_availability: true,
+		// send_error_codes: true,
+		// count: 20,
+		// ext: 'mediaStats%2ChighlightedLabel%2CcameraMoment',
+	}
+	
+	params = queryString(params);
+	let response;
+	try { response = await request.json(`https://api.twitter.com/2/timeline/conversation/${id}.json?${params}`, authOptions) }
+	catch {	response = {'errors': [{'message':'Failed to connect to Twitter','code':1}]} }
+	// Refresh token when it expires
+	if (response.errors && response.errors[0].code == 200) _cachedGuestToken = null;
+	if (response.errors) return response;
+	
+	const tweet = response.globalObjects.tweets[id];
+	// Sometimes Twitter returns an empty data object for deleted tweets
+	if (!tweet) return {'errors': [{'message':'Scraper error, empty data','code':0}]};
+
+	const userId = tweet.user_id_str;
+	const user = response.globalObjects.users[userId];
+	const { name, screen_name, location, description, profile_image_url_https } = user;
+	tweet.user = { name, screen_name, location, description, profile_image_url_https };
+	return tweet;
+}
+
+
+
+// Get guest token to access Twitter API
+async function updateCachedGuestToken(bearerToken=BEARER_TOKEN) {
+	_cachedGuestToken = await getGuestToken(bearerToken);
+}
+async function getGuestToken(token) {
+	const guestTokenResponse = await request('https://api.twitter.com/1.1/guest/activate.json',
+		{
+			method: 'POST',
+			headers: { authorization: `Bearer ${token}`, ...chromeUserAgent }
+		})
+	return JSON.parse(guestTokenResponse.body).guest_token;
+}
+
+
+
+// Stringify URL parameters
+function queryString(params) {
+	return Object.keys(params).map(key => key + '=' + params[key]).join('&');
+}
+
+
+
+// // Parse links -- @Ramsey periscope & video can be reworked, it's all under entities/card – try 981565451196022784
+// async function _parseLinks(inlineLinks) {
+// 	let links = { internal: [], external: [] };
+// 	if (!inlineLinks) return links;
+// 	let video;
+// 
+// 	for (const link of inlineLinks) {
+// 		let expandedLink = await request.expand(link)
+// 		// TODO is dropping trailing links overthinking it?
+// 		if (text.endsWith(link))
+// 			text = text.replace(link, '')
+// 		else
+// 			text = text.replace(link, expandedLink)
+// 		if (expandedLink.startsWith('https://twitter.com')) {
+// 			let statusMatch = expandedLink.match(/\/status\/([\d]+)/)
+// 			if (statusMatch) {
+// 				let tweetId = statusMatch[1]
+// 				if (!links.internal.includes(tweetId) && tweetId != id)
+// 					links.internal.push(tweetId)
+// 			} else {
+// 				let broadcastMatch = expandedLink.match(/\/broadcasts\/([^\/]+)/)
+// 				if (broadcastMatch) {
+// 					let broadcastId = broadcastMatch[1]
+// 					video = { type: 'twitter-live-video', id: broadcastId }
+// 				} else {
+// 					if (!links.external.includes(expandedLink))
+// 						links.external.push(expandedLink)
+// 				}
+// 			}
+// 		} else if (expandedLink.startsWith('https://www.pscp.tv') && expandedLink.match(/\/\w+\/([^\/]+)/)) {
+// 			let periscopeId = expandedLink.match(/\/\w+\/([^\/]+)/)[1]
+// 			video = { type: 'periscope-video', id: periscopeId }
+// 		} else {
+// 			if (!links.external.includes(expandedLink))
+// 				links.external.push(expandedLink)
+// 		}
+// 	}
+// 
+// 	return { links, video };
+// }
+
+
+
+module.exports = extract;

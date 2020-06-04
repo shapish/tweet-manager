@@ -10,7 +10,7 @@ const Tweet = require('../models/tweet');
 const {auth} = require('../middleware/auth');
 
 // Helpers
-const {removeDupDocs, compareArrays} = require('../functions/general');
+const {removeDupDocs, compareArrays} = require('../helpers/general');
 
 
 

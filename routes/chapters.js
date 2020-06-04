@@ -11,7 +11,7 @@ const { User } = require('../models/user');
 
 // Middleware & functions
 const {auth} = require('../middleware/auth');
-const {url} = require('../functions/general-global');
+const {url} = require('../helpers/general-global');
 
 // Shared
 const stages = ['Proposed', 'Assigned', 'Review', 'Revise', 'Approved', 'Locked', 'Proofed'];

@@ -9,7 +9,7 @@ const Joi = require('@hapi/joi');
 const { User, joiMsg } = require('../models/user');
 
 // Middleware & functions
-const {cookieDate} = require('../functions/general');
+const {cookieDate} = require('../helpers/general');
 
 // New login
 router.post('/', async (req, res) => {

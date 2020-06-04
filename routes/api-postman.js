@@ -6,22 +6,53 @@ const router = express.Router();
 const ejs = require('ejs');
 
 const Tweet = require('../models/tweet');
+const TweetScrape = require('../models/tweet-scrape');
+// const Tta = require('../models/tta');
 const Chapter = require('../models/chapter');
 const {User} = require('../models/user');
 
-const {createPath} = require('../functions/general');
+const {createPath} = require('../helpers/general');
 
+
+
+
+
+/**
+ * Testing
+ */
+
+
+
+
+
+
+
+/**
+ * Manipulating Data
+ */
 
 // Update tweets
 router.put('/update-tweets', async (req, res) => {
-	await Tweet.updateMany({}, {
-		$unset: { 
-			id_str: 1,
-		},
-		idTw: '123456'
+	const count = await Tweet.updateMany({}, {
+		// $unset: { 
+		// 	id_str: 1,
+		// },
+		deleted: false
+	}).count();
+
+	res.send([`Done: ${count} records updated`]);
+});
+
+// Update tweets
+router.put('/update-tweet-scrapes', async (req, res) => {
+	const count = await TweetScrape.find({ deleted: true }).count();
+	await TweetScrape.updateMany({
+		deleted: true
+	}, {
+		deleted: false
 	});
 
-	res.send(['done']);
+	res.send([`Done: ${count} records updated`]);
 });
 
 // Remove chapters
@@ -67,8 +98,7 @@ router.post('/fix-users', async (req, res) => {
 	res.send(users);
 });
 
-
-// Fix users poth
+// Fix users path
 router.post('/fix-users-path', async (req, res) => {
 	let users = await User.find();
 	var promises = users.map(user => {
@@ -81,7 +111,14 @@ router.post('/fix-users-path', async (req, res) => {
 });
 
 
-// Seed database
+
+
+
+/**
+ * Seeding
+ */
+
+// Seed database (with tweet ids from tta - Trump twitter archive)
 router.post('/seed/:filename', async (req, res) => {
 	const seedData = require('../data/' + req.params.filename);
 	const batchSize = req.query.bs ? req.query.bs : 100;
@@ -91,7 +128,7 @@ router.post('/seed/:filename', async (req, res) => {
 	for (let i=0; i<seedData.length; i++) {
 		if (i % batchSize === 0) {
 			batches.push([seedData[i]])
-		} else {
+		} else {	
 			batches[batches.length - 1].push(seedData[i]);
 		}
 	}
@@ -105,7 +142,14 @@ router.post('/seed/:filename', async (req, res) => {
 
 	while (batches[j]) {
 		console.log('#'+j, batches[j].length);
-		const data = await Tweet.create(batches[j]);
+		batches[j] = batches[j].map(tw => {
+			return {
+				idTw: tw.id_str,
+				source: tw.source
+			}
+		});
+		// console.log(batches[j])
+		const data = await TweetScrape.create(batches[j]);
 		result.push(...data);
 		j++;
 	}

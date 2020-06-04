@@ -1,8 +1,9 @@
-const { timeout } = require('../functions/general');
+const { timeout } = require('../helpers/general');
 
 async function gather(options, cb) {
 	const { browser, batchSize } = options;
-	let { p, url } = options;
+	let { url } = options;
+	let p = 1
 	let attempt = 1;
 
 	const page = await browser.newPage();
@@ -21,8 +22,8 @@ async function gather(options, cb) {
 			obj.url = (obj.url.slice(0,1) == '/') ? `https://twitter.com${obj.url}` : obj.url;
 		}
 
-		console.log('- - -')
-		console.log('p' + p + ': ' + obj.ids.length + ' ids scraped')
+		console.log('- - - p' + p + ': ' + obj.ids.length + ' ids scraped');
+		console.log('');
 
 		// Return current batch of ids + next page url
 		if (obj.ids.length > 0) {
@@ -51,30 +52,37 @@ async function gather(options, cb) {
 		// obj.url = result[1] ? result[1] : obj.url;
 		obj.url = result[1];
 
-		console.log('#' + p + '-' + attempt + ' -> ' + obj.ids.length + ' url: ' + currentPageUrl + ' next: ' + obj.url);
+		console.log('p' + p + '-' + attempt + ' -> ' + obj.ids.length + ' url: ' + currentPageUrl + ' next: ' + obj.url);
 
 		// Often IE6 UI won't properly load tweets, so we try again
-		if (obj.ids.length < 28 && attempt < 10) {
-			// When failed, reset url from next page (shoudl be null) to current page
-			// console.log('RESET: ', obj.url, ' -> ', currentPageUrl);
-			obj.url = currentPageUrl;
+		// Every page has 30 but sometimes it only loads 27-30
+		if (obj.ids.length < 27) {
+			if (attempt < 100) {
+				// When failed, reset url from next page (shoudl be null) to current page
+				obj.url = currentPageUrl;
 
-			attempt++;
-			await timeout(10); // Let Twitter take a breath
-			await _tryScrape(obj);
-		} else if (attempt >= 10) {
-			// Max attempts reached: reset and return current page URL,
-			// either Twitter fail or bottom of account is reached
-			console.log('')
-			console.log('')
-			console.log('---------------------------------');
-			console.log('------ Gathering Finished! ------');
-			console.log('---------------------------------');
+				attempt++;
+				const to = attempt <= 5 ? 100 : (attempt - 5) * 200; // Start slowing down attempts after 10
+				await timeout(to);
+				await _tryScrape(obj);
+			} else {
+				// Edge case where last page only has one tweet
+				// After 100 tries, abort
+				_logEnd();
+			}
 		} else {
+			// Successful scrape
 			attempt = 1;
-			// console.log('diff? ' + obj.url, pageUrl)
-			// obj.url = currentPageUrl;
 		}
+	}
+
+	// Log the end
+	function _logEnd() {
+		console.log('')
+		console.log('')
+		console.log('---------------------------------');
+		console.log('------ Gathering Finished! ------');
+		console.log('---------------------------------');
 	}
 }
 

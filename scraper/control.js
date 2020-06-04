@@ -1,3 +1,4 @@
+// Modules
 const puppeteer = require('puppeteer');
 
 // Models
@@ -7,65 +8,79 @@ const ScrapeControl = require('../models/scrape-control');
 // Functions
 const gather = require('./gather');
 const extract = require('./extract');
-const { timeout } = require('../functions/general');
+const { timeout } = require('../helpers/general');
+const cli = require('../helpers/cli-monitor');
 
 
-// GATHER & SAVE IDS
-// - - -
-// Keeps on scraping in batches, until bottom is reached or scraper is turned off.
-// Stores twitter ids in database per batch.
-async function gatherAndStore(url, batchSize, p) {
-	batchSize = batchSize ? batchSize : 20; // How many pages per batch
-	p = p ? p : 1;
 
-	url = url ? url : 'https://twitter.com/realDonaldTrump';
+
+/**
+ * Gather & store ids
+ * 
+ * Uses puppeteer to scrape tweet from a spoofed IE6 UI,
+ * until bottom is reached or scraper is turned off.
+ * Stores twitter ids in database per batch.
+ * 
+ * @param {string} url Leave empty (used for loop)
+ * @param {number} batchSize How many tweets to scrape before storing them
+ */
+async function gatherAndStore(url, batchSize) {
+	if (!url) return console.error('Abort: no scrape url provided.');
+	batchSize = batchSize ? batchSize : 10;
+
+	// Scrape control keeps track of progress & allows to pause/resume
+	let { p, total } = await ScrapeControl.findOne({ name: 'scrape-control' }).select('p total');
+
+	// No-sandbox required for Heroku: https://bit.ly/36UH3qE
 	const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
-	// No-sandbox required for Heroku https://github.com/puppeteer/puppeteer/blob/master/docs/troubleshooting.md#running-puppeteer-on-heroku
 
-	// Scrape one batch
+	// Scrape first batch, loop until turned off
 	await _gatherLoop(url);
-	
 	
 	async function _gatherLoop(url) {
 		let batchIds = [];
 		
-		// Update batchIds per page
 		await gather({
 			browser: browser,
 			url: url,
 			batchSize: batchSize,
 			p: p
 		}, async (ids, nextUrl, p) => {
+			// Callback called for each page
 			batchIds.push(...ids);
-			console.log('Add to batch: +', ids.length)
+			cli.log(`Adding ${ids.length} tweets to batch`, 2);
 			url = nextUrl;
 			p = p;
 		});
-		
-		// Status monitor
-		console.log('')
-		console.log('Store in database: +' + batchIds.length)
-		console.log(batchIds.join(','))
-		console.log(batchIds[0], ' --> ', batchIds[batchIds.length - 1], url);
-		console.log('')
-		console.log('')
 
-		// Save IDs to the database
+		cli.log(`p: ${p}`, 1);
+
+		// Remove duplicates (not needed but more accurate counting)
+		const dups = batchIds.filter((item, index) => batchIds.indexOf(item) != index);
+		dups.forEach((dup, i) => batchIds.splice(batchIds.indexOf(dup), 1))
+
+		// Update total
+		total += (batchIds.length - dups.length);
+		
+		// Monitor
+		cli.log(`Store in database: ${batchIds.length} --> Total: ${total}`);
+		cli.log(batchIds.join(',').green);
+		cli.log(`${batchIds[0]} --> ${batchIds[batchIds.length - 1]} - ${url}`, 2);
+
+		// Store ids in database
 		const promise = batchIds.map(id => {
 			return TweetScrape.findOneAndUpdate({ idTw: id }, {
 				idTw: id
 			}, { upsert: true, new: true });
 		});
 		let tweets = await Promise.all(promise);
-		console.log('tweets.length: ', tweets.length)
-		console.log('')
-		console.log('')
+		cli.log(`tweets.length: ${tweets.length}`, 2);
 
-		// Save next page URL to database
-		// + Check controls to see if we shoudl continue
+		// Store next page URL & check if we should continue
 		await ScrapeControl.findOneAndUpdate({ name: 'scrape-control' }, {
 			url: url,
-			p: p
+			p: p,
+			total: total
 		});
 
 		// Batch repeats with delay until we reach bottom of profile
@@ -83,6 +98,7 @@ async function gatherAndStore(url, batchSize, p) {
 // Loops through twitter ids and attaches all twitter data
 async function extractData() {
 	const ctrl = await ScrapeControl.findOne({ name: 'scrape-control' });
+	let batchNr = 1;
 	let processed = 0;
 	
 	_extractLoop();
@@ -90,26 +106,30 @@ async function extractData() {
 	// Loop through all empty tweets in batches of (10)
 	// and store all tweet data in database
 	async function _extractLoop(batchSize) {
-		batchSize = batchSize ? batchSize : 10;
-		console.log('Batch extracting ' + batchSize + ' tweets...')
+		batchSize = batchSize ? batchSize : 5;
 
 		// Find empty tweets
 		let tweets = await TweetScrape.find({
-			text: { $exists: false }
+			text: { $exists: false },
+			deleted: false
 		}).limit(batchSize).lean();
 
 		if (!tweets.length) {
-			return console.log('- -Extracting Complete - -')
+			return cli.title('Nothing left to be extracted')
+		} else {
+			cli.title(`Batch #${batchNr}`);
+			cli.log(`Extracting ${batchSize} tweets`);
 		}
 		
 		// Extract data
 		let ids = []; // For console
-		if (true) {
+		if (false) {
 			// FAST
 			tweets = tweets.map(async tweet => {
 				ids.push(tweet.idTw);
 				return extractOne(tweet.idTw, ctrl);
 			});
+			tweets = await Promise.all(tweets);
 		} else {
 			// SLOW for debugging
 			// A while loop lets us monitor what's happening chronologically
@@ -124,34 +144,33 @@ async function extractData() {
 			tweets = extractedTweets;
 		}
 		
-		// console.log('Ids: ' + ids.join(','));
-		tweets = await Promise.all(tweets);
-		
-		// Save to db
+		// Update database
 		tweets = tweets.map(async tweet => {
 			return TweetScrape.findOneAndUpdate({ idTw: tweet.idTw }, tweet);
 		});
 		tweets = await Promise.all(tweets);
-
+		
 		processed += tweets.length;
+		batchNr++;
 
-		console.log(`Batch saved to database – Total: ${processed}`);
-		console.log('');
+		cli.wait(false);
+		// cli.log(ids.join(',').green);
+		cli.log(`Done --> Total: ${processed}`, 1);
 
 		// Continue loop if more tweets are left and process is still on
 		if (tweets.length == batchSize) {
-			console.log('-- Next batch --');
+			// Twitter API rate limit is 1 tweet/second: https://bit.ly/3cujRk4
+			// Not correct, more like 20 a minute
+			await timeout(3000 * batchSize)
+
 			const { extracting } = await ScrapeControl.findOne({ name: 'scrape-control' });
 			if (extracting) _extractLoop(batchSize);
 		} else {
-			// Turn off process
+			// Turn off process when done
 			await ScrapeControl.findOneAndUpdate({ name: 'scrape-control' }, {
 				extracting: false
 			});
-			console.log('- - - - - - - - - - - - - - - - -');
-			console.log('- - - -Extracting Finished- - - -');
-			console.log('- - - - - - - - - - - - - - - - -');
-			console.log('');
+			cli.banner('Extracting Finished', -1);
 		}
 	}
 }
@@ -161,37 +180,41 @@ async function extractData() {
 async function extractOne(idTw, ctrl) {
 	data = await extract(idTw);
 
-	if (!data) {
-		// Tweet is most likely deleted,
-		// although this sometimes happend
-		// when Twitter fails to properly load
-		console.log('#### Missing record: ' + idTw)
-		return {
-			idTw: idTw,
-		};
+	// Extraction failed
+	if (data.errors) {
+		if (data.errors[0].code == 34 || data.errors[0].code === 0) {
+			// Tweet is deleted (0 is custom error in extract.js)
+			cli.log(` › Deleted: ${idTw}`.magenta);
+			return { idTw: idTw, deleted: true }
+		} else {
+			// Other errors: https://bit.ly/304zWuo (1 is custom error in extract.js)
+			cli.log(` › Error: ${data.errors[0].code} for ${idTw}: ${data.errors[0].message}`.red);
+			if (data.errors[0].code) console.log('\n\nTaking 8m break.\n\n'); await timeout(480000); // Pause when rate limit is exceeded;
+			// if (data.errors[0].code) return 'pause';
+			return { idTw: idTw }
+		}
 	}
-
+	
 	record = {
-		idTw: data.id,
-		text: data.text,
-		author: data.user,
-		date: data.timestamp,
-		isRT: (data.user != ctrl.account),
-		url: `https://twitter.com/${data.user}/status/${data.id}`,
-		location: {
-			name: data.location,
-			id: data.locationId
-		},
+		idTw: data.id_str,
+		text: data.full_text,
+		author: data.user.screen_name,
+		date: data.created_at,
+		isRT: (data.user.screen_name != ctrl.account),
+		location: data.place ? {
+			name: data.place.name,
+			id: data.place.id
+		} : null,
 		tagsTw: data.tags,
 		mentions: data.mentions,
-		internalLinks: data.links.internal,
-		externalLinks: data.links.external,
-		thread: data.thread,
+		internalLinks: data.links ? data.links.internal : null,
+		externalLinks: data.links ? data.links.external : null,
+		replyTo: data.in_reply_to_status_id_str ? data.in_reply_to_status_id_str : null,
 		extra: {
-			likes: data.likes,
-			replies: data.replies,
-			retweets: data.retweets,
-			poll: data.poll
+			likes: data.favorite_count,
+			replies: data.reply_count,
+			retweets: data.retweet_count,
+			quotes: data.quote_count
 		}
 	}
 	return record;

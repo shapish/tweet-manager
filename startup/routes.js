@@ -17,7 +17,7 @@ const apiScraper = require('../routes/api-scraper');
 const apiPostman = require('../routes/api-postman');
 
 // Frontend Helpers
-const frontendHelpers = require('../functions/general-global');
+const frontendHelpers = require('../helpers/general-global');
 
 module.exports = function(app) {
 	app.use(express.json());

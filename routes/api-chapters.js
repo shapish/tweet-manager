@@ -9,7 +9,7 @@ const { User } = require('../models/user');
 
 // Middleware & functions
 const { auth, isAdmin1 } = require('../middleware/auth');
-const {createPath} = require('../functions/general');
+const {createPath} = require('../helpers/general');
 
 
 
