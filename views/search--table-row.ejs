@@ -12,7 +12,7 @@
 	</div>
 	<div class="table-cell main">
 		<span><% if (user.handle != 'realDonaldTrump') { %><a href="https://twitter.com/<%= user.handle %>" target="_blank" class="other-user"><%= user.name %> @<%= user.handle %></a><% } %><%- text %></span><br>
-		<% if (media.length) { %>
+		<% if (media && media.length) { %>
 			<div class="media">
 			<% if (media.length == 1) { %>
 				<div href="<%= media[0].mediaUrl %>" target="_blank"><img src="<%= media[0].mediaUrl %>"></div>
@@ -26,7 +26,7 @@
 		<% if (quoted.id) { %>
 			<div class="quoted link" href="https://twitter.com/_/status/<%= quoted.id %>">
 				<div class="text"><span class="link color" href="https://twitter.com/<%= quoted.user.handle %>"><b><%= quoted.user.name %></b> <u>@<%= quoted.user.handle %></u></span>: <%- quoted.text %></div>
-				<% if (quoted.media.length) { %>
+				<% if (quoted.media && quoted.media.length) { %>
 					<div class="media">
 					<% if (quoted.media.length == 1) { %>
 						<img class="link" href="<%= quoted.media[0].mediaUrl %>" src="<%= quoted.media[0].mediaUrl %>">
@@ -49,7 +49,7 @@
 		<% if (repliesTo.id) { %>
 			<div class="replies-to link" href="https://twitter.com/_/status/<%= repliesTo.id %>">
 				<div class="text"><span class="link color" href="https://twitter.com/<%= repliesTo.user.handle %>"><b><%= repliesTo.user.name %></b> <u>@<%= repliesTo.user.handle %></u></span>: <%- repliesTo.text %></div>
-				<% if (repliesTo.media.length) { %>
+				<% if (repliesTo.media && repliesTo.media.length) { %>
 					<div class="media">
 					<% if (repliesTo.media.length == 1) { %>
 						<img class="link" href="<%= repliesTo.media[0].mediaUrl %>" src="<%= repliesTo.media[0].mediaUrl %>">

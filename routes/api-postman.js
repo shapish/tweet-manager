@@ -218,7 +218,7 @@ router.post('/seed/:filename', async (req, res) => {
 		// });
 		// console.log(batches[j])
 
-		const data = await Tta.create(batches[j]);
+		const data = await Tweet.create(batches[j]);
 		result.push(...data);
 		j++;
 	}
