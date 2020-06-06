@@ -183,15 +183,19 @@ router.post('/fix-users-path', async (req, res) => {
 /**
  * Seeding
  */
-
+const Test = require('../models/test');
 // Seed database (with tweet ids from tta - Trump twitter archive)
 router.post('/seed/:filename', async (req, res) => {
 	const seedData = require('../data/' + req.params.filename);
 	const batchSize = req.query.bs ? req.query.bs : 100;
+	const p = req.query.p ? req.query.p : 1;
+	const pageSize = 5000; // Limit to 5000 items at a time or server can time out
+	const end = Math.min(pageSize * p || seedData.length);
 
 	// Organize in batches
 	const batches = [];
-	for (let i=0; i<seedData.length; i++) {
+	for (let i=(p-1) * pageSize; i<end; i++) {
+		console.log(i, '->', end)
 		if (i % batchSize === 0) {
 			batches.push([seedData[i]])
 		} else {	
@@ -218,7 +222,7 @@ router.post('/seed/:filename', async (req, res) => {
 		// });
 		// console.log(batches[j])
 
-		const data = await Tweet.create(batches[j]);
+		const data = await Test.create(batches[j]);
 		result.push(...data);
 		j++;
 	}
