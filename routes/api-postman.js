@@ -190,11 +190,13 @@ router.post('/seed/:filename', async (req, res) => {
 	const batchSize = req.query.bs ? req.query.bs : 100;
 	const p = req.query.p ? req.query.p : 1;
 	const pageSize = 5000; // Limit to 5000 items at a time or server can time out
-	const end = Math.min(pageSize * p || seedData.length);
+	const end = Math.min(pageSize * p, seedData.length);
+	console.log('@@', Math.min(pageSize * p, seedData.length), (pageSize * p), seedData.length);
 
 	// Organize in batches
 	const batches = [];
 	for (let i=(p-1) * pageSize; i<end; i++) {
+		console.log(i)
 		if (i % batchSize === 0) {
 			batches.push([seedData[i]])
 		} else {	
