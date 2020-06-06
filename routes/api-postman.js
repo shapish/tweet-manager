@@ -195,7 +195,6 @@ router.post('/seed/:filename', async (req, res) => {
 	// Organize in batches
 	const batches = [];
 	for (let i=(p-1) * pageSize; i<end; i++) {
-		console.log(i, '->', end)
 		if (i % batchSize === 0) {
 			batches.push([seedData[i]])
 		} else {	
@@ -210,6 +209,8 @@ router.post('/seed/:filename', async (req, res) => {
 	console.log('')
 	console.log('batches.length: ', batches.length);
 
+	res.send('Seed command sent');
+
 	while (batches[j]) {
 		console.log('#'+j, batches[j].length);
 		
@@ -222,7 +223,7 @@ router.post('/seed/:filename', async (req, res) => {
 		// });
 		// console.log(batches[j])
 
-		const data = await Test.create(batches[j]);
+		const data = await Tweet.create(batches[j]);
 		result.push(...data);
 		j++;
 	}
@@ -231,7 +232,7 @@ router.post('/seed/:filename', async (req, res) => {
 	console.log(seedData.length + ' items added');
 
 	
-	res.send([`successfully added ${seedData.length} documents`]);
+	// res.send([`successfully added ${seedData.length} documents`]);
 });
 
 
