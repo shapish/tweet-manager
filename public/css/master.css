@@ -187,6 +187,7 @@ input[type=submit] {
 button,
 input[type=button] {
 	background: #E2D06D;
+	color: rgba(0,0,0,.75);
 }
 button.clear,
 input[type=button].clear,

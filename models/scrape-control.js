@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 module.exports = mongoose.model('scrape-control', new mongoose.Schema({
-	account: String,
+	user: String,
 	name: {
 		type: String,
 		unique: true

@@ -186,7 +186,7 @@ Search.prototype.translateQuery = function(terms) {
 
 	
 	// Adds to query:
-	// created_at: {
+	// date: {
 	// 	'$gte': '2020-05-01T00:00:00-04:00',
 	// 	'$lt': '2020-06-01T00:00:00-04:00'
 	// }
@@ -201,8 +201,8 @@ Search.prototype.translateQuery = function(terms) {
 				y : +y + 1
 			: +today.getFullYear() + 1;
 		
-		// Assemble created_at parameter
-		searchParams.created_at = {
+		// Assemble date parameter
+		searchParams.date = {
 			$gte: moment(beginYear + '-' + padNr(beginMonth) + '-01').format(),
 			$lt: moment(endYear + '-' + padNr(endMonth) + '-01').format()
 		}
@@ -222,7 +222,7 @@ Search.prototype.translateQuery = function(terms) {
 Search.prototype.getSort = function(s) {
 	return (s == 'chapter') || (s == '-chapter') ?
 		s : s == 'date' ?
-			'created_at' : '-created_at';
+			'date' : '-date';
 };
 
 
@@ -248,8 +248,8 @@ Search.prototype.highlightText = function(tweets) {
 	
 	// Add highlights
 	tweets = tweets.map((tweet, i) => {
-		if (strict.length) tweet.text = tweet.text.replace(regexStrict, '<b>$1</b>');
-		if (looseStems.length) tweet.text = tweet.text.replace(regexLoose, '<b>$1</b>');
+		if (strict.length) tweet.text = tweet.text.replace(regexStrict, '<em>$1</em>');
+		if (looseStems.length) tweet.text = tweet.text.replace(regexLoose, '<em>$1</em>');
 		if (literal.length) tweet.text = tweet.text.replace(regexLiteral, '<em>$1</em>');
 		if (regexQuery) tweet.text = tweet.text.replace(regexQuery, '<em>$1</em>'); // This can break html, eg with /\ba.*r\b/
 		return tweet;

@@ -7,7 +7,7 @@ const ScrapeControl = require('../models/scrape-control');
 
 // Functions
 const gather = require('./gather');
-const extract = require('./extract');
+const { extract } = require('./extract');
 const { timeout } = require('../helpers/general');
 const cli = require('../helpers/cli-monitor');
 
@@ -93,9 +93,11 @@ async function gatherAndStore(url, batchSize) {
 };
 
 
-// EXTRACT TWEET DATA
-// - - -
-// Loops through twitter ids and attaches all twitter data
+
+/**
+ * Extract tweet data
+ * Loops through twitter ids, attaches twitter data and stored in database
+ */
 async function extractData() {
 	const ctrl = await ScrapeControl.findOne({ name: 'scrape-control' });
 	let batchNr = 1;
@@ -110,8 +112,7 @@ async function extractData() {
 
 		// Find empty tweets
 		let tweets = await TweetScrape.find({
-			text: { $exists: false },
-			deleted: false
+			ogData: { $exists: false }
 		}).limit(batchSize).lean();
 
 		if (!tweets.length) {
@@ -123,13 +124,27 @@ async function extractData() {
 		
 		// Extract data
 		let ids = []; // For console
-		if (false) {
+		if (true) {
 			// FAST
 			tweets = tweets.map(async tweet => {
 				ids.push(tweet.idTw);
-				return extractOne(tweet.idTw, ctrl);
+				return extract(tweet.idTw, ctrl.user);
 			});
 			tweets = await Promise.all(tweets);
+			let rateLimitReached = false
+			tweets.forEach(tweet => {
+				const errors = tweet.errors;
+				delete tweet.errors;
+				// if (errors) console.log(errors);
+				if (errors && errors[0].code == 88) rateLimitReached = true;
+			})
+			// Pause when rate limit is exceeded
+			if (rateLimitReached) {
+				const date = new Date();
+				const time = date.getHours() + ':'+ date.getMinutes();
+				console.log(`\n\nTaking 5 min break (${time}).\n\n`);
+				await timeout(300000);
+			}
 		} else {
 			// SLOW for debugging
 			// A while loop lets us monitor what's happening chronologically
@@ -137,8 +152,17 @@ async function extractData() {
 			let i = 0;
 			while (i < tweets.length) {
 				ids.push(tweets[i].idTw);
-				const extractedTweet = await extractOne(tweets[i].idTw, ctrl);
+				const extractedTweet = await extract(tweets[i].idTw, ctrl.user);
+				const errors = extractedTweet.errors;
+				delete extractedTweet.errors;
 				extractedTweets.push(extractedTweet);
+				// Pause when rate limit is exceeded;
+				if (errors && errors[0].code == 88) {
+					const date = new Date();
+					const time = date.getHours() + ':'+ date.getMinutes();
+					console.log(`\n\nTaking 5 min break (${time}).\n\n`);
+					await timeout(300000);
+				}
 				i++;
 			}
 			tweets = extractedTweets;
@@ -155,13 +179,15 @@ async function extractData() {
 
 		cli.wait(false);
 		// cli.log(ids.join(',').green);
-		cli.log(`Done --> Total: ${processed}`, 1);
+		const date = new Date();
+		const time = date.getHours() + ':'+ date.getMinutes();
+		cli.log(`Done --> Total: ${processed} / ${time}`, 1);
 
 		// Continue loop if more tweets are left and process is still on
 		if (tweets.length == batchSize) {
 			// Twitter API rate limit is 1 tweet/second: https://bit.ly/3cujRk4
 			// Not correct, more like 20 a minute
-			await timeout(3000 * batchSize)
+			await timeout(3500 * batchSize)
 
 			const { extracting } = await ScrapeControl.findOne({ name: 'scrape-control' });
 			if (extracting) _extractLoop(batchSize);
@@ -173,51 +199,6 @@ async function extractData() {
 			cli.banner('Extracting Finished', -1);
 		}
 	}
-}
-
-
-// Extract single tweet
-async function extractOne(idTw, ctrl) {
-	data = await extract(idTw);
-
-	// Extraction failed
-	if (data.errors) {
-		if (data.errors[0].code == 34 || data.errors[0].code === 0) {
-			// Tweet is deleted (0 is custom error in extract.js)
-			cli.log(` › Deleted: ${idTw}`.magenta);
-			return { idTw: idTw, deleted: true }
-		} else {
-			// Other errors: https://bit.ly/304zWuo (1 is custom error in extract.js)
-			cli.log(` › Error: ${data.errors[0].code} for ${idTw}: ${data.errors[0].message}`.red);
-			if (data.errors[0].code) console.log('\n\nTaking 8m break.\n\n'); await timeout(480000); // Pause when rate limit is exceeded;
-			// if (data.errors[0].code) return 'pause';
-			return { idTw: idTw }
-		}
-	}
-	
-	record = {
-		idTw: data.id_str,
-		text: data.full_text,
-		author: data.user.screen_name,
-		date: data.created_at,
-		isRT: (data.user.screen_name != ctrl.account),
-		location: data.place ? {
-			name: data.place.name,
-			id: data.place.id
-		} : null,
-		tagsTw: data.tags,
-		mentions: data.mentions,
-		internalLinks: data.links ? data.links.internal : null,
-		externalLinks: data.links ? data.links.external : null,
-		replyTo: data.in_reply_to_status_id_str ? data.in_reply_to_status_id_str : null,
-		extra: {
-			likes: data.favorite_count,
-			replies: data.reply_count,
-			retweets: data.retweet_count,
-			quotes: data.quote_count
-		}
-	}
-	return record;
 }
 
 

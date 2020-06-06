@@ -1,17 +1,100 @@
 const request = require('./request');
 const { extractUrls, extractHashtags, extractMentions } = require('twitter-text');
 const he = require('he');
+const cli = require('../helpers/cli-monitor');
+const { queryString } = require('../helpers/general');
 
 // Twitter authentication
 const BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA';
 const chromeUserAgent = { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36' };
 let _cachedGuestToken = null;
 
+
+
+
+
 /**
- * Extracts data from a Twitter tweet ID
- * @param {string} id Twitter IDx
+ * Extracts all tweet data and formats it to our model
+ * @param {number} idTw Tweet id
+ * @param {string} user Username of author
  */
-async function extract(id) {
+async function extract(idTw, user) {
+	data = await _parseTweet(idTw);
+
+	// Extraction failed
+	if (data.errors) {
+		if (data.errors[0].code == 34 || data.errors[0].code === 0) {
+			// Tweet is deleted (0 is custom error in extract.js)
+			cli.log(` › Deleted: ${idTw}`.magenta);
+			return { idTw: idTw, deleted: true }
+		} else {
+			// Other errors: https://bit.ly/304zWuo (1 is custom error in extract.js)
+			cli.log(` › Error: ${data.errors[0].code} for ${idTw}: ${data.errors[0].message}`.red);
+			return { idTw: idTw, errors: data.errors }
+		}
+	}
+	
+	record = {
+		idTw: data.id_str,
+		text: data.full_text,
+		user: {
+			name: data.user.name,
+			handle: data.user.screen_name
+		},
+		date: data.created_at,
+		isRT: user ? (data.user.screen_name != user) : null,
+		media: data.media,
+		location: data.place ? {
+			name: data.place.name,
+			id: data.place.id
+		} : null,
+		tagsTw: data.tags,
+		mentions: data.mentions,
+		internalLinks: data.links ? data.links.internal : null,
+		externalLinks: data.links ? data.links.external : null,
+		repliesTo: data.repliesTo,
+		quoted: data.quoted,
+		thread: data.thread,
+		extra: {
+			likes: data.favorite_count,
+			replies: data.reply_count,
+			retweets: data.retweet_count,
+			quotes: data.quote_count
+		},
+		source: data.source,
+		ogData: data.ogData
+	}
+	return record;
+}
+
+
+
+/**
+ * Inspect tweet data objects
+ * @param {string} idTw Tweet id
+ * @param {*} type original / parsed / extracted (default: all)
+ */
+async function inspect(idTw, type) {
+	let result = {};
+	if (type == 'original') result = await _fetchTweet(idTw);
+	else if (type == 'parsed') result = await _parseTweet(idTw);
+	else if (type == 'extracted') result = await extract(idTw);
+	else if (!type) result = {
+		original: await _fetchTweet(idTw),
+		parsed: await _parseTweet(idTw),
+		extracted: await extract(idTw)
+	}
+	return result;
+};
+
+
+
+/**
+ * Parses & cleans Tweet data object
+ * @param {string} id Tweet ID
+ * @param {boolean} dontExpand Don't look up quoted/replied tweets (to avoid chain-quoting/replying, we only store one level)
+ */
+async function _parseTweet(id, dontExpand) {
 	const tweet = await _fetchTweet(id);
 	if (tweet.errors) {
 		return tweet;
@@ -37,24 +120,77 @@ async function extract(id) {
 
 	// Media (simplify)
 	let media;
-	if (tweet.entities.media) {
-		media = tweet.entities.media.forEach(m => {
+	if (tweet.extended_entities && tweet.extended_entities.media) {
+		media = tweet.extended_entities.media.map(m => {
 			return {
 				id: m.id_str,
-				media_url: m.media_url,
+				mediaUrl: m.media_url,
 				url: m.url,
-				type: m.type, // Note: tweets are videos with type:image
-				size: m.original_info
+				mType: m.type, // Note: tweets are videos with type:image
+				width: m.original_info.width,
+				height: m.original_info.height
 			}
 		});
 	}
 	tweet.media = media;
 
+	// Quoted tweet
+	let quoted;
+	if (tweet.quoted_status_id_str && !dontExpand) {
+		quoted = await _parseTweet(tweet.quoted_status_id_str, true);
+		if (quoted.user) { // <-- Make sure this quoted tweet still exists
+			quoted = {
+				id: tweet.quoted_status_id_str,
+				user: {
+					name: quoted.user.name,
+					handle: quoted.user.screen_name
+				},
+				text: quoted.full_text,
+				media: quoted.media,
+				date: quoted.created_at
+			}
+		}
+	}
+	tweet.quoted = quoted;
+
+	// Replies to
+	let repliesTo;
+	if (tweet.in_reply_to_status_id_str && !dontExpand) {
+		repliesTo = await _parseTweet(tweet.in_reply_to_status_id_str, true);
+		if (repliesTo.user) { // <-- Make sure this replied to tweet still exists
+			repliesTo = {
+				id: tweet.in_reply_to_status_id_str,
+				user: {
+					name: repliesTo.user.name,
+					handle: repliesTo.user.screen_name
+				},
+				text: repliesTo.full_text,
+				media: repliesTo.media,
+				date: repliesTo.created_at
+			}
+		}
+	}
+	tweet.repliesTo = repliesTo;
+
+	// Thread
+	let thread;
+	if (tweet.self_thread) {
+		thread = {
+			start: tweet.self_thread.id_str,
+			prev: tweet.in_reply_to_status_id_str
+		}
+	}
+	tweet.thread = thread;
+
 	// Source (parse)
 	tweet.source = tweet.source.match(/">(.+)<\//)[1];
 
+	// Attach OG data in case we need to parse something else later
+	tweet.ogData = JSON.stringify(tweet);
+
 	// Clean – remove this if you need to access more data
 	delete tweet.entities
+	delete tweet.extended_entities
 	delete tweet.card
 
 	return tweet;
@@ -62,7 +198,10 @@ async function extract(id) {
 
 
 
-// Fetch tweet data object from Twitter API
+/**
+ * Fetch original Twitter data object
+ * @param { Number } id Tweet id
+ */
 async function _fetchTweet(id) {
 	if (!_cachedGuestToken) await updateCachedGuestToken();
 
@@ -111,7 +250,7 @@ async function _fetchTweet(id) {
 	try { response = await request.json(`https://api.twitter.com/2/timeline/conversation/${id}.json?${params}`, authOptions) }
 	catch {	response = {'errors': [{'message':'Failed to connect to Twitter','code':1}]} }
 	// Refresh token when it expires
-	if (response.errors && response.errors[0].code == 200) _cachedGuestToken = null;
+	if (response && response.errors && response.errors[0].code == 200) _cachedGuestToken = null;
 	if (response.errors) return response;
 	
 	const tweet = response.globalObjects.tweets[id];
@@ -142,54 +281,4 @@ async function getGuestToken(token) {
 
 
 
-// Stringify URL parameters
-function queryString(params) {
-	return Object.keys(params).map(key => key + '=' + params[key]).join('&');
-}
-
-
-
-// // Parse links -- @Ramsey periscope & video can be reworked, it's all under entities/card – try 981565451196022784
-// async function _parseLinks(inlineLinks) {
-// 	let links = { internal: [], external: [] };
-// 	if (!inlineLinks) return links;
-// 	let video;
-// 
-// 	for (const link of inlineLinks) {
-// 		let expandedLink = await request.expand(link)
-// 		// TODO is dropping trailing links overthinking it?
-// 		if (text.endsWith(link))
-// 			text = text.replace(link, '')
-// 		else
-// 			text = text.replace(link, expandedLink)
-// 		if (expandedLink.startsWith('https://twitter.com')) {
-// 			let statusMatch = expandedLink.match(/\/status\/([\d]+)/)
-// 			if (statusMatch) {
-// 				let tweetId = statusMatch[1]
-// 				if (!links.internal.includes(tweetId) && tweetId != id)
-// 					links.internal.push(tweetId)
-// 			} else {
-// 				let broadcastMatch = expandedLink.match(/\/broadcasts\/([^\/]+)/)
-// 				if (broadcastMatch) {
-// 					let broadcastId = broadcastMatch[1]
-// 					video = { type: 'twitter-live-video', id: broadcastId }
-// 				} else {
-// 					if (!links.external.includes(expandedLink))
-// 						links.external.push(expandedLink)
-// 				}
-// 			}
-// 		} else if (expandedLink.startsWith('https://www.pscp.tv') && expandedLink.match(/\/\w+\/([^\/]+)/)) {
-// 			let periscopeId = expandedLink.match(/\/\w+\/([^\/]+)/)[1]
-// 			video = { type: 'periscope-video', id: periscopeId }
-// 		} else {
-// 			if (!links.external.includes(expandedLink))
-// 				links.external.push(expandedLink)
-// 		}
-// 	}
-// 
-// 	return { links, video };
-// }
-
-
-
-module.exports = extract;
+module.exports = { extract, inspect };

@@ -14,6 +14,7 @@ function Table(id, options, callbacks) {
 	this.localKeys = options.localKeys ? options.localKeys : () => { return true };
 	// Queryselector indicating what children you can click to select a row
 	this.rowSelectable = this.options.rowSelectable ? this.options.rowSelectable : null;
+	this.rowNotSelectable = this.options.rowNotSelectable ? this.options.rowNotSelectable : null
 	// Initialize external functions
 	this.initExternal = this.options.initExternal ? this.options.initExternal : () => {};
 	// Handle additional row click events
@@ -126,6 +127,9 @@ Table.prototype._initRowClicks = function(e) {
 		$row.off('click');
 		this.onRowClick($row);
 		$row.on('click', this.rowSelectable, (e) => { // Label & link clicks get blocked in toggleSelect // ##
+			// Block when label is clicked
+			console.log($(e.target).get(0), $(e.target).is(this.rowNotSelectable), '!!!')
+			if ($(e.target).is(this.rowNotSelectable)) return;
 			this._toggleSelect(e, $row);
 		});
 	}
@@ -246,9 +250,6 @@ Table.prototype._deselectSelected = function(value) {
 
 // Toggle select
 Table.prototype._toggleSelect = function(e, $row) {
-	// Block when label is clicked
-	if ($(e.target).is('a, .label, .x')) return;
-
 	// Check if we're selecting or deselecting
 	const isSelected = $row.hasClass('sel');
 	

@@ -8,6 +8,7 @@ require('./startup/db')();
 require('./startup/prod')(app);
 require('./startup/routes')(app);
 require('./startup/config')();
+require('./startup/cron-jobs');
 
 // Initialize server
 const port = process.env.PORT || 5000;

@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const logger = require('../helpers/logger');
 const ejs = require('ejs');
+const CSVParse = require('json2csv').parse;
 
 // Models
 const Tweet = require('../models/tweet');
@@ -12,9 +13,9 @@ const Chapter = require('../models/chapter');
 // Functions
 const Search = require('../helpers/classes/Search');
 const Pg = require('../helpers/classes/Pagination');
-const {getDateNav, linkText} = require('../helpers/search');
-const {url} = require('../helpers/general-global');
-const {auth} = require('../middleware/auth');
+const { getDateNav, linkText } = require('../helpers/search');
+const { url, padNr } = require('../helpers/general-global');
+const { auth } = require('../middleware/auth');
 
 
 
@@ -184,8 +185,9 @@ async function display(req, res) {
 	
 	// Gather all parameters to run search
 	const {search, terms, searchParams, sort} = new Search(req.query);
-	console.log('searchParams:', searchParams);
+	// console.log('searchParams:', searchParams);
 	// console.log('terms:', terms);
+	// console.log('sort', sort);
 
 	// Re-encode query.q once we're done with (so correct urlQuery is sent back)
 	if (req.query.q) req.query.q = encodeURIComponent(req.query.q);
@@ -217,7 +219,6 @@ async function display(req, res) {
 
 	// Link URLs and usernames
 	linkText(tweets);
-	// console.log(tweets[0])
 
 	// Highlight results
 	if (req.query.q) search.highlightText(tweets);
@@ -254,6 +255,7 @@ async function display(req, res) {
 			}
 		});
 		let queryDataHtml = '';
+		
 		// Note: empty options need to be passed here, otherwise the "strict" property of terms is confused with the strict option
 		ejs.renderFile('views/search--query-data.ejs', terms, {}, (err, str) => {
 			if (err) {
@@ -262,7 +264,7 @@ async function display(req, res) {
 				queryDataHtml += str;
 			}
 		});
-		console.log('&', url(req.query, null, null, req.keepPagination))
+		
 		res.send({
 			html: html,
 			resultCount: resultCount,
@@ -300,6 +302,102 @@ async function display(req, res) {
 		}
 	}
 }
+
+
+// Download
+router.get('/download/:format', auth, async (req, res) => {
+	let format = req.params.format;
+
+	// Decode q
+	if (req.query.q) req.query.q = decodeURIComponent(req.query.q);
+	
+	// Gather all parameters to run search
+	const {searchParams, sort} = new Search(req.query);
+
+	// Fetch results
+	let result = await Tweet.find(searchParams).sort(sort);
+
+	// Create filename
+	const date = new Date();
+	const filename = 'the45th-data-' + date.getFullYear() + padNr(date.getMonth()) + padNr(date.getDay()) + '-' + date.getHours() + 'h' + padNr(date.getMinutes());
+
+	// Format CSV
+	if (format == 'json') {
+		result = JSON.stringify(result);
+	} else if (format == 'csv') {
+		try {
+			result = CSVParse(result, {
+				fields: [
+					'text',
+					'user.name',
+					'user.handle',
+					'date',
+					'idTw',
+					'url',
+					'isRT',
+					'stars',
+					'labels',
+					'chapter',
+					'archived',
+					'deleted',
+					'tagsTW',
+					'mentions',
+					'repliesTo.text',
+					'repliesTo.id',
+					'quoted.text',
+					'quoted.id',
+					'location.name',
+					'location.id',
+					'extra.likes',
+					'extra.replies',
+					'extra.retweets',
+					'extra.quotes',
+					'source',
+					'internalLinks[0]',
+					'internalLinks[1]',
+					'internalLinks[2]',
+					'internalLinks[3]',
+					'externalLinks[0]',
+					'externalLinks[1]',
+					'externalLinks[2]',
+					'externalLinks[3]',
+					'media[0].mediaUrl',
+					'media[1].mediaUrl',
+					'media[2].mediaUrl',
+					'media[3].mediaUrl'
+				]
+			});
+		} catch (err) {
+			return res.send('Error parsing CSV.\n\n' + err);
+		}
+	} else if (format == 'csv-basic') {
+		format = 'csv';
+		try {
+			result = CSVParse(result, {
+				fields: [
+					'text',
+					'user.handle',
+					'date',
+					'url',
+					'isRT',
+					'stars',
+					'chapter',
+					'archived',
+					'deleted'
+				]
+			});
+		} catch (err) {
+			return res.send('Error parsing CSV.\n\n' + err);
+		}
+	}
+
+	// Download file
+	res.writeHead(200, {
+		'Content-Type': 'application/json-download',
+		"content-disposition": `attachment; filename="${filename}.${format}"`
+	});
+	res.end(result);
+});
 
 
 module.exports = router;

@@ -8,10 +8,10 @@ const ScrapeControl = require('../models/scrape-control'); // Storing of options
 
 // Functions
 const { gatherAndStore, extractData, openBrowser } = require('../scraper/control');  // Control functions
+const { extract, inspect } = require('../scraper/extract');
 const request = require('../scraper/request');
-const extract = require('../scraper/extract');
 const cli = require('../helpers/cli-monitor');
-
+const { padNr } = require('../helpers/general-global.js');
 
 
 
@@ -38,8 +38,8 @@ router.post('/gather/:state', async (req, res) => {
 		console.log('');
 
 		// Fetch starting URL
-		let { url, account } = await ScrapeControl.findOne({ name: 'scrape-control' });
-		if (!url) url = 'https://twitter.com/' + account;
+		let { url, user } = await ScrapeControl.findOne({ name: 'scrape-control' });
+		if (!url) url = 'https://twitter.com/' + user;
 
 		// Start scraping
 		gatherAndStore(url);
@@ -118,44 +118,67 @@ router.post('/transfer', async (req, res) => {
 
 
 
-// Testing: create documents
-router.get('/test', async (req, res) => {
-	var docs = [{
-		location: { name: null, id: null },
-		thread: { prev: '1266742919815454723', next: null },
-		extra: { likes: 0, replies: 0, retweets: 0, poll: null },
-		tagsTw: [],
-		mentions: [ 'the_forty_fifth', 'charlytesta' ],
-		internalLinks: [],
-		externalLinks: [],
-		stars: 0,
-		labels: [],
-		archived: false,
-		idTw: '1266743039982215173',
-		author: 'themoenen',
-		date: '2020-05-30T14:47:30.000Z',
-		isRT: false,
-		text: '@the_forty_fifth @charlytesta comment on comment 1',
-		url: 'https://twitter.com/themoenen/status/1266743039982215172'
-	}];
-	  
-	var result = await TweetScrape.create(docs);
+// Store single tweet on IFTTT prompt
+router.post('/new-tweet', async (req,res) => {
+	if (req.body.tweet) {
+		const id = req.body.tweet.match(/\d+$/)[0];
+		console.log('***')
+		const tweet = await extract(id);
+
+		// For console
+		const exists = !!await Tweet.countDocuments({ idTw: id });
+		if (exists) console.log('DELETING TWEET');
+
+		// Delete previous version of this tweet
+		await Tweet.findOneAndRemove({ idTw: id });
+
+		// Create new
+		await Tweet.create(tweet);
+		res.send(tweet);
+	} else {
+		res.send('Tweet link missing');
+	}
+});
 
 
-	res.send(result);
+
+// Inspect tweet
+router.get('/inspect/:id', async (req, res) => {
+	const tweet = await inspect(req.params.id);
+	res.send(tweet);
+});
+router.get('/inspect/:id/:type', async (req, res) => {
+	// Type can be original / parsed / extracted
+	const tweet = await inspect(req.params.id, req.params.type);
+	res.send(tweet);
+});
+
+
+
+// Download JSON of entire tweet database
+router.get('/download', async (req,res) => {
+	let allTweets = await Tweet.find();
+	allTweets = JSON.stringify(allTweets);
+	const date = new Date();
+	const filename = 'trump-archive-data-dump-' + date.getFullYear() + padNr(date.getMonth()) + padNr(date.getDay()) + '-' + date.getHours() + 'h' + padNr(date.getMinutes());
+	res.writeHead(200, {
+		'Content-Type': 'application/json-download',
+		"content-disposition": `attachment; filename="${filename}.json"`
+	});
+	res.end(allTweets);
 });
 
 
 
 // Initialize scraper
-// --> Create control center in database with any account name
-router.get('/init/:account', async (req, res) => {
+// --> Create control center in database with any user name
+router.get('/init/:user', async (req, res) => {
 	let ctrl = await ScrapeControl.findOneAndUpdate({ name: 'scrape-control' }, {
 		name: 'scrape-control',
 		extracting: false,
 		gathering: false,
 		url: null,
-		account: req.params.account,
+		user: req.params.user,
 		p: 1,
 		total: 1
 	}, { upsert: true, new: true});
@@ -195,6 +218,53 @@ router.get('/test-payload/:id', async (req, res) => {
 router.get('/open-browser', async (req, res) => {
 	openBrowser();
 	res.send('Chromium should open.')
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Testing: create documents
+router.get('/test', async (req, res) => {
+	var docs = [{
+		location: { name: null, id: null },
+		thread: { prev: '1266742919815454723', next: null },
+		extra: { likes: 0, replies: 0, retweets: 0, poll: null },
+		tagsTw: [],
+		mentions: [ 'the_forty_fifth', 'charlytesta' ],
+		internalLinks: [],
+		externalLinks: [],
+		stars: 0,
+		labels: [],
+		archived: false,
+		idTw: '1266743039982215173',
+		user: 'themoenen',
+		date: '2020-05-30T14:47:30.000Z',
+		isRT: false,
+		text: '@the_forty_fifth @charlytesta comment on comment 1',
+		url: 'https://twitter.com/themoenen/status/1266743039982215172'
+	}];
+	  
+	var result = await TweetScrape.create(docs);
+
+
+	res.send(result);
 });
 
 

@@ -28,7 +28,8 @@
 	<input id="search" type="text" placeholder="Search" value="<%= q %>" tabindex="1" autocomplete="off" autofocus>
 	<button type="button" id="search-clear" title="Clear search"></button>
 	<button type="submit">Search</button>
-	<button id="btn-search-tips">?</button>
+	<button id="btn-download" title="download results">D</button>
+	<button id="btn-search-tips" title="help">?</button>
 	<div id="search-results-count"><%= resultCount %> results</div>
 </form>
 
@@ -102,7 +103,21 @@
 		</div>
 	</div>
 	<%- include('search--query-data.ejs', terms) _%>
+	<form id="download-options">
+		<div id="dd-download-options" data-value="json" class="dropdown">
+			<select>
+				<option value="json" selected>JSON</option>
+				<option value="csv">CSV</option>
+				<option value="csv-basic">CSV Basic</option>
+			</select>
+			<div class="dsp">JSON</div>
+		</div>
+		<button type="button">cancel</button>
+		<button type="submit">download</button>
+		<div class="notice"><b>JSON:</b> full data / <b>CSV:</b> simplified data for spreadsheets</div>
+	</form>
 </div>
+
 
 <div id="table-wrap">
 <%- include('search--table.ejs') %>

@@ -30,8 +30,8 @@ function url(query, key, value, keepPagination) {
 
 
 // Turn numbers into comma numbers
-function prettyNr(x) {
-	return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+function prettyNr(nr) {
+	return nr.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 

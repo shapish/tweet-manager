@@ -1,5 +1,25 @@
 const mongoose = require('mongoose');
 
+const mediaSchema = [{
+	id: String,
+	mediaUrl: String,
+	url: String,
+	mTtype: String, // Note: tweets are videos with type:image
+	width: Number,
+	height: Number
+}];
+
+const miniTweetSchema = {
+	id: String,
+	user: {
+		name: String,
+		handle: String
+	},
+	text: String,
+	media: mediaSchema,
+	date: Date
+};
+
 const tweetSchema = new mongoose.Schema({
 	idTw: {
 		type: String,
@@ -7,18 +27,29 @@ const tweetSchema = new mongoose.Schema({
 	},
 	text: String,
 	author: String,
+	user: {
+		name: String,
+		handle: String
+	},
 	date: Date,
 	isRT: Boolean,
 	url: String,
-	location: {
-		name: String,
-		id: String
-	},
+	media: mediaSchema,
 	tagsTw: Array,
 	mentions: Array,
 	internalLinks: Array,
 	externalLinks: Array,
-	replyTo: String, // Previous tweet in thread
+	quoted: miniTweetSchema,
+	repliesTo: miniTweetSchema,
+	thread: {
+		start: String,
+		prev: String,
+		list: Array
+	},
+	location: {
+		name: String,
+		id: String
+	},
 	extra: {
 		likes: Number,
 		replies: Number,
@@ -26,6 +57,7 @@ const tweetSchema = new mongoose.Schema({
 		quotes: Number
 	},
 	source: String,
+	ogData: String,
 
 	// Internal fields
 	stars: {
@@ -47,8 +79,9 @@ const tweetSchema = new mongoose.Schema({
 		default: false
 	}
 });
+
+// Enable text search
 tweetSchema.path('text').index({text : true});
 
 const Tweet = mongoose.model('tweet-scrape', tweetSchema);
-
 module.exports = Tweet;

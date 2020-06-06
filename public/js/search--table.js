@@ -3,6 +3,7 @@ const tweetTable = new Table('tweet-table', {
 	paginationSelector: '#table-wrap .pagination',
 	path: '/search',
 	rowSelectable: 'checkbox, .cb, .main',
+	rowNotSelectable: 'a, .label, .x, .link, .link *',
 	onRowClick:	onRowClick,
 	localKeys: localKeys,
 	initExternal: function() {
@@ -32,9 +33,19 @@ initControls.bind(tweetTable)();
 
 // Handle additional row click events
 function onRowClick($row) {
-	$row.on('click', '.star', () => { this._cycleStar($row) })
-	$row.on('click', '.btn-archive', (e) => { this._toggleArchive($(e.target)); e.preventDefault(); })
-	$row.on('click', '.btn-copy', (e) => { this._copyToClipboard($row); e.preventDefault(); })
+	$row.on('click', '.icn-star', () => { this._cycleStar($row) });
+	$row.on('click', '.btn-archive', (e) => { this._toggleArchive($(e.target)); e.preventDefault(); });
+	$row.on('click', '.btn-copy', (e) => { this._copyToClipboard($row); e.preventDefault(); });
+	// $row.on('click', '.link', (e) => { window.open($(e.currentTarget).attr('href')); console.log($(e.currentTarget).attr('href')) });
+	$row.on('click', '.link', (e) => {
+		const $link = $(e.currentTarget);
+		// Avoid overlapping links to fire twice
+		if (!$link.find('.link.clicked').length) {
+			window.open($link.attr('href'));
+			$link.addClass('clicked');
+			setTimeout(() => { $link.removeClass('clicked') }, 100);
+		}
+	});
 }
 
 function hideSettings() {

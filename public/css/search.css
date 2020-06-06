@@ -11,7 +11,8 @@
 	clear: none;
 	margin-bottom: 0;
 }
-#btn-search-tips {
+#btn-search-tips,
+#btn-download {
 	min-width: 0;
 	width: 40px;
 }
@@ -148,7 +149,7 @@ input#search {
 /**
  * Query data
  */
- #query-data {
+#query-data {
 	font-size: 13px;
 	line-height: 16px;
 	/* background: pink; */
@@ -177,6 +178,28 @@ input#search {
 	background: #eee;
 	border-radius: 2px;
 	padding: 0 4px;
+}
+
+
+
+/**
+ * Download options
+ */
+#download-options,
+#controls.download #query-data,
+#controls.download .select-ui,
+#controls.download .reselect-ui {
+	display: none
+}
+#controls.download #download-options {
+	display: block;
+}
+#controls .notice {
+	font-size: 13px;
+	height: 40px;
+	line-height: 40px;
+	float: left;
+	margin-left: 10px;
 }
 
 

@@ -28,6 +28,12 @@ function linkText(tweets) {
 		tweet.plainText = tweet.text;
 		tweet.text = linkURLs(tweet.text);
 		tweet.text = linkUserNames(tweet.text);
+
+		tweet.repliesTo.text = linkURLs(tweet.repliesTo.text, true);
+		tweet.repliesTo.text = linkUserNames(tweet.repliesTo.text, true);
+
+		tweet.quoted.text = linkURLs(tweet.quoted.text, true);
+		tweet.quoted.text = linkUserNames(tweet.quoted.text, true);
 		return tweet;
 	});
 }
