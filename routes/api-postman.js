@@ -12,7 +12,7 @@ const ScrapeControl = require('../models/scrape-control');
 const Chapter = require('../models/chapter');
 const {User} = require('../models/user');
 
-const {createPath} = require('../helpers/general');
+const { createPath, timeout } = require('../helpers/general');
 const { extract } = require('../scraper/extract');
 
 
@@ -220,13 +220,17 @@ router.post('/seed/:filename', async (req, res) => {
 		// console.log(batches[j])
 
 		try {
-			const data = await Test.create(batches[j]);
+			const data = await Tweet.create(batches[j]);
 			result.push(...data);
 		}
 		catch {
 			console.log('Error, probably duplicates, on batch #' + j + '\n\n');
 		}
-		j++;
+		console.log(j % 100)
+		if (j % 100 === 99) {
+			console.log('/n/n- break-/n/n');
+			await timeout(5000);
+		}
 	}
 	
 	console.log('- - - - - - - - - done');
