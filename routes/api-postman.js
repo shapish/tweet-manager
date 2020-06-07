@@ -188,15 +188,10 @@ const Test = require('../models/test');
 router.post('/seed/:filename', async (req, res) => {
 	const seedData = require('../data/' + req.params.filename);
 	const batchSize = req.query.bs ? req.query.bs : 100;
-	const p = req.query.p ? req.query.p : 1;
-	const pageSize = 5000; // Limit to 5000 items at a time or server can time out
-	const end = Math.min(pageSize * p, seedData.length);
-	console.log('@@', Math.min(pageSize * p, seedData.length), (pageSize * p), seedData.length);
 
 	// Organize in batches
 	const batches = [];
-	for (let i=(p-1) * pageSize; i<end; i++) {
-		console.log(i)
+	for (let i=0; i<seedData.length; i++) {
 		if (i % batchSize === 0) {
 			batches.push([seedData[i]])
 		} else {	
@@ -204,19 +199,18 @@ router.post('/seed/:filename', async (req, res) => {
 		}
 	}
 
-	let j = 0;
+	// let j = 0;
 	const result = [];
 	
-	console.log('')
-	console.log('')
-	console.log('batches.length: ', batches.length);
+	console.log('Number of batches: ' + batches.length + ' * ' + batchSize);
 
 	res.send('Seed command sent');
 
-	while (batches[j]) {
-		console.log('#'+j, batches[j].length);
+	// Loop throug batches
+	for (let j=0; j<batches.length; j++) {
+		console.log('#' + j, batches[j].length);
 		
-		// Translate to our own format
+		// Translate tta to our own format
 		// batches[j] = batches[j].map(tw => {
 		// 	return {
 		// 		idTw: tw.id_str,
@@ -225,16 +219,21 @@ router.post('/seed/:filename', async (req, res) => {
 		// });
 		// console.log(batches[j])
 
-		const data = await Tweet.create(batches[j]);
-		result.push(...data);
+		try {
+			const data = await Test.create(batches[j]);
+			result.push(...data);
+		}
+		catch {
+			console.log('Error, probably duplicates, on batch #' + j + '\n\n');
+		}
 		j++;
 	}
+	
 	console.log('- - - - - - - - - done');
 	console.log('')
 	console.log(seedData.length + ' items added');
 
 	
-	// res.send([`successfully added ${seedData.length} documents`]);
 });
 
 
