@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const puppeteer = require('puppeteer');
 
 // Models
 const Tweet = require('../models/tweet');
@@ -8,7 +9,7 @@ const ScrapeControl = require('../models/scrape-control'); // Storing of options
 
 // Functions
 const { gatherAndStore, extractData, openBrowser } = require('../scraper/control');  // Control functions
-const { extract, inspect } = require('../scraper/extract');
+const { extract, extractSimple, inspect } = require('../scraper/extract');
 const request = require('../scraper/request');
 const cli = require('../helpers/cli-monitor');
 const { padNr } = require('../helpers/general-global.js');
@@ -118,26 +119,74 @@ router.post('/transfer', async (req, res) => {
 
 
 
-// Store single tweet on IFTTT prompt
-router.post('/new-tweet', async (req,res) => {
-	if (req.body.tweet) {
-		const id = req.body.tweet.match(/\d+$/)[0];
-		console.log('***')
-		const tweet = await extract(id);
+// // Store single tweet on IFTTT prompt
+// router.post('/new-tweet', async (req,res) => {
+// 	console.log('\n\n- - -\nNew tweet')
+// 	if (req.body.tweet) {
+// 		console.log(req.body.tweet);
+// 		const id = req.body.tweet.match(/\d+$/)[0];
+// 		const tweet = await extract(id);
 
-		// For console
-		const exists = !!await Tweet.countDocuments({ idTw: id });
-		if (exists) console.log('DELETING TWEET');
+// 		// For console
+// 		const exists = !!await Tweet.countDocuments({ idTw: id });
+		
+// 		// // Delete previous version of this tweet
+// 		// if (exists) console.log('DELETING TWEET');
+// 		// await Tweet.findOneAndRemove({ idTw: id });
 
-		// Delete previous version of this tweet
-		await Tweet.findOneAndRemove({ idTw: id });
+// 		if (!exists) {
+// 			await Tweet.create(tweet);
+// 			console.log('Tweet added: ' + id)
+// 		} else {
+// 			console.log('Tweet already scraped: ' + id)
+// 		}
+// 		console.log('***\n\n\n')
+		
+// 		res.send(tweet);
+// 	} else {
+// 		res.send('Tweet link missing');
+// 	}
+// });
 
-		// Create new
-		await Tweet.create(tweet);
-		res.send(tweet);
-	} else {
-		res.send('Tweet link missing');
-	}
+
+
+// // Get new tweet with Puppeteer (test)
+// router.post('/new1/:id', async (req, res) => {
+// 	console.log('- - NEW1 - -')
+
+
+// 	const browser = await puppeteer.launch({ headless: false, args: ['--no-sandbox'] });
+// 	const page = await browser.newPage();
+// 	await page.setUserAgent('Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)');
+// 	await page.goto(`https://twitter.com/realDonaldTrump/status/${req.params.id}`, { waitUntil: 'networkidle0' });
+// 	const result = await page.evaluate(_ => {
+// 		const text = document.querySelector('#main-content .tweet-text').innerText.trim();
+// 		let date = document.querySelector('#main-content .metadata').innerText.trim();
+// 		date = date.split(' - ');
+// 		date = date.reverse().join(' ');
+// 		date = String(new Date(date));
+// 		return [text, date];
+// 	});
+// 	console.log(result)
+
+// 	res.send(result);
+// });
+
+
+// Get new tweet using GOT
+router.post('/new-tweet', async (req, res) => {
+	let id = req.body.tweet.match(/\d+$/)[0];
+	
+	// Ignore tweets already scraped
+	const exists = !!await Tweet.countDocuments({ idTw: id });
+	if (exists) return res.send(`Tweet ${id} has previously been scraped.`);
+
+	// Extract & save
+	const tweet = await extractSimple(id);
+	console.log(tweet)
+	if (tweet) await Tweet.create(tweet);
+
+	res.send(tweet);
 });
 
 

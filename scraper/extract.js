@@ -3,6 +3,8 @@ const { extractUrls, extractHashtags, extractMentions } = require('twitter-text'
 const he = require('he');
 const cli = require('../helpers/cli-monitor');
 const { queryString } = require('../helpers/general');
+const got = require('got');
+const cheerio = require('cheerio');
 
 // Twitter authentication
 const BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA';
@@ -65,6 +67,54 @@ async function extract(idTw, user) {
 		ogData: data.ogData
 	}
 	return record;
+}
+
+
+
+/**
+ * Does a simplified scrape of basic data without going through the Twitter API
+ * Used to scrape tweet text from server immediately as one is published, because
+ * server IP is permanently exceeding rate limit due to other users' activity.
+ * @param {String} id Tweet id
+ */
+async function extractSimple(id) {
+	let payload;
+	try {
+		payload = await got(`https://twitter.com/realDonaldTrump/status/${id}`, {
+			headers: {
+				'user-agent': 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)'
+			}
+		});
+	} catch (error) {
+		if (error.response.statusCode == '404') {
+			console.log(`New tweet ${id} has been deleted before we could scrape it.`)
+		} else {
+			console.log(`New tweet scraping failed, Server responsed with ${error.response.statusCode}`)
+		}
+		return null;
+	}
+
+	let $ = cheerio.load(payload.body);
+
+	const text = $('#main-content .tweet-text').text().trim();
+	const userHandle = $('#main-content .user-info .username').text().trim().slice(1);
+	const userName = $('#main-content .user-info .fullname').text().trim();
+	const isRT = userHandle != 'realDonaldTrump';
+	let date = $('#main-content .metadata').text().trim();
+	date = date.split(' - ');
+	date = date.reverse().join(' ');
+	date = String(new Date(date));
+
+	return {
+		idTw: id,
+		text: text,
+		user: {
+			name: userName,
+			handle: userHandle
+		},
+		date: date,
+		isRT: isRT
+	}
 }
 
 
@@ -281,4 +331,4 @@ async function getGuestToken(token) {
 
 
 
-module.exports = { extract, inspect };
+module.exports = { extract, extractSimple, inspect };

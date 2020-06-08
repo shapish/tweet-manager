@@ -26,7 +26,6 @@ const tweetSchema = new mongoose.Schema({
 		unique: true
 	},
 	text: String,
-	author: String,
 	user: {
 		name: String,
 		handle: String
