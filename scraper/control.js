@@ -3,12 +3,14 @@ const puppeteer = require('puppeteer');
 
 // Models
 const TweetScrape = require('../models/tweet-scrape');
+const Tweet = require('../models/tweet');
+const Tta = require('../models/tta');
 const ScrapeControl = require('../models/scrape-control');
 
 // Functions
 const gather = require('./gather');
 const { extract } = require('./extract');
-const { timeout } = require('../helpers/general');
+const { timeout, getTime } = require('../helpers/general');
 const cli = require('../helpers/cli-monitor');
 
 
@@ -26,10 +28,13 @@ const cli = require('../helpers/cli-monitor');
  */
 async function gatherAndStore(url, batchSize) {
 	if (!url) return console.error('Abort: no scrape url provided.');
-	batchSize = batchSize ? batchSize : 10;
+	batchSize = batchSize ? batchSize : 5;
+	let batchNr = 0;
 
 	// Scrape control keeps track of progress & allows to pause/resume
-	let { p, total } = await ScrapeControl.findOne({ name: 'scrape-control' }).select('p total');
+	let { pagesDone, total } = await ScrapeControl.findOne({ name: 'scrape-control' }).select('pagesDone total');
+	let page = pagesDone + 1;
+	cli.title(`Starting at p: ${page} – Tweets scraped: ${total}`, 0, 3)
 
 	// No-sandbox required for Heroku: https://bit.ly/36UH3qE
 	const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
@@ -40,54 +45,78 @@ async function gatherAndStore(url, batchSize) {
 	async function _gatherLoop(url) {
 		let batchIds = [];
 		
+		// Loop through one batch of pages
+		// and store all ids in array
 		await gather({
 			browser: browser,
 			url: url,
 			batchSize: batchSize,
-			p: p
+			page: page
 		}, async (ids, nextUrl, p) => {
 			// Callback called for each page
 			batchIds.push(...ids);
-			cli.log(`Adding ${ids.length} tweets to batch`, 2);
 			url = nextUrl;
-			p = p;
+			// cli.log(`Returning p:${page}`.green)
+			page = p;
 		});
 
-		cli.log(`p: ${p}`, 1);
-
-		// Remove duplicates (not needed but more accurate counting)
+		// Remove duplicates within our results (not needed but more accurate counting)
 		const dups = batchIds.filter((item, index) => batchIds.indexOf(item) != index);
 		dups.forEach((dup, i) => batchIds.splice(batchIds.indexOf(dup), 1))
 
+		// Remove ids that already have been scraped
+		let existing = batchIds.map(async (id, i) => {
+			return Tweet.countDocuments({ idTw: id });
+		});
+		existing = await Promise.all(existing);
+		const newBatchIds = [];
+		const removedIds = []; // Store for logging
+		existing.forEach((exists, i) => {
+			if (exists) {
+				removedIds.push(batchIds[i]);
+			} else {
+				newBatchIds.push(batchIds[i]);
+			}
+		});
+
+		batchNr++;
+		cli.title(`Processing batch #${batchNr}: ${newBatchIds.length}/${batchIds.length} new tweets.`);
+		batchIds = newBatchIds;
+
 		// Update total
-		total += (batchIds.length - dups.length);
-		
+		total += batchIds.length;
+
+		// If no new tweets are scraped, end the process.
+		if (!batchIds.length) return cli.banner('Scrapes up to date');
+
 		// Monitor
-		cli.log(`Store in database: ${batchIds.length} --> Total: ${total}`);
-		cli.log(batchIds.join(',').green);
-		cli.log(`${batchIds[0]} --> ${batchIds[batchIds.length - 1]} - ${url}`, 2);
+		cli.log(`Removed ${removedIds.length} already imported tweets: [${removedIds.join(',')}]`)
+		cli.title(`Store in database: ${batchIds.length} --> Total: ${total}`, 0, 2);
+		// cli.log(batchIds.join(',').green);
+		// cli.log(`${batchIds[0]} --> ${batchIds[batchIds.length - 1]} - ${url}`, 2);
 
 		// Store ids in database
-		const promise = batchIds.map(id => {
+		const promise2 = batchIds.map(id => {
 			return TweetScrape.findOneAndUpdate({ idTw: id }, {
 				idTw: id
 			}, { upsert: true, new: true });
 		});
-		let tweets = await Promise.all(promise);
-		cli.log(`tweets.length: ${tweets.length}`, 2);
+		let tweets = await Promise.all(promise2);
 
 		// Store next page URL & check if we should continue
 		await ScrapeControl.findOneAndUpdate({ name: 'scrape-control' }, {
 			url: url,
-			p: p,
-			total: total
+			pagesDone: page, // Not working, needs debug
+			total: total // Off with a few – not functional but sloppy
 		});
+
+		page++;
 
 		// Batch repeats with delay until we reach bottom of profile
 		if (url) {
 			await timeout(5000);
 			const { gathering } = await ScrapeControl.findOne({ name: 'scrape-control' });
-			if (gathering) _gatherLoop(url);
+			if (gathering) { _gatherLoop(url) } else { cli.title('Stopped', 2, 2) }
 		}
 	}
 };
@@ -112,7 +141,8 @@ async function extractData() {
 
 		// Find empty tweets
 		let tweets = await TweetScrape.find({
-			ogData: { $exists: false }
+			ogData: { $exists: false },
+			deleted: { $ne: true } // False or null
 		}).limit(batchSize).lean();
 
 		if (!tweets.length) {
@@ -140,8 +170,7 @@ async function extractData() {
 			})
 			// Pause when rate limit is exceeded
 			if (rateLimitReached) {
-				const date = new Date();
-				const time = date.getHours() + ':'+ date.getMinutes();
+				const time = getTime(false, true);
 				console.log(`\n\nTaking 5 min break (${time}).\n\n`);
 				await timeout(300000);
 			}
@@ -158,8 +187,7 @@ async function extractData() {
 				extractedTweets.push(extractedTweet);
 				// Pause when rate limit is exceeded;
 				if (errors && errors[0].code == 88) {
-					const date = new Date();
-					const time = date.getHours() + ':'+ date.getMinutes();
+					const time = getTime(false, true);
 					console.log(`\n\nTaking 5 min break (${time}).\n\n`);
 					await timeout(300000);
 				}
@@ -179,8 +207,7 @@ async function extractData() {
 
 		cli.wait(false);
 		// cli.log(ids.join(',').green);
-		const date = new Date();
-		const time = date.getHours() + ':'+ date.getMinutes();
+		const time = getTime(false, true);
 		cli.log(`Done --> Total: ${processed} / ${time}`, 1);
 
 		// Continue loop if more tweets are left and process is still on
@@ -203,6 +230,68 @@ async function extractData() {
 
 
 
+/**
+ * Fill in deleted tweets
+ * When a tweet is deleted, we try retrieving its data from the Trump Twitter Archive
+ */
+async function fillInDeleted(tweet) {
+	const tta = await Tta.findOne({
+		id_str: tweet.idTw
+	});
+	if (tta) {
+		tweet.text = tta.text;
+		tweet.user = {
+			name: 'Donald J. Trump',
+			handle: 'realDonaldTrump',
+		};
+		tweet.date = tta.created_at;
+		tweet.isRT = tta.is_retweet;
+		tweet.url = 'https://twitter.com/realDonaldTrump/' + tweet.idTw;
+		tweet.extra = {
+			likes: tta.favorite_count,
+			retweets: tta.retweet_count
+		};
+		tweet.source = tta.source;
+	}
+}
+
+
+
+/**
+ * When a tweet is a retweet, reprocess it
+ * (This is initial scrape and can be deleted later, although the replace aspect should be kept)
+ */
+async function expandRetweet(tweet) {
+	const newTweet = await extract(tweet.idTw);
+	
+	if (newTweet.deleted) {
+		// Catch & fill deleted tweets
+		// console.log('\n\n\nbefore: ', newTweet);
+		await fillInDeleted(newTweet);
+		// console.log('\n\n\nafter: ', newTweet);
+		newTweet.isRT = true;
+
+		// Remove RT text & save username
+		const rtUserHandle = newTweet.text.match(/^RT @(\S+)\b: /)[1];
+		newTweet.text = newTweet.text.replace(/^RT @\S+\b: /, '');
+		if (!newTweet.rt) {
+			newTweet.rt = { user: { handle: rtUserHandle } };
+		}
+
+		// Save
+		await Tweet.findOneAndUpdate({
+			idTw: tweet.idTw
+		}, newTweet);
+	} else {
+		// Fully replace properly scraped tweets
+		await Tweet.findOneAndDelete({
+			idTw: tweet.idTw
+		});
+		await Tweet.create(newTweet);
+	}
+}
+
+
 
 // Open browser for testing
 async function openBrowser() {
@@ -214,10 +303,7 @@ async function openBrowser() {
 
 
 
-
-
-
-module.exports = { gatherAndStore, extractData, openBrowser }
+module.exports = { gatherAndStore, extractData, fillInDeleted, expandRetweet, openBrowser }
 
 
 

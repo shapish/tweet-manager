@@ -1,4 +1,4 @@
-const {padNr, linkURLs, linkUserNames} = {...require('./general-global'), ...require('./general')};
+const { padNr, linkURLs, linkUserNames } = require('./general');
 
 
 // Returns { years: [], months: [] }

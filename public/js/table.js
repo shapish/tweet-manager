@@ -126,10 +126,11 @@ Table.prototype._initRowClicks = function(e) {
 		const $row = this.$rows.eq(i);
 		$row.off('click');
 		this.onRowClick($row);
+		$row.on('click', '.icn-star', () => { this._cycleStar($row) });
 		$row.on('click', this.rowSelectable, (e) => { // Label & link clicks get blocked in toggleSelect // ##
 			// Block when label is clicked
-			console.log($(e.target).get(0), $(e.target).is(this.rowNotSelectable), '!!!')
-			if ($(e.target).is(this.rowNotSelectable)) return;
+			// if ($(e.target).is(this.rowNotSelectable) || $(e.target).closest(this.rowNotSelectable).length) return;
+			if ($(e.target).closest(this.rowNotSelectable).length) return;
 			this._toggleSelect(e, $row);
 		});
 	}

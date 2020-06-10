@@ -3,7 +3,7 @@ const tweetTable = new Table('tweet-table', {
 	paginationSelector: '#table-wrap .pagination',
 	path: '/search',
 	rowSelectable: 'checkbox, .cb, .main',
-	rowNotSelectable: 'a, .label, .x, .link, .link *',
+	rowNotSelectable: 'a, .label, .x, .link, .link *, .video-wrap',
 	onRowClick:	onRowClick,
 	localKeys: localKeys,
 	initExternal: function() {
@@ -33,10 +33,9 @@ initControls.bind(tweetTable)();
 
 // Handle additional row click events
 function onRowClick($row) {
-	$row.on('click', '.icn-star', () => { this._cycleStar($row) });
+	$row.on('click', '.video-wrap', (e) => { this._playVideo($(e.currentTarget), $row) });
 	$row.on('click', '.btn-archive', (e) => { this._toggleArchive($(e.target)); e.preventDefault(); });
 	$row.on('click', '.btn-copy', (e) => { this._copyToClipboard($row); e.preventDefault(); });
-	// $row.on('click', '.link', (e) => { window.open($(e.currentTarget).attr('href')); console.log($(e.currentTarget).attr('href')) });
 	$row.on('click', '.link', (e) => {
 		const $link = $(e.currentTarget);
 		// Avoid overlapping links to fire twice
@@ -255,6 +254,29 @@ function localKeys(e) {
 	}
 	return true;
 }
+
+
+
+/**
+ * PLAYING VIDEO
+ */
+
+tweetTable._playVideo = function($wrap, $row) {
+	const url = $wrap.attr('data-url');
+	if (!url) return;
+	
+	// Make sure video is not loaded twice.
+	$wrap.removeAttr('data-url');
+	$row.off('click', '.video-wrap');
+
+	
+	const video = `<video width="100%" height="100%" controls autoplay>
+		<source src="${url}" type="video/mp4">
+		Your browser does not support HTML5 video.
+	</video>`;
+	$wrap.find('.video-play').remove();
+	$wrap.prepend(video);
+};
 
 
 

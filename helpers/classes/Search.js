@@ -1,5 +1,5 @@
 const moment = require('moment');
-const {padNr} = require('../general-global');
+const { padNr } = require('../general');
 
 
 /**	

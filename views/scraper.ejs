@@ -8,20 +8,25 @@
 		'scraper.js'
 	]
 }) %>
-
-<a href="/api/scraper/init/" target="_blank">Initialize</a><br>
-<a href="/api/scraper/reset" target="_blank">Reset</a><br>
-<a href="/api/scraper/open-browser" target="_blank">Spoof browser</a><br>
-<a href="/api/scraper/test-payload/1246561509645352961" target="_blank">Test payload</a><br>
-<a href="/api/scraper/tweet/1246561509645352961" target="_blank">Inspect tweet</a><br>
-<br>
-<a href="/api/scraper/download" target="_blank">Data dump</a><br>
+<h3>Live Scraper</h3>
+<div class="process">
+	<button id="scrape-new-tweets" class="<% if (extracting) { %>on<% } %>"></button>
+	<div class="display"></div>
+</div><br><br>
+<p>This scrapes the latest tweets and updated that directly into the main table.</p>
 <br><br>
-
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+<br><br>
+<h3>Batch Scraper</h3>
+<p>This scrapes an entire timeline into a separate table which then is transferred. Three steps:</p>
 <% if (typeof gathering == 'undefined') { %>
-	Initialize controls to begin:<br>
-	<a href="/init/realdonaldtrump" target="_blank">Initialize</a>
+	<a href="/api/scraper/init/realDonaldTrump" target="_blank">Initialize Scrape Controller</a> to start.<br>
 <% } else { %>
+	<p>1. <b>Gather</b> will scrape ids from DJT's timeline Twitter and store them in the TweetScrapes table.</p>
+	<p>2. <b>Extract</b> will run each id by the Twitter API and fetch all data, updating the TweetScrapes table (requires localhost).</p>
+	<p>3. <b>Transfer</b> will transfer the TweetScrapes table to Tweets table. Duplicated will throw an error.</p>
+	<br><br>
+	<p style="color: #d00">Connected to: <%= database %></p><br>
 	<div class="process">
 		<button id="gather" class="<% if (gathering) { %>on<% } %>"></button>
 		<div class="display"></div>
@@ -35,6 +40,31 @@
 	<div class="process">
 		<button id="transfer">Transfer Data</button>
 		<div class="display"></div>
-	</div>
+	</div><br>
+	<br><br>
+	<h3>Useful links</h3>
+	<ul>
+		<li>
+			<a href="/api/scraper/init/realDonaldTrump" target="_blank">Re-initialize scrape control</a><br>
+			!! Warning: TweetScrape table will be dropped and controller reset
+		</li>
+		<li>
+			<a href="/api/scraper/tweet/1246561509645352961" target="_blank">Inspect tweet</a><br>
+			Better done from Postman (bc JSON formatting)
+		</li>
+		<li>
+			<a href="/api/scraper/open-browser" target="_blank">Spoof browser</a><br>
+			See what puppeteer scraper sees (when scraping IDs) with IE6 user-agent
+		</li>
+		<li>
+			<a href="/api/scraper/test-payload/1246561509645352961/true" target="_blank">Test payload</a> (rendered) or 
+			<a href="/api/scraper/test-payload/1246561509645352961/false" target="_blank">Test payload</a> (html)<br>
+			Payload using npm got is only used for simpleScrape,<br>
+			to temporarily scrape tweets until we get to run them by API.<br>
+			It uses the same IE6 user-agent as puppeteer
+		</li>
+	</ul>
 <% } %>
+
+
 <%- include('partials/foot.ejs') %>

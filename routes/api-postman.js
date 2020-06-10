@@ -11,9 +11,11 @@ const Tta = require('../models/tta');
 const ScrapeControl = require('../models/scrape-control');
 const Chapter = require('../models/chapter');
 const {User} = require('../models/user');
+const { fillInDeleted, expandRetweet } = require('../scraper/control');
 
-const {createPath} = require('../helpers/general');
+const { createPath, timeout } = require('../helpers/general');
 const { extract } = require('../scraper/extract');
+const cli = require('../helpers/cli-monitor');
 
 
 
@@ -22,7 +24,14 @@ const { extract } = require('../scraper/extract');
 /**
  * Testing
  */
-
+// https://stackoverflow.com/questions/3459476/how-to-append-to-a-file-in-node/43370201#43370201
+// var stream = fs.createWriteStream("append.txt", {flags:'a'});
+// console.log(new Date().toISOString());
+// [...Array(10000)].forEach( function (item,index) {
+//     stream.write(index + "\n");
+// });
+// console.log(new Date().toISOString());
+// stream.end();
 
 
 
@@ -42,43 +51,9 @@ router.put('/fill-deleted', async (req, res) => {
 		text: null
 	});
 
-	// let deleted = await TweetScrape.updateMany({
-	// 	deleted: true
-	// }, {
-	// 	$unset: {
-	// 		source: 1
-	// 	}
-	// })
-
-	// deleted = deleted.map(async tweet => {
-	// 	return extract(tweet.idTw, ctrl.user);
-	// });
-	// await Promise.all(deleted);
-
 	// Fill in data
 	for (let i=0; i<deleted.length; i++) {
-		if (!deleted[i].text) {
-			const tta = await Tta.findOne({
-				id_str: deleted[i].idTw
-			});
-			console.log(tta.id_str)
-			deleted[i].text = tta.text;
-			deleted[i].user = {
-				name: 'Donald J. Trump',
-				screen_name: 'realDonaldTrump',
-				location: 'Washington, DC',
-				description: '45th President of the United States of America🇺🇸',
-				profile_image_url_https: 'https://pbs.twimg.com/profile_images/874276197357596672/kUuht00m_normal.jpg'
-			};
-			deleted[i].date = tta.created_at;
-			deleted[i].isRT = tta.is_retweet;
-			deleted[i].url = 'https://twitter.com/realDonaldTrump/' + deleted[i].idTw;
-			deleted[i].extra.likes = tta.favorite_count;
-			deleted[i].extra.retweets = tta.retweet_count;
-			deleted[i].source = tta.source;
-		} else {
-			console.log('Not deleted: ', deleted[i].idTw);
-		}
+		await fillInDeleted(deleted[i]);
 	};
 	
 	// Update database
@@ -95,18 +70,157 @@ router.put('/fill-deleted', async (req, res) => {
 
 // Update tweets
 router.put('/update-tweets', async (req, res) => {
-	const count = await TweetScrape.count();
-	await TweetScrape.updateMany({}, {
+	const Model = Tweet;
+	const query = { 'media.0': { $exists: true }  };
+	const count = await Model.countDocuments(query);
+
+	await Model.updateMany(query, {
 		// $unset: { 
 		// 	author: 1,
 		// },
-		user: {
-			name: 'Donald J. Trump',
-			handle: 'realDonaldTrump'
-		}
 	});
 
 	res.send([`Done: ${count} records updated`]);
+});
+
+// Remove author field
+router.put('/remove-author', async (req, res) => {
+	const Model = Tweet;
+	const count = await Model.countDocuments();
+	const tweets = await Model.updateMany({}, {
+		$unset: { 
+			author: 1
+		}
+	});
+
+	res.send([`Done: ${count} records updated`, tweets]);
+});
+
+// Update tweets
+router.put('/fix-video-gif-type-and-url', async (req, res) => {
+	const Model = Tweet;
+	const query = { 'media.0': { $exists: true }  };
+	const count = await Model.countDocuments(query);
+	const tweets = await Model.find(query);
+
+	for (let i=0; i<tweets.length; i++) {
+		const tweet = tweets[i];
+		const ogData = JSON.parse(tweet.ogData);
+		tweet.media = tweet.media.map((m, j) => {
+			const ogMedia = ogData.extended_entities.media[j];
+			const type = ogMedia.type;
+			// console.log(i, j, type, tweet.idTw)
+
+			// Video: Cycle trough formats to find the largest bitrate
+			let videoUrl;
+			if (type == 'video') {
+				let videoFormats = ogMedia.video_info.variants; // Array of video formats
+				let bitrate = 0;
+				videoFormats.forEach(format => {
+					if (format.bitrate && format.bitrate > bitrate) {
+						bitrate	= format.bitrate;
+						videoUrl = format.url
+					}
+				});
+				// console.log('videoUrl: ', videoUrl, bitrate);
+			}
+
+			// Gif: Pluck video directly
+			let gifUrl = (type == 'animated_gif') ? ogMedia.video_info.variants[0].url : null;
+			// if (type == 'animated_gif') console.log('gifUrl: ', gifUrl, ogMedia.video_info.variants.length)
+
+			m.mType = type;
+			if (type == 'video') m.videoUrl = videoUrl
+			if (type == 'animated_gif') m.gifUrl = gifUrl;
+			return m;
+		});
+		
+		// Save to db
+		await Tweet.findOneAndUpdate({
+			idTw: tweet.idTw
+		}, {
+			media: tweet.media
+		});
+
+	}
+
+	// await Model.updateMany(query, {
+	// 	// $unset: { 
+	// 	// 	author: 1,
+	// 	// },
+	// 	// rt: null,
+	// 	isRT: true
+	// });
+
+	res.send([`Done: ${count} records updated`]);
+});
+
+// Update tweets
+router.put('/delete-recent-tweets', async (req, res) => {
+	const Model = Tweet;
+	const query = { date: { $gt: new Date('6-3-2020') } }
+	const count = await Model.countDocuments(query);
+
+	await Model.deleteMany(query);
+
+	// await Model.updateMany(query, {
+	// 	// $unset: { 
+	// 	// 	author: 1,
+	// 	// },
+	// 	// rt: null,
+	// 	isRT: true
+	// });
+
+	res.send([`Done: ${count} records updated`]);
+});
+
+// Fix retweet flags
+router.put('/reset-rt', async (req, res) => {
+	// This first:
+	const result = await Tweet.updateMany({}, {
+		isRT: null
+	});
+
+	res.send([`Done: ${result.nModified}/${result.n} records updated`]);
+});
+
+// Expand tta RTs
+router.put('/expand-rt', async (req, res) => {
+	const batchSize = 10;
+	const query = {
+		text: { $regex: /^RT @/ },
+		// deleted: false
+	}
+	const total = await Tweet.countDocuments(query);
+	let  done = 0;
+	let i = 1;
+	cli.banner('Start expanding retweets');
+	res.send([`Expanding activated, ${total} documents to go.`]);
+	
+	_cycle();
+	const to = setTimeout(_cycle, batchSize * 5000); // Avoid going over rate limit
+	
+	async function _cycle() {
+		const count = await Tweet.countDocuments(query).limit(batchSize);
+		const tweets = await Tweet.find(query).limit(batchSize).lean();
+
+		// Log
+		cli.title(`Cycle #${i} : ${count*i} / ${total}`, 2);
+
+		// Loop through retweets & replace with original tweets
+		for (let j=0; j<tweets.length; j++) {
+			console.log('#' + (done+1), tweets[j].text.replace(/\n/g, ' '));
+			await expandRetweet(tweets[j]);
+			done++;
+		}
+
+		// Repeat cycle
+		if (i < total) {
+			i++;
+		} else {
+			clearTimeout(to)
+		}
+	}
 });
 
 // Update tweets

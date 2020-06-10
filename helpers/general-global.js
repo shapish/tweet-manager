@@ -35,14 +35,5 @@ function prettyNr(nr) {
 }
 
 
-// Pad numbers with zero
-function padNr(n, width) {
-	width = width ? width : 2;
-	n = n + '';
-	return n.length >= width ? n : new Array(width - n.length + 1).join(0) + n;
-}
-
-
-exports.padNr = padNr;
 exports.prettyNr = prettyNr;
 exports.url = url;

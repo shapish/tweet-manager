@@ -1,3 +1,18 @@
+/* Live Scrape */
+#scrape-new-tweets::after {
+	content: 'Scrape latest tweets';
+}
+#scrape-new-tweets.on::after {
+	content: 'Stop Scraping';
+}
+#scrape-new-tweets:not(.on) + .display::after {
+	content: 'Scraping off';
+}
+#scrape-new-tweets.on + .display::after {
+	content: 'Scraping on!';
+}
+
+
 .process {
 	margin-bottom: 40px;
 	clear: left;

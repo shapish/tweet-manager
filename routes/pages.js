@@ -67,7 +67,8 @@ router.get('/scraper', auth, async (req, res) => {
 		data = {
 			gathering: gathering,
 			extracting: extracting,
-			user: req.user
+			user: req.user,
+			database: config.get('db').match('localhost') ? 'localhost' : 'production'
 		};
 	}
 	

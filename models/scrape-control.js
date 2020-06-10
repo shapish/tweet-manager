@@ -8,15 +8,16 @@ module.exports = mongoose.model('scrape-control', new mongoose.Schema({
 	},
 	gathering: Boolean,
 	extracting: Boolean,
+	liveScraping: Boolean,
 	url: String, /* URL of next page to be scraped */
-	p: {
+	pagesDone: {
 		/* Page number of next page to be scraped */
 		type: Number,
-		default: 1
+		default: 0
 	},
 	total: {
 		/* Count of how many tweets are scraped */
 		type: Number,
 		default: 0
 	}
-}, { collection: 'control' }));
+}, { collection: 'scrape-control' }));

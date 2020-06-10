@@ -1,3 +1,4 @@
+
 /**
  * Helper functions available  only in backend
  */
@@ -117,4 +118,47 @@ function queryString(params) {
 }
 
 
-module.exports = { removeDupDocs, compareArrays, linkURLs, linkUserNames, createPath, cookieDate, timeout, queryString }
+function padNr(n, width) {
+	width = width ? width : 2;
+	n = n + '';
+	return n.length >= width ? n : new Array(width - n.length + 1).join(0) + n;
+}
+
+
+// Return formatted time
+function getTime(date, us) {
+	date = date ? new Date(date) : new Date();
+	let time;
+	if (us) {
+		ampm = date.getHours() < 12 ? ' AM' : ' PM';
+		let hours = date.getHours() % 12;
+		hours = hours ? hours : 12;
+		time = hours + ':' + padNr(date.getMinutes()) +  ampm;
+	} else {
+		time = date.getHours() + ':'+ padNr(date.getMinutes());
+	}
+	return time;
+}
+
+
+// Return formatted date
+// Type 1/2/3 = short, medium, long
+function getDate(date, type) {
+	date = date ? new Date(date) : new Date();
+	type = type ? type : 2; // 1-2-3
+	const monthsLong =  ['January','February','March','April','May','June','July','August','September','October','November','December'];
+	const monthsShort =  ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+	const months = type == 2 ? monthsShort : type == 3 ? monthsLong : null;
+
+	if (type == 1) {
+		// 1: 01-05-20
+		return padNr(date.getMonth()) + '-' + padNr(date.getDate()) + '-' + String(date.getFullYear()).slice(2);
+	} else {
+		// 2: Jan 5, 2020
+		// 3: January 5, 2020
+		return months[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+	}
+}
+
+
+module.exports = { removeDupDocs, compareArrays, linkURLs, linkUserNames, createPath, cookieDate, timeout, queryString, padNr, getTime, getDate }

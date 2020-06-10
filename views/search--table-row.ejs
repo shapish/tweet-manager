@@ -11,14 +11,43 @@
 		<%- include('svg/star.ejs') %>
 	</div>
 	<div class="table-cell main">
-		<span><% if (user.handle != 'realDonaldTrump') { %><a href="https://twitter.com/<%= user.handle %>" target="_blank" class="other-user"><%= user.name %> @<%= user.handle %></a><% } %><%- text %></span><br>
+		<span>
+			<% if (isRT) { %>
+				<a href="https://twitter.com/realDonaldTrump/status/<%= rt.idTw %>" target="_blank" class="flag rt"><b>RT</b></a><a href="https://twitter.com/<%= rt.user.handle %>" class="flag"><span>@<%= rt.user.handle %></span></a>
+			<% } else if (user.handle != 'realDonaldTrump') { %>
+				<a href="https://twitter.com/<%= user.handle %>" target="_blank" class="flag"><b><%= user.name %></b><span>@<%= user.handle %></span></a>
+			<% } %>
+			<%- text %>
+		</span><br>
 		<% if (media && media.length) { %>
 			<div class="media">
 			<% if (media.length == 1) { %>
-				<div href="<%= media[0].mediaUrl %>" target="_blank"><img src="<%= media[0].mediaUrl %>"></div>
+				<% if (media[0].mType == 'video') { %>
+					<%# <!-- video --> %>
+					<div class="video-wrap" data-url="<%= media[0].videoUrl %>">
+						<div class="video-play"><%- include('svg/twitter-play.ejs') %></div>
+						<!-- <video width="100%" height="100%" controls style="max-width:100%;max-height:100%">
+							<source src="<%= media[0].videoUrl %>" type="video/mp4">
+							Your browser does not support HTML5 video.
+						</video> -->
+						<img src="<%= media[0].mediaUrl %>">
+					</div>
+				<% } else if (media.mType == 'animated_gif') { %>
+					<%# <!-- animated gif --> %>
+					<div class="video-wrap">
+						<video width="640" height="360" controls>
+							<source src="https://video.twimg.com/amplify_video/1267606437380980737/vid/640x360/3PL7GEsymGxvD7h2.mp4?tag=13" type="video/mp4">
+							Your browser does not support the video tag.
+						</video>
+						<img src="<%= media[0].mediaUrl %>">
+					</div>
+				<% } else { %>
+					<%# <!-- image --> %>
+					<div class="link" href="<%= media[0].mediaUrl %>" target="_blank"><img src="<%= media[0].mediaUrl %>"></div>
+				<% } %>
 			<% } else { %>
 				<% for (const i in media) { %>
-					<div href="<%= media[i].mediaUrl %>" target="_blank"><img class="small" src="<%= media[i].mediaUrl %>"></div>
+					<div class="link" href="<%= media[i].mediaUrl %>" target="_blank"><img class="small" src="<%= media[i].mediaUrl %>"></div>
 				<% } %>
 			<% } %>
 			</div>
@@ -41,15 +70,16 @@
 		<% } %>
 		<div class="meta">
 			<% if (date) { %>
-				<a href="#"><%= monthNames.split(',')[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear() %></a> at <%= date.getHours() + ':' + padNr(date.getMinutes(), 2) %>
+				<a href="#"><%= dateString %></a> at <%= timeString %>
 			<% } %>
 			<% if (extra.retweets && extra.likes && extra.quotes) { %>
 				&nbsp;&nbsp;•&nbsp;&nbsp; RT <%= prettyNr(extra.retweets) %>
 				&nbsp;&nbsp;•&nbsp;&nbsp; &#9825; <%= prettyNr(extra.likes) %>
 				&nbsp;&nbsp;•&nbsp;&nbsp; Q <%= prettyNr(extra.quotes) %>
 				&nbsp;&nbsp;•&nbsp;&nbsp; Source: <%= source %>
-			<% } else { %>
-				&nbsp;&nbsp;•&nbsp;&nbsp; This tweet has not been fully scraped, media is not included.
+			<% } %>
+			<% if (!ogData && !deleted) { %>
+				&nbsp;&nbsp;•&nbsp;&nbsp; Not yet fully scraped.
 			<% } %>
 		</div>
 		<div class="label-wrap<% if (labels.length) { %> pad<% } %>">
@@ -80,7 +110,7 @@
 		<%- include('partials/chapter-dropdown.ejs') %>
 	</div>
 	<a href="https://twitter.com/_/status/<%= idTw %>" target="_blank" class="table-cell date">
-		<% if (date) { %><%= monthNames.split(',')[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear() %><% } %>
+		<% if (date) { %><%= dateString %><% } %>
 	</a>
 	<a href="#" class="table-cell btn-copy">
 		copy

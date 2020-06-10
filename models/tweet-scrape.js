@@ -1,20 +1,24 @@
 const mongoose = require('mongoose');
 
+const userSchema = {
+	name: String,
+	handle: String
+}
+
 const mediaSchema = [{
 	id: String,
 	mediaUrl: String,
 	url: String,
-	mTtype: String, // Note: tweets are videos with type:image
+	mType: String,
+	videoUrl: String,
+	gifUrl: String,
 	width: Number,
 	height: Number
 }];
 
 const miniTweetSchema = {
 	id: String,
-	user: {
-		name: String,
-		handle: String
-	},
+	user: userSchema,
 	text: String,
 	media: mediaSchema,
 	date: Date
@@ -26,13 +30,15 @@ const tweetSchema = new mongoose.Schema({
 		unique: true
 	},
 	text: String,
-	user: {
-		name: String,
-		handle: String
-	},
+	user: userSchema,
 	date: Date,
 	isRT: Boolean,
-	url: String,
+	rt: {
+		idTw: String, // Retweet id (not scrapeable, but stored from tta)
+		date: Date,
+		user: userSchema,
+		rtIdMissing: Boolean // We don't have the RT id for scraped tweets, so we mark them
+	},
 	media: mediaSchema,
 	tagsTw: Array,
 	mentions: Array,
@@ -76,7 +82,9 @@ const tweetSchema = new mongoose.Schema({
 	deleted: {
 		type: Boolean,
 		default: false
-	}
+	},
+	test: Number,
+	author: String
 });
 
 // Enable text search

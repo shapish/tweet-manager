@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const puppeteer = require('puppeteer');
+const got = require('got');
 
 // Models
 const Tweet = require('../models/tweet');
@@ -12,7 +13,7 @@ const { gatherAndStore, extractData, openBrowser } = require('../scraper/control
 const { extract, extractSimple, inspect } = require('../scraper/extract');
 const request = require('../scraper/request');
 const cli = require('../helpers/cli-monitor');
-const { padNr } = require('../helpers/general-global.js');
+const { padNr, timeout } = require('../helpers/general');
 
 
 
@@ -33,19 +34,24 @@ router.get('/tweet/:id', async (req, res) => {
 router.post('/gather/:state', async (req, res) => {
 	let state = +req.params.state;
 	if (state) {
-		console.log('---------------------------------');
-		console.log('-------- Start Gathering --------');
-		console.log('---------------------------------');
-		console.log('');
+		cli.banner('Start Gathering');
 
-		// Fetch starting URL
-		let { url, user } = await ScrapeControl.findOne({ name: 'scrape-control' });
+		// Load controller
+		const ctrl = await ScrapeControl.findOne({ name: 'scrape-control' });
+		if (!ctrl) {
+			const errorMsg = 'ABORTED – Initialize Scrape Controller first';
+			cli.title(errorMsg.red, 2, 2);
+			return res.send(errorMsg)
+		}
+
+		let { url, user } = ctrl;
 		if (!url) url = 'https://twitter.com/' + user;
 
 		// Start scraping
 		gatherAndStore(url);
 	}
 
+	// Update central controller status
 	const ctrl = await ScrapeControl.findOneAndUpdate({ name: 'scrape-control' }, {
 		gathering: state
 	}, { new: true });
@@ -89,25 +95,20 @@ router.post('/transfer', async (req, res) => {
 	// Remove previously old tweets
 	// Tweet.collection.drop();
 
-	console.log('');
-	console.log('');
-	console.log('TRANSFER START');
-	console.log(`${total} tweets`);
-	console.log('');
-	console.log('');
+	cli.banner('TRANSFER START');
+	cli.log(`${total} tweets`, 2);
 	await _transferLoop();
-	console.log('Transfer complete');
+	cli.title('Transfer complete');
 
 	async function _transferLoop() {
-		console.log('Batch', batch)
+		cli.log(`Batch #${batch}`)
 		const tweets = await TweetScrape.find({ text: { $exists: true } })
 			.skip(batch * batchSize)
 			.limit(batchSize)
 			.select('-_id -__v')
 			.lean();
 		await Tweet.create(tweets);
-		console.log('-- Done --');
-		console.log('');
+		cli.title('Done');
 		batch++;
 
 		// Keep on looping until end is reached
@@ -119,70 +120,78 @@ router.post('/transfer', async (req, res) => {
 
 
 
-// // Store single tweet on IFTTT prompt
-// router.post('/new-tweet', async (req,res) => {
-// 	console.log('\n\n- - -\nNew tweet')
-// 	if (req.body.tweet) {
-// 		console.log(req.body.tweet);
-// 		const id = req.body.tweet.match(/\d+$/)[0];
-// 		const tweet = await extract(id);
+// Live scrape latest tweets directly into the main table
+// --> Loop through scraped ids and extract tweet data
+router.post('/scrape-live/:state', async (req, res) => {
+	let state = +req.params.state;
+	let i = 0;
+	let tweets;
 
-// 		// For console
-// 		const exists = !!await Tweet.countDocuments({ idTw: id });
+	await ScrapeControl.findOneAndUpdate({ name: 'scrape-control' }, {
+		liveScraping: state
+	}, { new: true });
+
+	if (state) {
+		const query = {
+			deleted: false,
+			ogData: null,
+			date: { $gt: new Date('2020-05-28') } // For testing
+			// date: { $gt: new Date('2020-06-01') } // For testing
+		}
 		
-// 		// // Delete previous version of this tweet
-// 		// if (exists) console.log('DELETING TWEET');
-// 		// await Tweet.findOneAndRemove({ idTw: id });
+		// Display START banner
+		const total = await Tweet.countDocuments(query);
+		tweets = await Tweet.find(query);
+		cli.banner(`Start Live Extracting ${total} tweets`);
+		// console.log(tweets);
 
-// 		if (!exists) {
-// 			await Tweet.create(tweet);
-// 			console.log('Tweet added: ' + id)
-// 		} else {
-// 			console.log('Tweet already scraped: ' + id)
-// 		}
-// 		console.log('***\n\n\n')
-		
-// 		res.send(tweet);
-// 	} else {
-// 		res.send('Tweet link missing');
-// 	}
-// });
+		// Start scraping
+		await _cycle();
+	} else {
+		cli.title(`Stopping Extraction`, 2, 2);
+	}
 
+	res.send({ state: state });
 
+	async function _cycle() {
+		fullTweet = await extract(tweets[i].idTw);
+		if (fullTweet.text) {
+			// console.log(fullTweet)
+			console.log('#'+(i+1), fullTweet.idTw, fullTweet.text.replace('\n', '').slice(0.30), '\n\n');
+		} else {
+			// Tweet is deleted
+			console.log('DELETED: ', fullTweet)
+		}
+		tweets[i] = fullTweet;
+		await Tweet.findOneAndUpdate({
+			idTw: tweets[i].idTw
+		}, tweets[i]);
+		if (i < tweets.length - 1) {
+			const { liveScraping } = await ScrapeControl.findOne({ name: 'scrape-control' });
+			if (liveScraping) {
+				i++;
+				// await timeout(5000);
+				await _cycle();
+			}
+		} else {
+			cli.banner(`Done extracting`, -1);
+		}
+	}
+});
 
-// // Get new tweet with Puppeteer (test)
-// router.post('/new1/:id', async (req, res) => {
-// 	console.log('- - NEW1 - -')
-
-
-// 	const browser = await puppeteer.launch({ headless: false, args: ['--no-sandbox'] });
-// 	const page = await browser.newPage();
-// 	await page.setUserAgent('Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)');
-// 	await page.goto(`https://twitter.com/realDonaldTrump/status/${req.params.id}`, { waitUntil: 'networkidle0' });
-// 	const result = await page.evaluate(_ => {
-// 		const text = document.querySelector('#main-content .tweet-text').innerText.trim();
-// 		let date = document.querySelector('#main-content .metadata').innerText.trim();
-// 		date = date.split(' - ');
-// 		date = date.reverse().join(' ');
-// 		date = String(new Date(date));
-// 		return [text, date];
-// 	});
-// 	console.log(result)
-
-// 	res.send(result);
-// });
 
 
 // Get new tweet using GOT
 router.post('/new-tweet', async (req, res) => {
-	let id = req.body.tweet.match(/\d+$/)[0];
+	const id = req.body.tweet.match(/\d+$/)[0];
+	const user = req.body.user;
 	
 	// Ignore tweets already scraped
 	const exists = !!await Tweet.countDocuments({ idTw: id });
 	if (exists) return res.send(`Tweet ${id} has previously been scraped.`);
 
 	// Extract & save
-	const tweet = await extractSimple(id);
+	const tweet = await extractSimple(id, user);
 	console.log(tweet)
 	if (tweet) await Tweet.create(tweet);
 
@@ -192,29 +201,14 @@ router.post('/new-tweet', async (req, res) => {
 
 
 // Inspect tweet
-router.get('/inspect/:id', async (req, res) => {
+router.get('/inspect/:user/:id', async (req, res) => {
 	const tweet = await inspect(req.params.id);
 	res.send(tweet);
 });
-router.get('/inspect/:id/:type', async (req, res) => {
+router.get('/inspect/:user/:id/:type', async (req, res) => {
 	// Type can be original / parsed / extracted
-	const tweet = await inspect(req.params.id, req.params.type);
+	const tweet = await inspect(req.params.id, req.params.user, req.params.type);
 	res.send(tweet);
-});
-
-
-
-// Download JSON of entire tweet database
-router.get('/download', async (req,res) => {
-	let allTweets = await Tweet.find();
-	allTweets = JSON.stringify(allTweets);
-	const date = new Date();
-	const filename = 'trump-archive-data-dump-' + date.getFullYear() + padNr(date.getMonth()) + padNr(date.getDay()) + '-' + date.getHours() + 'h' + padNr(date.getMinutes());
-	res.writeHead(200, {
-		'Content-Type': 'application/json-download',
-		"content-disposition": `attachment; filename="${filename}.json"`
-	});
-	res.end(allTweets);
 });
 
 
@@ -228,24 +222,18 @@ router.get('/init/:user', async (req, res) => {
 		gathering: false,
 		url: null,
 		user: req.params.user,
-		p: 1,
-		total: 1
+		pagesDone: 0,
+		total: 0
 	}, { upsert: true, new: true});
 
-	// Delete other scraped tweets
-	// TweetScrape.collection.drop();
-
-	res.send(ctrl);
-});
-
-
-
-// Reset
-// --> Reset url to start url (otherwise it will pick up where left off)
-router.get('/reset', async (req, res) => {
-	const ctrl = await ScrapeControl.findOneAndUpdate({ name: 'scrape-control' }, {
-		url: null
-	}, { new: true});
+	try {
+		// Delete other scraped tweets
+		await TweetScrape.collection.drop();
+		console.log('Deleted TweetScrape collection.')
+	} catch {
+		console.log('TweetScrape collection was already empty.')
+	}
+	
 
 	res.send(ctrl);
 });
@@ -253,11 +241,16 @@ router.get('/reset', async (req, res) => {
 
 
 // Testing: inspect payload
-router.get('/test-payload/:id', async (req, res) => {
+router.get('/test-payload/:id/:render', async (req, res) => {
 	// eg. 1266741095561650176
-	// let payload = await request('https://twitter.com/_/status/' + req.params.id);
-	let payload = await request('https://twitter.com/ferrebeekeeper/status/1159843489535758342');
+	let payload = await got(`https://twitter.com/_/status/${req.params.id}`, {
+		headers: {
+			'user-agent': 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)'
+		}
+	});
 	
+	payload = req.params.render == 'true' ? payload.body : { body: payload.body };
+
 	res.send(payload)
 });
 

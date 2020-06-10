@@ -14,7 +14,8 @@ const Chapter = require('../models/chapter');
 const Search = require('../helpers/classes/Search');
 const Pg = require('../helpers/classes/Pagination');
 const { getDateNav, linkText } = require('../helpers/search');
-const { url, padNr } = require('../helpers/general-global');
+const { padNr, getTime, getDate } = require('../helpers/general');
+const { url } = require('../helpers/general-global');
 const { auth } = require('../middleware/auth');
 
 
@@ -220,6 +221,13 @@ async function display(req, res) {
 	// Link URLs and usernames
 	linkText(tweets);
 
+	// Parse clean date & time formats
+	tweets = tweets.map(tweet => {
+		tweet.dateString = getDate(tweet.date);
+		tweet.timeString = getTime(tweet.date);
+		return tweet;
+	});
+
 	// Highlight results
 	if (req.query.q) search.highlightText(tweets);
 
@@ -305,6 +313,7 @@ async function display(req, res) {
 
 
 // Download
+fs = require('fs');
 router.get('/download/:format', auth, async (req, res) => {
 	let format = req.params.format;
 
@@ -335,6 +344,7 @@ router.get('/download/:format', auth, async (req, res) => {
 					'idTw',
 					'url',
 					'isRT',
+					'rt.user.handle',
 					'stars',
 					'labels',
 					'chapter',
@@ -391,12 +401,18 @@ router.get('/download/:format', auth, async (req, res) => {
 		}
 	}
 
-	// Download file
-	res.writeHead(200, {
-		'Content-Type': 'application/json-download',
-		"content-disposition": `attachment; filename="${filename}.${format}"`
+	
+	fs.writeFile(`public/${filename}.json`, result, () => {
+		console.log('success');
 	});
-	res.end(result);
+
+	// Download file
+	// res.writeHead(200, {
+	// 	'Content-Type': 'application/json-download',
+	// 	"content-disposition": `attachment; filename="${filename}.${format}"`
+	// });
+
+	res.end(`<a href="http://archive.thefortyfifth.us/${filename}.json">http://archive.thefortyfifth.us/${filename}.json</a>`);
 });
 
 

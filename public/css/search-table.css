@@ -63,16 +63,32 @@
 	color: rgba(0,0,0,.3);
 	color: #8AA07A
 }
-.table-cell.main .other-user {
+.table-cell.main .flag {
 	background: #C76B8B;
 	color: #fff;
 	padding: 0 5px;
 	border-radius: 2px;
-	margin-right: 10px;
-	font-size: 13px;
-	display: inline-block;
+	margin-right: 5px;
+	height: 18px; /* Match line height */
+	display: inline-flex;
 }
-.table-cell.main .other-user:hover {
+.table-cell.main .flag.rt {
+	margin-right: 2px;
+}
+.table-cell.main .flag.rt:not(:hover) {
+	background: rgba(0,0,0,.75);
+}
+.table-cell.main .flag b,
+.table-cell.main .flag span {
+	font-size: 13px;
+	line-height: 18px;
+}
+.table-cell.main .flag :nth-child(2) {
+	margin-left: 5px;
+	padding-left: 5px;
+	border-left: solid 1px #fff;
+}
+.table-cell.main .flag:hover {
 	background: crimson;
 }
 
@@ -93,26 +109,74 @@
 .table-cell.main .media {
 	margin: 10px 0 0 0;
 	overflow: auto;
+	position: relative;
 }
-.media a {
-	float: left;
-}
+
+/* Image */
 .media img {
-	max-width: 100%;
-	max-height: 500px;
 	border-radius: 3px;
 	float: left;
-	margin: 0 5px 5px 0;
+	max-width: 100%;
+	max-height: 500px;
+	margin-bottom: 5px;
 }
 .media img.small {
 	max-height: 100px;
+	margin: 0 5px 5px 0;
+}
+
+/* Video */
+.media .video-wrap {
+	float: left;
+	margin-bottom: 5px;
+	position: relative;
+}
+.media .video-wrap img {
+	margin: 0;
+}
+.media video {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}
+
+/* Video play button */
+.media div.video-play {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 68px;
+	height: 68px;
+	margin-left: -34px;
+	margin-top: -34px;
+	border: solid 4px #fff;
+	border-radius: 40px;
+	background: rgb(29, 161, 242);
+	transition: background 150ms ease-in-out;
+	box-sizing: border-box;
+}
+.media div.video-play:hover {
+	background: rgb(26, 145, 218);
+}
+.media div.video-play svg {
+	width: 34px;
+	height: 34px;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	margin-left: -17px;
+	margin-top: -17px;
+	padding-left: 2.5px;
+	fill: white;
 }
 
 /* Tweet --> quoted */
 .table-cell.main .quoted {
 	border: solid 1px rgba(0,0,0,.2);
 	border-radius: 3px;
-	padding: 15px 15px 10px 15px;
+	padding: 15px;
 	display: inline-block;
 	margin: 10px 0;
 	background: rgba(0,0,0,.04);
@@ -123,6 +187,7 @@
 }
 .table-cell.main .quoted .media {
 	margin-top: 20px;
+	margin-bottom: -5px;
 	padding: 0;
 }
 

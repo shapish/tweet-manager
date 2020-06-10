@@ -21,7 +21,7 @@ let _cachedGuestToken = null;
  * @param {string} user Username of author
  */
 async function extract(idTw, user) {
-	data = await _parseTweet(idTw);
+	data = await _parseTweet(idTw, user);
 
 	// Extraction failed
 	if (data.errors) {
@@ -39,12 +39,10 @@ async function extract(idTw, user) {
 	record = {
 		idTw: data.id_str,
 		text: data.full_text,
-		user: {
-			name: data.user.name,
-			handle: data.user.screen_name
-		},
+		user: data.userData,
 		date: data.created_at,
-		isRT: user ? (data.user.screen_name != user) : null,
+		isRT: !!data.rt,
+		rt: data.rt,
 		media: data.media,
 		location: data.place ? {
 			name: data.place.name,
@@ -72,83 +70,86 @@ async function extract(idTw, user) {
 
 
 /**
- * Does a simplified scrape of basic data without going through the Twitter API
- * Used to scrape tweet text from server immediately as one is published, because
- * server IP is permanently exceeding rate limit due to other users' activity.
- * @param {String} id Tweet id
- */
-async function extractSimple(id) {
-	let payload;
-	try {
-		payload = await got(`https://twitter.com/realDonaldTrump/status/${id}`, {
-			headers: {
-				'user-agent': 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)'
-			}
-		});
-	} catch (error) {
-		if (error.response.statusCode == '404') {
-			console.log(`New tweet ${id} has been deleted before we could scrape it.`)
-		} else {
-			console.log(`New tweet scraping failed, Server responsed with ${error.response.statusCode}`)
-		}
-		return null;
-	}
-
-	let $ = cheerio.load(payload.body);
-
-	const text = $('#main-content .tweet-text').text().trim();
-	const userHandle = $('#main-content .user-info .username').text().trim().slice(1);
-	const userName = $('#main-content .user-info .fullname').text().trim();
-	const isRT = userHandle != 'realDonaldTrump';
-	let date = $('#main-content .metadata').text().trim();
-	date = date.split(' - ');
-	date = date.reverse().join(' ');
-	date = String(new Date(date));
-
-	return {
-		idTw: id,
-		text: text,
-		user: {
-			name: userName,
-			handle: userHandle
-		},
-		date: date,
-		isRT: isRT
-	}
-}
-
-
-
-/**
- * Inspect tweet data objects
- * @param {string} idTw Tweet id
- * @param {*} type original / parsed / extracted (default: all)
- */
-async function inspect(idTw, type) {
-	let result = {};
-	if (type == 'original') result = await _fetchTweet(idTw);
-	else if (type == 'parsed') result = await _parseTweet(idTw);
-	else if (type == 'extracted') result = await extract(idTw);
-	else if (!type) result = {
-		original: await _fetchTweet(idTw),
-		parsed: await _parseTweet(idTw),
-		extracted: await extract(idTw)
-	}
-	return result;
-};
-
-
-
-/**
  * Parses & cleans Tweet data object
  * @param {string} id Tweet ID
  * @param {boolean} dontExpand Don't look up quoted/replied tweets (to avoid chain-quoting/replying, we only store one level)
  */
-async function _parseTweet(id, dontExpand) {
-	const tweet = await _fetchTweet(id);
+async function _parseTweet(id, user, dontExpand) {
+	let tweet = await _fetchTweet(id);
 	if (tweet.errors) {
 		return tweet;
 	}
+
+	tweet.userData = {
+		name: tweet.user.name,
+		handle: tweet.user.screen_name
+	}
+
+	// When it's a retweet, load the original tweet instead
+	// Note: scraping data never gets a RT id but gets the original tweet id indead
+	// So this part only applies when converting tweets from Trump Twitter Archive
+	// Eg. #1 https://twitter.com/realDonaldTrump/status/1239756509212553217
+	//    --> https://twitter.com/Techno_Fog/status/1239687082160689152
+	if (tweet.retweeted_status_id_str) {
+		// console.log('Expand RT >>', tweet.id_str, ' -->', tweet.retweeted_status_id_str, '\n\n');
+		try {
+			retweet = tweet;
+			tweet = await _fetchTweet(tweet.retweeted_status_id_str);
+			if (tweet.errors) console.log('Errors', tweet.errors);
+			if (!tweet.errors) { // makse sure the original tweet is not deleted
+				// Store RT info
+				tweet.rt = {
+					idTw: retweet.id_str,
+					date: tweet.created_at,
+					user: tweet.userData
+				}
+				
+				// Credit retweeter
+				tweet.created_at = retweet.created_at;
+				tweet.userData = {
+					name: 'Donald J. Trump', // TODO: make dynamic
+					handle: user
+				}
+	
+				// In case this user is retweeting themselves, this tweet id
+				// will already exist in the database, so we can't use it
+				// Eg. #2 https://twitter.com/realDonaldTrump/status/1267247098648559620 (self-retweet)
+				//    --> https://twitter.com/realDonaldTrump/status/1267132763116838913
+				if (tweet.user.screen_name == retweet.user.screen_name) tweet.id_str = retweet.id_str;
+				// console.log(tweet.user.screen_name, '==', retweet.user.screen_name, (tweet.user.screen_name == retweet.user.screen_name))
+			} else {
+				// Tweet might be deleted or API rate limit exceeded
+				console.log('Error: ' + id + ' --> og.' + tweet.retweeted_status_id_str);
+				console.log('RETURN: ', tweet);
+				return tweet;
+			}
+		} catch {
+			console.log(`RT expanding failed: ${tweet.id_str} --> ${tweet.retweeted_status_id_str}`)
+		}
+	}
+
+	// When it's a tweet not from the user we're scraping, mark it as retweet
+	if (user && tweet.user.screen_name != user) {
+		console.log('REWTEEET ', tweet.id_str, '@'+tweet.user.screen_name) //, tweet.full_text.slice(0, 50).replace('\n', ''))
+		// Store RT info
+		tweet.rt = {
+			idTw: tweet.id_str,
+			date: tweet.created_at,
+			user: {
+				name: tweet.user.name,
+				handle: tweet.user.screen_name
+			},
+			rtIdMissing: true
+		}
+
+		// Credit retweeter
+		tweet.userData = {
+			name: 'Donald J. Trump', // TODO: make dynamic
+			handle: user
+		}
+		console.log(tweet.userData)
+	}
+
 	
 	// Tags, mentions (parse)
 	const _text = he.decode(tweet.full_text);
@@ -187,7 +188,7 @@ async function _parseTweet(id, dontExpand) {
 	// Quoted tweet
 	let quoted;
 	if (tweet.quoted_status_id_str && !dontExpand) {
-		quoted = await _parseTweet(tweet.quoted_status_id_str, true);
+		quoted = await _parseTweet(tweet.quoted_status_id_str, user, true);
 		if (quoted.user) { // <-- Make sure this quoted tweet still exists
 			quoted = {
 				id: tweet.quoted_status_id_str,
@@ -206,7 +207,7 @@ async function _parseTweet(id, dontExpand) {
 	// Replies to
 	let repliesTo;
 	if (tweet.in_reply_to_status_id_str && !dontExpand) {
-		repliesTo = await _parseTweet(tweet.in_reply_to_status_id_str, true);
+		repliesTo = await _parseTweet(tweet.in_reply_to_status_id_str, user, true);
 		if (repliesTo.user) { // <-- Make sure this replied to tweet still exists
 			repliesTo = {
 				id: tweet.in_reply_to_status_id_str,
@@ -253,7 +254,7 @@ async function _parseTweet(id, dontExpand) {
  * @param { Number } id Tweet id
  */
 async function _fetchTweet(id) {
-	if (!_cachedGuestToken) await updateCachedGuestToken();
+	if (!_cachedGuestToken) await _updateCachedGuestToken();
 
 	const authOptions = {
 		headers: {
@@ -317,10 +318,10 @@ async function _fetchTweet(id) {
 
 
 // Get guest token to access Twitter API
-async function updateCachedGuestToken(bearerToken=BEARER_TOKEN) {
-	_cachedGuestToken = await getGuestToken(bearerToken);
+async function _updateCachedGuestToken(bearerToken=BEARER_TOKEN) {
+	_cachedGuestToken = await _getGuestToken(bearerToken);
 }
-async function getGuestToken(token) {
+async function _getGuestToken(token) {
 	const guestTokenResponse = await request('https://api.twitter.com/1.1/guest/activate.json',
 		{
 			method: 'POST',
@@ -328,6 +329,88 @@ async function getGuestToken(token) {
 		})
 	return JSON.parse(guestTokenResponse.body).guest_token;
 }
+
+
+
+/**
+ * Does a simplified scrape of basic data without going through the Twitter API
+ * Used to scrape tweet text from server immediately as one is published, because
+ * server IP is permanently exceeding rate limit due to other users' activity.
+ * @param {String} id Tweet id
+ */
+async function extractSimple(id, user) {
+	let payload;
+	try {
+		payload = await got(`https://twitter.com/realDonaldTrump/status/${id}`, {
+			headers: {
+				'user-agent': 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)'
+			}
+		});
+	} catch (error) {
+		if (error.response.statusCode == '404') {
+			console.log(`New tweet ${id} has been deleted before we could scrape it.`)
+		} else {
+			console.log(`New tweet scraping failed, Server responsed with ${error.response.statusCode}`)
+		}
+		return null;
+	}
+
+	let $ = cheerio.load(payload.body);
+
+	const text = $('#main-content .tweet-text').text().trim();
+	const userHandle = $('#main-content .user-info .username').text().trim().slice(1);
+	const userName = $('#main-content .user-info .fullname').text().trim();
+	let date = $('#main-content .metadata').text().trim();
+	date = date.split(' - ');
+	date = date.reverse().join(' ');
+	date = String(new Date(date));
+	let rt;
+	let isRT = false;
+	if (user && userHandle != user) {
+		rt = {
+			user: {
+				name: userName,
+				handle: userHandle
+			},
+			date: date,
+			idTw: id
+		},
+		isRT = true
+	}
+
+	return {
+		idTw: id,
+		text: text,
+		user: {
+			name: userName,
+			handle: userHandle
+		},
+		date: date,
+		rt: rt,
+		isRT: isRT
+	}
+}
+
+
+
+/**
+ * Inspect tweet data objects
+ * @param {string} idTw Tweet id
+ * @param {*} type original / parsed / extracted (default: all)
+ */
+async function inspect(idTw, user, type) {
+	let result = {};
+	user = user == '_' ? null : user;
+	if (type == 'original') result = await _fetchTweet(idTw);
+	else if (type == 'parsed') result = await _parseTweet(idTw, user);
+	else if (type == 'extracted') result = await extract(idTw, user);
+	else if (!type) result = {
+		original: await _fetchTweet(idTw),
+		parsed: await _parseTweet(idTw, user),
+		extracted: await extract(idTw, user)
+	}
+	return result;
+};
 
 
 

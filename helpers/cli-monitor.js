@@ -48,9 +48,10 @@ Monitor.prototype.banner = function(text, gapT, gapB) {
 
 
 // Display title
-Monitor.prototype.title = function(text, gap) {
-	gap = gap ? gap : 0;
-	process.stdout.write('\n\n--- ' + text + ' ---\n' + '\n'.repeat(gap));
+Monitor.prototype.title = function(text, gapT, gapB) {
+	gapT = gapT || gapT === 0 ? gapT : 2;
+	gapB = gapB || gapT === 0 ? gapB : 0;
+	process.stdout.write('\n'.repeat(gapT) + '--- ' + text + ' ---\n' + '\n'.repeat(gapB));
 }
 
 
