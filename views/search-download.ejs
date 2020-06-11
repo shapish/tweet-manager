@@ -3,17 +3,53 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<script src="/node_modules/jquery/dist/jquery.min.js"></script>
+	<script src="/js/search-download.js" defer></script>
 	<link rel="stylesheet" href="/css/master.css">
 	<link rel="stylesheet" href="/css/master-elms.css">
 	<style>
 		body {
 			margin: 40px;
 		}
+		small {
+			opacity: .5;
+		}
+		#blink {
+			animation: blink 1s infinite;
+		}
+		@keyframes blink {
+			0% {
+				opacity: 1;
+			}
+			49.9% {
+				opacity: 1;
+			}
+			50% {
+				opacity: 0;
+			}
+			99.9% {
+				opacity: 0;
+			}
+			100% {
+				opacity: 1;
+			}
+		}
 	</style>
 	<title>Download</title>
 </head>
 <body>
-	<p>Download <%= total %> results here:</p>
-	<a href="<%= path %>"><%= filename %></a>
+	<% if (expired) { %>
+		This download link has expired.
+	<% } else { %>
+		<% if (ready) { %>
+			<p>Download <%= total %> results here:</p>
+			<a href="<%= path %>"><%= filenameExt %></a>
+			<br><br><br>
+			<p><small>Right-click the link to download it.</small></p>
+		<% } else { %>
+			<p id="waiting" data-filename="<%= filenameExt %>">Your file is being prepared, please wait.</p>
+			<a id="blink">Processing...</a>
+		<% } %>
+	<% } %>
 </body>
 </html>

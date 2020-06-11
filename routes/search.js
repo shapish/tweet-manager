@@ -17,7 +17,7 @@ const Chapter = require('../models/chapter');
 const Search = require('../helpers/classes/Search');
 const Pg = require('../helpers/classes/Pagination');
 const { getDateNav, linkText } = require('../helpers/search');
-const { padNr, getTime, getDate, timeout } = require('../helpers/general');
+const { padNr, getTime, getDate, laterDate, timeout } = require('../helpers/general');
 const { url } = require('../helpers/general-global');
 const { auth } = require('../middleware/auth');
 
@@ -317,7 +317,7 @@ async function display(req, res) {
 
 // Download
 router.get('/download/:format', auth, async (req, res) => {
-	const batchSize = 500;
+	const batchSize = 1000;
 	const format = req.params.format;
 
 	// Decode q
@@ -333,121 +333,68 @@ router.get('/download/:format', auth, async (req, res) => {
 	// Come back for next slices
 	const sliced = (total > results.length);
 
+	// Parse results into JSON or CSV
+	resultsString = _formatData(results, format);
+	if (format == 'csv-simple') format = 'csv';
+
 	// Create filename
 	const date = new Date();
 	const filename = 'the45th-data-' + date.getFullYear() + padNr(date.getMonth()) + padNr(date.getDay()) + '-' + date.getHours() + padNr(date.getMinutes()) + padNr(date.getSeconds());
-
-	// Format CSV
-	if (format == 'json') {
-		resultsString = JSON.stringify(results);
-	} else if (format == 'csv') {
-		try {
-			resultsString = CSVParse(results, {
-				fields: [
-					'text',
-					'user.name',
-					'user.handle',
-					'date',
-					'idTw',
-					'url',
-					'isRT',
-					'rt.user.handle',
-					'stars',
-					'labels',
-					'chapter',
-					'archived',
-					'deleted',
-					'tagsTW',
-					'mentions',
-					'repliesTo.text',
-					'repliesTo.id',
-					'quoted.text',
-					'quoted.id',
-					'location.name',
-					'location.id',
-					'extra.likes',
-					'extra.replies',
-					'extra.retweets',
-					'extra.quotes',
-					'source',
-					'internalLinks[0]',
-					'internalLinks[1]',
-					'internalLinks[2]',
-					'internalLinks[3]',
-					'externalLinks[0]',
-					'externalLinks[1]',
-					'externalLinks[2]',
-					'externalLinks[3]',
-					'media[0].mediaUrl',
-					'media[1].mediaUrl',
-					'media[2].mediaUrl',
-					'media[3].mediaUrl'
-				]
-			});
-		} catch (err) {
-			return res.send('Error parsing CSV.\n\n' + err);
-		}
-	} else if (format == 'csv-basic') {
-		format = 'csv';
-		try {
-			resultsString = CSVParse(results, {
-				fields: [
-					'text',
-					'user.handle',
-					'date',
-					'url',
-					'isRT',
-					'stars',
-					'chapter',
-					'archived',
-					'deleted'
-				]
-			});
-		} catch (err) {
-			return res.send('Error parsing CSV.\n\n' + err);
-		}
-	}
+	const filenameExt = `${filename}.${format}`;
+	const path = `public/downloads/${filenameExt}`; // Internal path to sliced file (for fs)
+	const pathTmp = path + '-tmp'; // Temporary filename until download is complete
+	const pathPublic = `/downloads/${filenameExt}`; // External path to sliced file (for front-end)
 
 	if (sliced) {
 		// For larger queries, write results into a file
-		const path = `/downloads/${filename}.${format}`;
-		let stream = fs.createWriteStream('public' + path, { flags: 'a' });
-		stream.write('[');
-		let batch = 1;
-		const totalBatches = Math.ceil(total / batchSize);
-		while (batch <= totalBatches) {
-			results = await _storeSlice(stream, batch, totalBatches);
-			batch++;
-
-			// // Reset stream to avoid memory overload
-			// stream.end();
-			// stream = fs.createWriteStream('public' + path, { flags: 'a' });
-		}
-		stream.write(']');
-		stream.end();
-
-		// Schedule file to be deleted in 10 min
-		var deleteAt = new Date(new Date().getTime() + 10 * 60 * 1000);
-		schedule.scheduleJob(deleteAt, function(fs, path, filename) {
- 			fs.unlink('public' + path, () => { console.log('Deleted ' + filename) });
-		}.bind(null, fs, path, filename));
-
-		return res.render('search-download', {
-			total: total,
-			path: path,
-			filename: filename + '.' + format
-		});
+		_slicedDownload();
 	} else {
+		// Smaller queries are downloaded at once
+		_directDownload();
+	}
+
+	function _directDownload() {
 		// For small queries, do a direct download
 		res.writeHead(200, {
 			'Content-Type': 'application/json-download',
-			"content-disposition": `attachment; filename="${filename}.${format}"`
+			"content-disposition": `attachment; filename="${filenameExt}"`
 		});
 
 		res.end(resultsString);
 	}
 
-	// Write one slice and load the next
+	async function _slicedDownload() {
+		// Store file info and forward to redirect
+		res.cookie(filenameExt, {
+			total: total,
+			pathPublic: pathPublic
+		}, laterDate('10m'));
+		res.redirect(`/search/download/file/${filenameExt}`);
+
+		let stream = fs.createWriteStream(pathTmp, { flags: 'a' });
+		stream.write('[');
+		let batch = 1;
+		const totalBatches = Math.ceil(total / batchSize);
+		while (batch <= totalBatches) {
+			// Write one slice and load the next
+			results = await _storeSlice(stream, batch, totalBatches);
+			batch++;
+
+			// // Reset stream to avoid memory overload – not needed it seems
+			// stream.end();
+			// stream = fs.createWriteStream('public' + pathTmp, { flags: 'a' });
+		}
+		stream.write(']');
+		stream.end();
+		fs.rename( pathTmp, path, (err) => { if (err) console.log('Error renaming download file.') });
+
+		// Schedule file to be deleted in 10 min
+		var deleteAt = laterDate('10m');
+		schedule.scheduleJob(deleteAt, function(fs, path, filenameExt) {
+ 			fs.unlink('public' + path, () => { console.log('Deleted ' + filenameExt) });
+		}.bind(null, fs, path, filenameExt));
+	}
+
 	async function _storeSlice(stream, batch, totalBatches) {
 		console.log(`Writing batch ${batch} / ${totalBatches} –`, results.length);
 		// console.log(results[0].text);
@@ -456,7 +403,107 @@ router.get('/download/:format', auth, async (req, res) => {
 			stream.write(JSON.stringify(result));
 		});
 		return await Tweet.find(searchParams).skip(batch * batchSize).limit(batchSize);
-	}	
+	}
+
+	function _formatData(data, format) {
+		let resultsString;
+		if (format == 'json') {
+			resultsString = JSON.stringify(data);
+		} else if (format == 'csv-basic') {
+			try {
+				resultsString = CSVParse(data, {
+					fields: [
+						'text',
+						'user.handle',
+						'date',
+						'url',
+						'isRT',
+						'stars',
+						'chapter',
+						'archived',
+						'deleted'
+					]
+				});
+			} catch (err) {
+				return res.send('Error parsing CSV.\n\n' + err);
+			}
+		} else if (format == 'csv') {
+			try {
+				resultsString = CSVParse(data, {
+					fields: [
+						'text',
+						'user.name',
+						'user.handle',
+						'date',
+						'idTw',
+						'url',
+						'isRT',
+						'rt.user.handle',
+						'stars',
+						'labels',
+						'chapter',
+						'archived',
+						'deleted',
+						'tagsTW',
+						'mentions',
+						'repliesTo.text',
+						'repliesTo.id',
+						'quoted.text',
+						'quoted.id',
+						'location.name',
+						'location.id',
+						'extra.likes',
+						'extra.replies',
+						'extra.retweets',
+						'extra.quotes',
+						'source',
+						'internalLinks[0]',
+						'internalLinks[1]',
+						'internalLinks[2]',
+						'internalLinks[3]',
+						'externalLinks[0]',
+						'externalLinks[1]',
+						'externalLinks[2]',
+						'externalLinks[3]',
+						'media[0].mediaUrl',
+						'media[1].mediaUrl',
+						'media[2].mediaUrl',
+						'media[3].mediaUrl'
+					]
+				});
+			} catch (err) {
+				return res.send('Error parsing CSV.\n\n' + err);
+			}
+		}
+		return resultsString;
+	}
+});
+
+// Download redirects here to download file
+router.get('/download/file/:filenameExt', auth, async (req, res) => {
+	const filenameExt = req.params.filenameExt;
+	const fileData = req.cookies[filenameExt];
+	
+	if (fileData) {
+		const { total, pathPublic } = fileData;
+		const ready = fs.existsSync('public/downloads/' + filenameExt);
+		res.render('search-download', {
+			expired: false,
+			ready: ready,
+			total: total,
+			path: pathPublic,
+			filenameExt: filenameExt
+		});
+	} else {
+		res.render('search-download', { expired: true });
+	}
+});
+
+// API call to check if a file download is ready
+router.post('/download/check/:filenameExt', async (req, res) => {
+	const filenameExt = req.params.filenameExt;
+	const ready = fs.existsSync('public/downloads/' + filenameExt);
+	res.send(ready);
 });
 
 module.exports = router;

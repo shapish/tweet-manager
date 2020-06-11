@@ -9,7 +9,7 @@ const { User, validate } = require('../models/user');
 
 // Middleware & functions
 const { auth, isAdmin2 } = require('../middleware/auth');
-const { createPath, cookieDate } = require('../helpers/general');
+const { createPath, laterDate } = require('../helpers/general');
 
 
 
@@ -46,7 +46,7 @@ router.post('/', async (req, res) => {
 
 	// Add authorization token to response header to recognize user on next visit
 	const token = user.generateAuthToken();
-	res.cookie('authToken', token, { expires: cookieDate() });
+	res.cookie('authToken', token, { expires: laterDate('2y') });
 	
 	res.send(_.pick(user, ['_id', 'name', 'email', 'isAdmin']));
 });
@@ -82,7 +82,7 @@ router.put('/', auth, async (req, res) => {
 	
 	// Add authorization token to response header to recognize user on next visit
 	const token = user.generateAuthToken();
-	res.cookie('authToken', token, { expires: cookieDate() });
+	res.cookie('authToken', token, { expires: laterDate('2y') });
 	
 	res.send(_.pick(user, ['_id', 'name', 'email', 'isAdmin']));
 });

@@ -96,12 +96,41 @@ function createPath(title) {
 }
 
 
-// Create date 2 years into the future for cookies to expire
-function cookieDate(y) {
-	y = y ? y : 2;
-	const CookieDate = new Date;
-	CookieDate.setFullYear(CookieDate.getFullYear() + y);
-	return CookieDate;
+/**
+ * Returns date that's a set time in the future
+ * @param {String} interval Number + unit: 3y / 3mo / 3w / 3d / 3h / 3m / 3s – default: 1y
+ */
+function laterDate(interval) {
+	const parsed = interval.match(/(^\d+)([ywdhms]{1}((?<=m)(o{0,1})|))$/);
+	interval = parsed && parsed[1] ? +parsed[1] : 1; // Number
+	const unit = parsed && parsed[2] ? parsed[2] : 'y'; // y/mo/w/d/h/m/s
+	const laterDate = new Date();
+	
+	switch (unit) {
+		case  'y':
+			laterDate.setFullYear(laterDate.getFullYear() + interval);
+			break;
+		case 'mo':
+			laterDate.setMonth(laterDate.getMonth() + interval);
+			break;
+		case 'w':
+			laterDate.setHours(laterDate.getHours() + interval * 24 * 7);
+			break;
+		case 'd':
+			laterDate.setHours(laterDate.getHours() + interval * 24);
+			break;
+		case 'h':
+			laterDate.setHours(laterDate.getHours() + interval);
+			break;
+		case 'm':
+			laterDate.setMinutes(laterDate.getMinutes() + interval);
+			break;
+		case 's':
+			laterDate.setSeconds(laterDate.getSeconds() + interval);
+			break;
+	} 
+	
+	return laterDate;
 }
 
 // Promisyfied timeout
@@ -161,4 +190,4 @@ function getDate(date, type) {
 }
 
 
-module.exports = { removeDupDocs, compareArrays, linkURLs, linkUserNames, createPath, cookieDate, timeout, queryString, padNr, getTime, getDate }
+module.exports = { removeDupDocs, compareArrays, linkURLs, linkUserNames, createPath, laterDate: laterDate, timeout, queryString, padNr, getTime, getDate }

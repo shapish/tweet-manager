@@ -9,7 +9,7 @@ const Joi = require('@hapi/joi');
 const { User, joiMsg } = require('../models/user');
 
 // Middleware & functions
-const {cookieDate} = require('../helpers/general');
+const {laterDate} = require('../helpers/general');
 
 // New login
 router.post('/', async (req, res) => {
@@ -36,7 +36,7 @@ router.post('/', async (req, res) => {
 	// Generate authorization token
 	const token = user.generateAuthToken();
 
-	res.cookie('authToken', token, { expires: cookieDate() });
+	res.cookie('authToken', token, { expires: laterDate('2y') });
 	res.send({ token: token });
 });
 
