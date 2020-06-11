@@ -317,7 +317,7 @@ async function display(req, res) {
 
 // Download
 router.get('/download/:format', auth, async (req, res) => {
-	const batchSize = 5000;
+	const batchSize = 500;
 	const format = req.params.format;
 
 	// Decode q
@@ -414,9 +414,9 @@ router.get('/download/:format', auth, async (req, res) => {
 		let stream = fs.createWriteStream('public' + path, { flags: 'a' });
 		stream.write('[');
 		let batch = 1;
-		while (batch <= Math.ceil(total / batchSize)) {
-			console.log(batch, '<', Math.ceil(total / batchSize))
-			results = await _storeSlice(stream, batch);
+		const totalBatches = Math.ceil(total / batchSize);
+		while (batch <= totalBatches) {
+			results = await _storeSlice(stream, batch, totalBatches);
 			batch++;
 
 			// // Reset stream to avoid memory overload
@@ -448,8 +448,8 @@ router.get('/download/:format', auth, async (req, res) => {
 	}
 
 	// Write one slice and load the next
-	async function _storeSlice(stream, batch) {
-		console.log('Writing '+ batch, results.length);
+	async function _storeSlice(stream, batch, totalBatches) {
+		console.log(`Writing batch ${batch} / ${totalBatches} –`, results.length);
 		// console.log(results[0].text);
 		results.forEach((result, i) => {
 			if (!(batch == 1 && i === 0)) stream.write(',');
