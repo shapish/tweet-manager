@@ -4,6 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const ejs = require('ejs');
+const fs = require('fs');
 
 const Tweet = require('../models/tweet');
 const TweetScrape = require('../models/tweet-scrape');
@@ -24,14 +25,38 @@ const cli = require('../helpers/cli-monitor');
 /**
  * Testing
  */
-// https://stackoverflow.com/questions/3459476/how-to-append-to-a-file-in-node/43370201#43370201
-// var stream = fs.createWriteStream("append.txt", {flags:'a'});
-// console.log(new Date().toISOString());
-// [...Array(10000)].forEach( function (item,index) {
-//     stream.write(index + "\n");
-// });
-// console.log(new Date().toISOString());
-// stream.end();
+
+const schedule = require('node-schedule');
+router.post('/schedule', async (req, res) => {
+	const dateStamp = new Date(new Date().getTime() + 2 * 1000);
+	var s = schedule.scheduleJob(dateStamp, function(){
+		console.log('The world is going to end today.');
+	});
+	res.send(s);
+});
+
+// This lets you continuously write to file iwthout overloading memory.
+router.post('/write-stream', async (req, res) => {
+	// https://stackoverflow.com/questions/3459476/how-to-append-to-a-file-in-node/43370201#43370201
+	var stream = fs.createWriteStream('public/downloads/test.txt', {flags:'a'});
+	console.log(new Date().toISOString());
+	[...Array(10)].forEach((item, i) => {
+	    stream.write(i + "test\n");
+	});
+	console.log(new Date().toISOString());
+	stream.end();
+	res.send('ok');
+});
+
+router.post('/append-to-file', async (req, res) => {
+	// https://stackoverflow.com/questions/3459476/how-to-append-to-a-file-in-node/43370201#43370201
+	fs.appendFile('public/downloads/test.txt', 'data to append\n', function (err) {
+		if (err) throw err;
+		console.log('Saved!');
+	});
+	res.send('ok!');
+});
+
 
 
 
@@ -186,10 +211,15 @@ router.put('/reset-rt', async (req, res) => {
 
 // Expand tta RTs
 router.put('/expand-rt', async (req, res) => {
-	const batchSize = 10;
+	const batchSize = 70;
 	const query = {
 		text: { $regex: /^RT @/ },
-		// deleted: false
+		
+		// isRT: true,
+		// deleted: true
+
+		// idTw: '1267668820640108550' //dt
+		// idTw: '1267588935338930176' // not dt
 	}
 	const total = await Tweet.countDocuments(query);
 	let  done = 0;
@@ -198,19 +228,24 @@ router.put('/expand-rt', async (req, res) => {
 	res.send([`Expanding activated, ${total} documents to go.`]);
 	
 	_cycle();
-	const to = setTimeout(_cycle, batchSize * 5000); // Avoid going over rate limit
+	// const to = setTimeout(_cycle, batchSize * 5000); // Avoid going over rate limit
+	const to = setInterval(_cycle, 120000); // Avoid going over rate limit
 	
 	async function _cycle() {
 		const count = await Tweet.countDocuments(query).limit(batchSize);
 		const tweets = await Tweet.find(query).limit(batchSize).lean();
 
 		// Log
-		cli.title(`Cycle #${i} : ${count*i} / ${total}`, 2);
+		cli.title(`Cycle #${i} : ${count*i} / ${total} - ${getTime()}`, 2);
 
 		// Loop through retweets & replace with original tweets
+		let refreshToken = true;
 		for (let j=0; j<tweets.length; j++) {
 			console.log('#' + (done+1), tweets[j].text.replace(/\n/g, ' '));
-			await expandRetweet(tweets[j]);
+			const newTweet = await expandRetweet(tweets[j], refreshToken);
+			refreshToken = false;
+			// console.log(newTweet)
+			if (newTweet == 88) { await timeout(30000); cli.title('WAIT'.red,2,2); j-- } // Rate limit exceeded, wait 30 sec
 			done++;
 		}
 
@@ -218,7 +253,7 @@ router.put('/expand-rt', async (req, res) => {
 		if (i < total) {
 			i++;
 		} else {
-			clearTimeout(to)
+			clearInterval(to)
 		}
 	}
 });

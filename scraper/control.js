@@ -261,8 +261,8 @@ async function fillInDeleted(tweet) {
  * When a tweet is a retweet, reprocess it
  * (This is initial scrape and can be deleted later, although the replace aspect should be kept)
  */
-async function expandRetweet(tweet) {
-	const newTweet = await extract(tweet.idTw);
+async function expandRetweet(tweet, refreshToken) {
+	const newTweet = await extract(tweet.idTw, refreshToken);
 	
 	if (newTweet.deleted) {
 		// Catch & fill deleted tweets

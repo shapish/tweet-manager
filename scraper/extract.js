@@ -2,7 +2,7 @@ const request = require('./request');
 const { extractUrls, extractHashtags, extractMentions } = require('twitter-text');
 const he = require('he');
 const cli = require('../helpers/cli-monitor');
-const { queryString } = require('../helpers/general');
+const { queryString, getTime } = require('../helpers/general');
 const got = require('got');
 const cheerio = require('cheerio');
 
@@ -20,7 +20,9 @@ let _cachedGuestToken = null;
  * @param {number} idTw Tweet id
  * @param {string} user Username of author
  */
-async function extract(idTw, user) {
+async function extract(idTw, user, refreshToken) {
+	if (refreshToken) { cli.title(`REFRESH TOKEN - ${getTime()}`, 2, 2); _cachedGuestToken = null; }
+	
 	data = await _parseTweet(idTw, user);
 
 	// Extraction failed
@@ -84,6 +86,7 @@ async function _parseTweet(id, user, dontExpand) {
 		name: tweet.user.name,
 		handle: tweet.user.screen_name
 	}
+	console.log('##', tweet.userData)
 
 	// When it's a retweet, load the original tweet instead
 	// Note: scraping data never gets a RT id but gets the original tweet id indead
@@ -91,6 +94,7 @@ async function _parseTweet(id, user, dontExpand) {
 	// Eg. #1 https://twitter.com/realDonaldTrump/status/1239756509212553217
 	//    --> https://twitter.com/Techno_Fog/status/1239687082160689152
 	if (tweet.retweeted_status_id_str) {
+		console.log('####')
 		// console.log('Expand RT >>', tweet.id_str, ' -->', tweet.retweeted_status_id_str, '\n\n');
 		try {
 			retweet = tweet;
@@ -101,8 +105,9 @@ async function _parseTweet(id, user, dontExpand) {
 				tweet.rt = {
 					idTw: retweet.id_str,
 					date: tweet.created_at,
-					user: tweet.userData
+					user: retweet.userData
 				}
+				console.log('$$$', tweet.rt)
 				
 				// Credit retweeter
 				tweet.created_at = retweet.created_at;
@@ -115,8 +120,10 @@ async function _parseTweet(id, user, dontExpand) {
 				// will already exist in the database, so we can't use it
 				// Eg. #2 https://twitter.com/realDonaldTrump/status/1267247098648559620 (self-retweet)
 				//    --> https://twitter.com/realDonaldTrump/status/1267132763116838913
-				if (tweet.user.screen_name == retweet.user.screen_name) tweet.id_str = retweet.id_str;
-				// console.log(tweet.user.screen_name, '==', retweet.user.screen_name, (tweet.user.screen_name == retweet.user.screen_name))
+				if (tweet.user.screen_name == retweet.user.screen_name) {
+					tweet.id_str = retweet.id_str; // old
+				}
+				console.log(tweet.user.screen_name, '==', retweet.user.screen_name, (tweet.user.screen_name == retweet.user.screen_name))
 			} else {
 				// Tweet might be deleted or API rate limit exceeded
 				console.log('Error: ' + id + ' --> og.' + tweet.retweeted_status_id_str);
@@ -126,11 +133,21 @@ async function _parseTweet(id, user, dontExpand) {
 		} catch {
 			console.log(`RT expanding failed: ${tweet.id_str} --> ${tweet.retweeted_status_id_str}`)
 		}
+	} else if (tweet.full_text.match(/^RT @(\S+)\b/)) {
+		// Older tweets from before ~June 2013 don't have retweeted_status_id_str
+		tweet.rt = {
+			user: {
+				idTw: tweet.id_str,
+				date: tweet.created_at,
+				handle: tweet.full_text.match(/^RT @(\S+)\b/)[1],
+				rtIdMissing: true
+			}
+		}
 	}
 
 	// When it's a tweet not from the user we're scraping, mark it as retweet
 	if (user && tweet.user.screen_name != user) {
-		console.log('REWTEEET ', tweet.id_str, '@'+tweet.user.screen_name) //, tweet.full_text.slice(0, 50).replace('\n', ''))
+		// console.log('REWTEEET ', tweet.id_str, '@'+tweet.user.screen_name) //, tweet.full_text.slice(0, 50).replace('\n', ''))
 		// Store RT info
 		tweet.rt = {
 			idTw: tweet.id_str,
@@ -147,7 +164,7 @@ async function _parseTweet(id, user, dontExpand) {
 			name: 'Donald J. Trump', // TODO: make dynamic
 			handle: user
 		}
-		console.log(tweet.userData)
+		// console.log(tweet.userData)
 	}
 
 	

@@ -4,6 +4,9 @@ const router = express.Router();
 const logger = require('../helpers/logger');
 const ejs = require('ejs');
 const CSVParse = require('json2csv').parse;
+const fs = require('fs');
+var schedule = require('node-schedule');
+
 
 // Models
 const Tweet = require('../models/tweet');
@@ -14,7 +17,7 @@ const Chapter = require('../models/chapter');
 const Search = require('../helpers/classes/Search');
 const Pg = require('../helpers/classes/Pagination');
 const { getDateNav, linkText } = require('../helpers/search');
-const { padNr, getTime, getDate } = require('../helpers/general');
+const { padNr, getTime, getDate, timeout } = require('../helpers/general');
 const { url } = require('../helpers/general-global');
 const { auth } = require('../middleware/auth');
 
@@ -313,9 +316,9 @@ async function display(req, res) {
 
 
 // Download
-fs = require('fs');
 router.get('/download/:format', auth, async (req, res) => {
-	let format = req.params.format;
+	const batchSize = 5000;
+	const format = req.params.format;
 
 	// Decode q
 	if (req.query.q) req.query.q = decodeURIComponent(req.query.q);
@@ -323,19 +326,23 @@ router.get('/download/:format', auth, async (req, res) => {
 	// Gather all parameters to run search
 	const {searchParams, sort} = new Search(req.query);
 
-	// Fetch results
-	let result = await Tweet.find(searchParams).sort(sort);
+	// Count + fetch results
+	const total = await Tweet.countDocuments(searchParams);
+	let results = await Tweet.find(searchParams).limit(batchSize);
+
+	// Come back for next slices
+	const sliced = (total > results.length);
 
 	// Create filename
 	const date = new Date();
-	const filename = 'the45th-data-' + date.getFullYear() + padNr(date.getMonth()) + padNr(date.getDay()) + '-' + date.getHours() + 'h' + padNr(date.getMinutes());
+	const filename = 'the45th-data-' + date.getFullYear() + padNr(date.getMonth()) + padNr(date.getDay()) + '-' + date.getHours() + padNr(date.getMinutes()) + padNr(date.getSeconds());
 
 	// Format CSV
 	if (format == 'json') {
-		result = JSON.stringify(result);
+		resultsString = JSON.stringify(results);
 	} else if (format == 'csv') {
 		try {
-			result = CSVParse(result, {
+			resultsString = CSVParse(results, {
 				fields: [
 					'text',
 					'user.name',
@@ -383,7 +390,7 @@ router.get('/download/:format', auth, async (req, res) => {
 	} else if (format == 'csv-basic') {
 		format = 'csv';
 		try {
-			result = CSVParse(result, {
+			resultsString = CSVParse(results, {
 				fields: [
 					'text',
 					'user.handle',
@@ -401,19 +408,55 @@ router.get('/download/:format', auth, async (req, res) => {
 		}
 	}
 
-	
-	fs.writeFile(`public/${filename}.json`, result, () => {
-		console.log('success');
-	});
+	if (sliced) {
+		// For larger queries, write results into a file
+		const path = `/downloads/${filename}.${format}`;
+		let stream = fs.createWriteStream('public' + path, { flags: 'a' });
+		stream.write('[');
+		let batch = 1;
+		while (batch <= Math.ceil(total / batchSize)) {
+			console.log(batch, '<', Math.ceil(total / batchSize))
+			results = await _storeSlice(stream, batch);
+			batch++;
 
-	// Download file
-	// res.writeHead(200, {
-	// 	'Content-Type': 'application/json-download',
-	// 	"content-disposition": `attachment; filename="${filename}.${format}"`
-	// });
+			// // Reset stream to avoid memory overload
+			// stream.end();
+			// stream = fs.createWriteStream('public' + path, { flags: 'a' });
+		}
+		stream.write(']');
+		stream.end();
 
-	res.end(`<a href="http://archive.thefortyfifth.us/${filename}.json">http://archive.thefortyfifth.us/${filename}.json</a>`);
+		// Schedule file to be deleted in 10 min
+		var deleteAt = new Date(new Date().getTime() + 10 * 60 * 1000);
+		schedule.scheduleJob(deleteAt, function(fs, path, filename) {
+ 			fs.unlink('public' + path, () => { console.log('Deleted ' + filename) });
+		}.bind(null, fs, path, filename));
+
+		return res.render('search-download', {
+			total: total,
+			path: path,
+			filename: filename + '.' + format
+		});
+	} else {
+		// For small queries, do a direct download
+		res.writeHead(200, {
+			'Content-Type': 'application/json-download',
+			"content-disposition": `attachment; filename="${filename}.${format}"`
+		});
+
+		res.end(resultsString);
+	}
+
+	// Write one slice and load the next
+	async function _storeSlice(stream, batch) {
+		console.log('Writing '+ batch, results.length);
+		// console.log(results[0].text);
+		results.forEach((result, i) => {
+			if (!(batch == 1 && i === 0)) stream.write(',');
+			stream.write(JSON.stringify(result));
+		});
+		return await Tweet.find(searchParams).skip(batch * batchSize).limit(batchSize);
+	}	
 });
-
 
 module.exports = router;
