@@ -83,8 +83,7 @@ const tweetSchema = new mongoose.Schema({
 		type: Boolean,
 		default: false
 	},
-	test: Number,
-	author: String
+	test: Number
 });
 
 // Enable text search

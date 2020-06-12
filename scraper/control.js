@@ -137,7 +137,7 @@ async function extractData() {
 	// Loop through all empty tweets in batches of (10)
 	// and store all tweet data in database
 	async function _extractLoop(batchSize) {
-		batchSize = batchSize ? batchSize : 5;
+		batchSize = batchSize ? batchSize : 80;
 
 		// Find empty tweets
 		let tweets = await TweetScrape.find({
@@ -156,9 +156,10 @@ async function extractData() {
 		let ids = []; // For console
 		if (true) {
 			// FAST
-			tweets = tweets.map(async tweet => {
+			tweets = tweets.map(async (tweet, i) => {
 				ids.push(tweet.idTw);
-				return extract(tweet.idTw, ctrl.user);
+				const refreshToken = (i === 0);
+				return extract(tweet.idTw, ctrl.user, refreshToken);
 			});
 			tweets = await Promise.all(tweets);
 			let rateLimitReached = false
@@ -181,7 +182,8 @@ async function extractData() {
 			let i = 0;
 			while (i < tweets.length) {
 				ids.push(tweets[i].idTw);
-				const extractedTweet = await extract(tweets[i].idTw, ctrl.user);
+				const refreshToken = (i === 0);
+				const extractedTweet = await extract(tweets[i].idTw, ctrl.user, refreshToken);
 				const errors = extractedTweet.errors;
 				delete extractedTweet.errors;
 				extractedTweets.push(extractedTweet);
@@ -213,8 +215,8 @@ async function extractData() {
 		// Continue loop if more tweets are left and process is still on
 		if (tweets.length == batchSize) {
 			// Twitter API rate limit is 1 tweet/second: https://bit.ly/3cujRk4
-			// Not correct, more like 20 a minute
-			await timeout(3500 * batchSize)
+			// Web API rate is 180/15min = 1/5s
+			// await timeout(5000 * batchSize)
 
 			const { extracting } = await ScrapeControl.findOne({ name: 'scrape-control' });
 			if (extracting) _extractLoop(batchSize);

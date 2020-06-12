@@ -182,7 +182,7 @@ router.post('/scrape-live/:state', async (req, res) => {
 
 
 // Get new tweet using GOT
-router.post('/new-tweet', async (req, res) => {
+router.post('/new-trump-tweet', async (req, res) => {
 	const id = req.body.tweet.match(/\d+$/)[0];
 	const user = req.body.user;
 	
@@ -192,7 +192,7 @@ router.post('/new-tweet', async (req, res) => {
 
 	// Extract & save
 	const tweet = await extractSimple(id, user);
-	console.log(tweet)
+	console.log('New tweet coming in!', tweet)
 	if (tweet) await Tweet.create(tweet);
 
 	res.send(tweet);

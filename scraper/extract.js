@@ -86,7 +86,6 @@ async function _parseTweet(id, user, dontExpand) {
 		name: tweet.user.name,
 		handle: tweet.user.screen_name
 	}
-	console.log('##', tweet.userData)
 
 	// When it's a retweet, load the original tweet instead
 	// Note: scraping data never gets a RT id but gets the original tweet id indead
@@ -94,7 +93,6 @@ async function _parseTweet(id, user, dontExpand) {
 	// Eg. #1 https://twitter.com/realDonaldTrump/status/1239756509212553217
 	//    --> https://twitter.com/Techno_Fog/status/1239687082160689152
 	if (tweet.retweeted_status_id_str) {
-		console.log('####')
 		// console.log('Expand RT >>', tweet.id_str, ' -->', tweet.retweeted_status_id_str, '\n\n');
 		try {
 			retweet = tweet;
