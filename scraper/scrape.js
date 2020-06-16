@@ -23,31 +23,26 @@ async function scrapeLatest(options) {
 		await sc.set('liveScraping');
 	}
 	
-	let state = +req.params.state;
 	let i = 0;
 	let tweets;
-
-	if (state) {
-		const query = {
-			deleted: false,
-			ogData: null,
-			date: { $gt: new Date('2020-05-28') } // For testing
-			// date: { $gt: new Date('2020-06-01') } // For testing
-		}
-		
-		// Display START banner
-		const total = await Tweet.countDocuments(query);
-		tweets = await Tweet.find(query);
-		cli.banner(`Start Live Extracting ${total} tweets`);
-		// console.log(tweets);
-
-		// Start scraping
-		await _cycle();
-	} else {
-		
+	
+	const query = {
+		deleted: false,
+		ogData: null,
+		date: { $gt: new Date('2020-05-28') } // For testing
+		// date: { $gt: new Date('2020-06-01') } // For testing
 	}
+	
+	// Display START banner
+	const total = await Tweet.countDocuments(query);
+	tweets = await Tweet.find(query);
+	cli.banner(`Start Live Extracting ${total} tweets`);
+	// console.log(tweets);
 
-	res.send({ state: state });
+	// Start scraping
+	await _cycle();
+	
+
 
 	async function _cycle() {
 		fullTweet = await extract(tweets[i].idTw);

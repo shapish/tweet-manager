@@ -21,6 +21,7 @@ const frontendHelpers = require('../helpers/general-global');
 
 // Development-only
 const isProd = process.env.NODE_ENV == 'production';
+// const isProd = true;
 const apiSeeder = isProd ? null : require('../routes/api-seeder');
 
 module.exports = function(app) {
@@ -51,5 +52,5 @@ module.exports = function(app) {
 	app.use(error);
 	
 	// Development only
-	if (isProd) app.use('/api/seeder', apiSeeder);
+	if (!isProd) app.use('/api/seeder', apiSeeder);
 }
