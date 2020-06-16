@@ -83,11 +83,11 @@ async function extract(idTw, dontVerifyToken) {
 
 /**
  * Parses & cleans Tweet data object
- * @param {string} id Tweet ID
+ * @param {string} idTw Tweet ID
  * @param {boolean} dontFollow Don't look up quoted/replied tweets (to avoid chain-quoting/replying, we only store one level)
  */
-async function _parseTweet(id, dontFollow) {
-	let tweet = await _fetchTweet(id);
+async function _parseTweet(idTw, dontFollow) {
+	let tweet = await _fetchTweet(idTw);
 	if (tweet.errors) { return tweet }
 	
 	// Store user data
@@ -109,10 +109,13 @@ async function _parseTweet(id, dontFollow) {
 		// Makse sure the original tweet is not deleted
 		if (tweet.errors && (tweet.errors[0].code == 34 || tweet.errors[0].code === 0)) {
 			// Original tweet probably deleted
-			console.log(`Error: Retweeted tweet deleted - rt:${reTweet.id_str} - og:${tweet.id_str}`);
+			cli.log(` › Following RT / ${idTw}: ${tweet.errors[0].message} (code ${tweet.errors[0].code})`.magenta);
+		} else if (tweet.errors) {
+			cli.log(` › Following RT / Error #${tweet.errors[0].code} for ${idTw}: ${tweet.errors[0].message}`.red);
+			return tweet.errors;
 		} else {
 			// Store RT details
-			rt.id = tweet.id_str;
+			rt.idTw = tweet.id_str;
 			rt.date = tweet.created_at;
 			rt.user = {
 				handle: tweet.user.screen_name,
@@ -335,10 +338,16 @@ async function _fetchTweet(id) {
 	
 	params = queryString(params);
 	let response;
+	
 	try {
-		response = await got(`https://api.twitter.com/2/timeline/conversation/${id}.json?${params}`, { headers: twAuth.getHeaders() })
+		response = await got(`https://api.twitter.com/2/timeline/conversation/${id}.json?${params}`, {
+			headers: twAuth.getHeaders(),
+			retry: 0 // Only way to eliminate ugle console errors
+		});
 	} catch (error) {
+		if (!error.response.body) console.log('######', error.response)
 		return JSON.parse(error.response.body);
+		// response = JSON.parse(error.response.body);
 	};
 
 	// Refresh token when rate limit is reached
@@ -367,7 +376,6 @@ async function _fetchTweet(id) {
 	tweet.user = { name, screen_name, location, description, profile_image_url_https };
 	return tweet;
 }
-
 
 
 /**

@@ -67,7 +67,7 @@ router.post('/scrape-live/:state', async (req, res) => {
 // 1266740439740284928 // Thread
 // 1268006529678049281
 router.get('/tweet/:id', async (req, res) => {
-	twAuth.refresh();
+	await twAuth.refresh();
 	const tweet = await extract(req.params.id);
 	// console.log(tweet)
 	// console.log(JSON.stringify(tweet, null, '\t'))

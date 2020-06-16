@@ -30,7 +30,7 @@ module.exports = function() {
 
 	// Http request headers
 	this.getHeaders = function() {
-		if (!this.guestToken) console.log('Requesting headers before guets token is created');
+		if (!this.guestToken) console.log('Requesting headers before guest token is created');
 		
 		return {
 			authorization: `Bearer ${bearerToken}`,

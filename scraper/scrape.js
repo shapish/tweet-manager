@@ -25,7 +25,6 @@ async function scrapeLatest(options) {
 	
 	let i = 0;
 	let tweets;
-	
 	const query = {
 		deleted: false,
 		ogData: null,
