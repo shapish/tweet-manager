@@ -1,63 +1,7 @@
-/* General */
-h4 {
-	margin-bottom: 5px;
-}
-form {
-	margin-top: 20px;
-	width: 100%;
-}
-.step {
-	margin-bottom: 40px;
-	/* border: solid 1px; */
-	overflow: auto;
-}
-
-
-
-
-/* Live Scrape */
-#scrape-new-tweets::after {
-	content: 'Scrape latest tweets';
-}
-#scrape-new-tweets.on::after {
-	content: 'Stop Scraping';
-}
-#scrape-new-tweets:not(.on) + .display::after {
-	content: 'Scraping off';
-}
-#scrape-new-tweets.on + .display::after {
-	content: 'Scraping on!';
-}
-
-
-
-
-/* Seeding */
-form .input-wrap:not(.clear) {
-	clear: none;
-}
-form input[type=text] {
-	width: 150px;
-}
-
-
-
-/* Transferring */
-.process.transfer-wrap {
-	clear: none;
-	flex-direction: row;
-	padding-top: 25px;
-}
-
-
-
-
-
-
 /**
  * Process button states
  */
-.process {
+ .process {
 	margin-bottom: 40px;
 	clear: left;
 }
@@ -76,63 +20,15 @@ form input[type=text] {
 }
 
 /* Seeding */
-#btn-seed::after {
-	content: 'Start Seeding';
+#btn-scrape-latest::after {
+	content: 'Start';
 }
-#btn-seed.on::after {
-	content: 'Stop Seeding';
+#btn-scrape-latest.on::after {
+	content: 'Stop';
 }
-#btn-seed:not(.on) + .display::after {
-	content: 'Seeding off';
+#btn-scrape-latest:not(.on) + .display::after {
+	content: 'Scraping off';
 }
-#btn-seed.on + .display::after {
-	content: 'Seeding inprogress';
-}
-
-/* Gathering */
-#btn-gather::after {
-	content: 'Start Gathering';
-}
-#btn-gather.on::after {
-	content: 'Stop Gathering';
-}
-#btn-gather:not(.on) + .display::after {
-	content: 'Gathering off';
-}
-#btn-gather.on + .display::after {
-	content: 'Gathering in progress';
-}
-
-/* Extracting */
-#btn-extract::after {
-	content: 'Start Extracting';
-}
-#btn-extract.on::after {
-	content: 'Stop Extracting';
-}
-#btn-extract:not(.on) + .display::after {
-	content: 'Extracting off';
-}
-#btn-extract.on + .display::after {
-	content: 'Extracting in progress';
-}
-
-/* Extracting */
-#btn-transfer::after {
-	content: 'Start Transfer';
-}
-#btn-transfer.on::after {
-	content: 'Stop Transfer';
-}
-#btn-transfer:not(.on) + .display::after {
-	content: 'Transferring off';
-}
-#btn-transfer.on + .display::after {
-	content: 'Transferring in progress';
-}
-
-/* Transferring */
-#transfer.init ~ #transfer-status::after {
-	content: 'Transfer initiated, check console.';
-	color: green;
+#btn-scrape-latest.on + .display::after {
+	content: 'Scraping in progress';
 }

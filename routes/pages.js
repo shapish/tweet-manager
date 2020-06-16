@@ -58,6 +58,26 @@ router.get('/users', auth, async (req, res) => {
 
 
 
+// Seeder
+router.get('/seeder', auth, async (req, res) => {
+	const scraper = await ScrapeControl.findOne({ name: 'scrape-control' });
+	let data = { user: req.user };
+	if (scraper) {
+		const { seeding, extracting, transferring } = scraper;
+		data = {
+			seeding: seeding,
+			extracting: extracting,
+			transferring: transferring,
+			user: req.user,
+			database: config.get('db').match('localhost') ? 'localhost' : 'production'
+		};
+	}
+	
+	res.render('seeder', data);
+});
+
+
+
 // Scraper
 router.get('/scraper', auth, async (req, res) => {
 	const scraper = await ScrapeControl.findOne({ name: 'scrape-control' });

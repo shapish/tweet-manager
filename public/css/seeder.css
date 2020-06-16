@@ -1,0 +1,118 @@
+/* General */
+h4 {
+	margin-bottom: 5px;
+}
+form {
+	margin-top: 20px;
+	width: 100%;
+}
+.step {
+	margin-bottom: 100px;
+	/* border: solid 1px; */
+	overflow: auto;
+}
+
+
+
+
+/* Live Scrape */
+#scrape-new-tweets::after {
+	content: 'Scrape latest tweets';
+}
+#scrape-new-tweets.on::after {
+	content: 'Stop Scraping';
+}
+#scrape-new-tweets:not(.on) + .display::after {
+	content: 'Scraping off';
+}
+#scrape-new-tweets.on + .display::after {
+	content: 'Scraping on!';
+}
+
+
+
+
+/* Seeding */
+form .input-wrap:not(.clear) {
+	clear: none;
+}
+form input[type=text] {
+	width: 150px;
+}
+
+
+
+/* Transferring */
+.process.transfer-wrap {
+	clear: none;
+	flex-direction: row;
+	padding-top: 25px;
+}
+
+
+
+
+
+
+/**
+ * Process button states
+ */
+.process {
+	margin-bottom: 40px;
+	clear: left;
+}
+.process button {
+	min-width: 150px;
+	margin-right: 30px;
+}
+.process .display {
+	float: left;
+	height: 40px;
+	line-height: 40px;
+	color: rgba(0,0,0,.3);
+}
+.process button.on + .display {
+	color: green;
+}
+
+/* Seeding */
+#btn-seed::after {
+	content: 'Start Seeding';
+}
+#btn-seed.on::after {
+	content: 'Stop Seeding';
+}
+#btn-seed:not(.on) + .display::after {
+	content: 'Seeding off';
+}
+#btn-seed.on + .display::after {
+	content: 'Seeding in progress';
+}
+
+/* Extracting */
+#btn-extract::after {
+	content: 'Start Extracting';
+}
+#btn-extract.on::after {
+	content: 'Stop Extracting';
+}
+#btn-extract:not(.on) + .display::after {
+	content: 'Extracting off';
+}
+#btn-extract.on + .display::after {
+	content: 'Extracting in progress';
+}
+
+/* Transferring */
+#btn-transfer::after {
+	content: 'Start Transfer';
+}
+#btn-transfer.on::after {
+	content: 'Stop Transfer';
+}
+#btn-transfer:not(.on) + .display::after {
+	content: 'Transferring off';
+}
+#btn-transfer.on + .display::after {
+	content: 'Transferring in progress';
+}
