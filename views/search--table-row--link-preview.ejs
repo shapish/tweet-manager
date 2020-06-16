@@ -1,0 +1,16 @@
+<% if (linkPreview && linkPreview.urlExpanded) { %>
+	<div class="link link-preview<% if (linkPreview.img) { %> large-img<% } %>" href="<%= linkPreview.urlExpanded %>">
+		<% if (linkPreview.img) { %>
+			<img class="large" src="<%= linkPreview.img %>">
+		<% } else if (linkPreview.thumb) { %>
+			<div class="thumb" style="background-image:url(<%= linkPreview.thumb %>)"></div>
+		<% } %>
+		
+		
+		<div class="link-info">
+			<div class="link-title"><%= linkPreview.title %></div>
+			<div class="link-description"><%= linkPreview.description %></div>
+			<div class="link-vanity-url"><%= linkPreview.urlVanity %></div>
+		</div>
+	</div>
+<% } %>

@@ -6,13 +6,9 @@ const router = express.Router();
 const ejs = require('ejs');
 const schedule = require('node-schedule');
 const fs = require('fs');
-const StreamArray = require( 'stream-json/streamers/StreamArray');
-const { Writable } = require('stream');
-const got = require('got');
 
 // Models
-const Tweet = require('../models/tweet');
-const TweetScrape = require('../models/tweet-scrape');
+const { Tweet, TweetScrape } = require('../models/tweet');
 const Tta = require('../models/tta');
 const ScrapeControl = require('../models/scrape-control');
 const Chapter = require('../models/chapter');
@@ -24,8 +20,12 @@ const { createPath, timeout } = require('../helpers/general');
 const { prettyNr } = require('../helpers/general-global');
 const { extract } = require('../scraper/extract');
 const cli = require('../helpers/cli-monitor');
+const { gatherIds } = require('../scraper/gather');
 
-
+// (async () => {
+// 	var x = await Tweet.listIndexes();
+// 	console.log('@', x)
+// })();
 
 
 
@@ -33,7 +33,12 @@ const cli = require('../helpers/cli-monitor');
  * Testing
  */
 
-router.post('/foo', async (req, res) => {
+router.post('/test1', async (req, res) => {
+	await gatherIds(25073877, () => {});
+	res.send('success');
+});
+router.post('/test2', async (req, res) => {
+	await gatherIds(25073877, () => {});
 	res.send('success');
 });
 
@@ -246,7 +251,7 @@ router.put('/expand-rt', async (req, res) => {
 		const tweets = await Tweet.find(query).limit(batchSize).lean();
 
 		// Log
-		cli.title(`Cycle #${i} : ${count*i} / ${total} - ${getTime()}`, 2);
+		cli.title(`Cycle #${i} : ${count*i} / ${total} - ${getTime()}++`);
 
 		// Loop through retweets & replace with original tweets
 		let refreshToken = true;
@@ -255,7 +260,7 @@ router.put('/expand-rt', async (req, res) => {
 			const newTweet = await expandRetweet(tweets[j], refreshToken);
 			refreshToken = false;
 			// console.log(newTweet)
-			if (newTweet == 88) { await timeout(30000); cli.title('WAIT'.red,2,2); j-- } // Rate limit exceeded, wait 30 sec
+			if (newTweet == 88) { await timeout(30000); cli.title('++WAIT++'.red); j-- } // Rate limit exceeded, wait 30 sec
 			done++;
 		}
 
@@ -336,302 +341,6 @@ router.post('/fix-users-path', async (req, res) => {
 });
 
 
-
-
-/**
- * Seeding
- */
-// Seed database – automatically redirects to next page on batch complete
-router.post('/seed/:filename', async (req, res) => {
-	const p = req.query.p ? +req.query.p : 1; // Current request's page
-	let done = req.query.done ? +req.query.done : 0; // Docs processed
-	const pageSize = 5000; // Number of items per page
-	const batchSize = 100; // Number of items per batch
-	const seedData = require('../data/' + req.params.filename);
-	const totalPages = Math.ceil(seedData.length / pageSize);
-	// seedData = seedData.map((item, i) => { return i });
-	const pageSlice = seedData.slice((p - 1) * pageSize, p * pageSize); // This page's docs
-
-	// Organize this page's docs in batches
-	const batches = [];
-	for (let i=0; i<pageSlice.length; i++) {
-		if (i % batchSize === 0) {
-			// console.log(i, '!!')
-			batches.push([pageSlice[i]])
-		} else {
-			// console.log(i);
-			batches[batches.length - 1].push(pageSlice[i]);
-		}
-	}
-
-	res.send('Seed command sent');
-
-	// Logging
-	if (p == 1) cli.banner(`Seeding ${seedData.length} documents`)
-	cli.title(`Processing p${p} – ${pageSlice.length} docs`, 3, 1);
-
-	// Loop through items
-	let j = 0;
-	while (batches[j]) {
-		// Translate to our own format
-		// batches[j] = batches[j].map(tw => {
-		// 	return {
-		// 		idTw: tw.id_str,
-		// 		source: tw.source
-		// 	}
-		// });
-		// console.log(batches[j])
-
-		try {
-			await Tweet.create(batches[j]);
-			done += batches[j].length;
-			console.log(`p${p} - batch #${j+1} +`, batches[j].length, '=>', done);
-		}
-		catch {
-			console.log(`p${p} - batch #${j+1} +`, batches[j].length, '=> ERROR (probably duplicates)');
-		}
-		j++;
-	}
-	
-	if (p == totalPages) {
-		cli.banner(`Seeding ${seedData.length} documents complete`);
-	} else {
-		const urlBase = req.protocol + '://' + req.get('host');
-		const urlPath = `/seed/${req.params.filename}?p=${p+1}&done=${done}`;
-		const nextUrl = urlBase + '/api/postman' + urlPath;
-		// cli.log(`\n- Next page: ${urlPath} -\n`);
-
-		// Load next page
-		await got.post(nextUrl);
-	}
-	
-});
-
-
-
-
-
-// /**
-//  * Seeding
-//  */
-// // Seed database – needs ?p=1/2/3 etc
-// router.post('/seed/:filename', async (req, res) => {
-// 	const seedData = require('../data/' + req.params.filename);
-// 	const batchSize = req.query.bs ? req.query.bs : 100;
-// 	const p = req.query.p ? req.query.p : 1;
-// 	const pageSize = 5000; // Limit to 5000 items at a time or server can time out
-// 	const end = Math.min(pageSize * p, seedData.length);
-
-// 	// Organize in batches
-// 	const batches = [];
-// 	for (let i=(p-1) * pageSize; i<end; i++) {
-// 		if (i % batchSize === 0) {
-// 			batches.push([seedData[i]])
-// 		} else {	
-// 			batches[batches.length - 1].push(seedData[i]);
-// 		}
-// 	}
-
-// 	let j = 0;
-// 	const result = [];
-	
-// 	console.log('')
-// 	console.log('')
-// 	console.log('batches.length: ', batches.length);
-
-// 	res.send('Seed command sent');
-
-// 	while (batches[j]) {
-// 		console.log('p' + p + ' - #'+j, batches[j].length);
-		
-// 		// Translate to our own format
-// 		// batches[j] = batches[j].map(tw => {
-// 		// 	return {
-// 		// 		idTw: tw.id_str,
-// 		// 		source: tw.source
-// 		// 	}
-// 		// });
-// 		// console.log(batches[j])
-// 		try {
-// 			const data = await Tweet.create(batches[j]);
-// 			result.push(...data);
-// 		}
-// 		catch {
-// 			console.log('Error, probably duplicates, on batch #' + j + '\n\n');
-// 		}
-// 		j++;
-// 	}
-// 	console.log('- - - - - - - - - done');
-// 	console.log('')
-// 	console.log(seedData.length + ' items added');
-
-	
-// });
-
-
-/**
- * Seed database
- * Processes a json file in groups of batches, not finished
- */
-// router.post('/seed/:filename', async (req, res) => {
-// 	const seedData = require('../data/' + req.params.filename);
-// 	const batchSize = 100; // Documents per batchs
-// 	const groupSize = 50; // Batches per group
-
-// 	// Organize in batches
-// 	const batches = _createBatches();
-
-// 	// Organize batches in groups
-// 	const groups = _createGroups(batches);
-
-// 	// Response
-// 	const response = `Seeding ${prettyNr(seedData.length)} documents to database.
-// 	--------------------------------------------------
-// 	--> Seeding ${groups.length} groups of ${groupSize} batches with each max ${batchSize} documents
-// 	--> ${groups.length} x ${groupSize} x ${batchSize} = ${prettyNr(groups.length * groupSize * batchSize)} documents
-// 	--> Last group has ${groups[groups.length - 1].length} batches and the last batch has ${batches[batches.length - 1].length} documents`
-// 	res.send(response);
-
-	
-// 	const result = [];
-
-// 	// Loop throug groups
-// 	let i = 0;
-// 	_processGroup(groups[i], i);
-	
-// 	console.log('- - - - - - - - - done');
-// 	console.log('')
-// 	console.log(seedData.length + ' items added');
-
-
-
-	
-
-// 	function _createBatches() {
-// 		const batches = [];
-// 		for (let j=0; j<seedData.length; j++) {
-// 			if (j % batchSize === 0) {
-// 				batches.push([seedData[j]])
-// 			} else {	
-// 				batches[batches.length - 1].push(seedData[j]);
-// 			}
-// 		}
-// 		return batches;
-// 	}
-
-// 	function _createGroups() {
-// 		const groups = [];
-// 		for (let j=0; j<batches.length; j++) {
-// 			if (j % groupSize === 0) {
-// 				groups.push([batches[j]])
-// 			} else {	
-// 				groups[groups.length - 1].push(batches[j]);
-// 			}
-// 		}
-// 		return groups;
-// 	}
-
-// 	function _processGroup(group, i) {
-// 		// Loop throug batches
-// 		console.log(`Processing group #${i} with ${group.length} batches\n-----------------------------------\n\n`)
-// 		for (let j=0; j<group.length; j++) {
-// 			_processBatch(batches[j], j);
-// 		}
-
-// 		// Schedule file to be deleted in 10 min
-// 		var time = laterDate('5s');
-// 		schedule.scheduleJob(time, function(_processGroup, groups, group, batches, i, schedule) {
-// 			_processGroup(groups[i], i)
-// 		}.bind(null, _processGroup, groups, group, i+1, batches, schedule));
-
-// 	}
-
-// 	async function _processBatch(batch, j) {
-// 		console.log(`Batch #${j}: ${batch.length}`);
-		
-// 		// Translate tta to our own format
-// 		// batch = batch.map(tw => {
-// 		// 	return {
-// 		// 		idTw: tw.id_str,
-// 		// 		source: tw.source
-// 		// 	}
-// 		// });
-// 		// console.log(batch)
-
-// 		try {
-// 			const data = await Tweet.create(batch);
-// 			result.push(...data);
-// 		}
-// 		catch {
-// 			console.log('Error, probably duplicates, on batch #' + j + '\n\n');
-// 		}
-// 		// if (j % 100 === 99) {
-// 		// 	console.log('/n/n- break-/n/n');
-// 		// 	await timeout(5000);
-// 		// }
-// 	}
-// });
-
-
-
-
-
-
-// /**
-//  * Seed database JSON without overloading memory
-//  * https://ckhconsulting.com/parsing-large-json-with-nodejs/
-//  * 
-//  * This is not working – memory is overloaded even faster bc everything is written into array
-//  */
-// router.post('/seed/:filename', async (req, res) => {
-// 	const fileStream = fs.createReadStream('data/' + req.params.filename + '.json');
-// 	const jsonStream = StreamArray.withParser();
-
-// 	const batchSize = 1000;
-// 	let count = 1;
-// 	let total = 0;
-// 	let batch = [];
-
-// 	const processingStream = new Writable({
-// 		write({key, value}, encoding, callback) {
-// 			batch.push(value);
-// 			if (key % batchSize == batchSize - 1) {
-// 				_processBatch(batch);
-// 				count++;
-// 				batch = [];
-// 			}
-// 			callback();
-// 		},
-// 		// Don't skip this, as we need to operate with objects, not buffers
-// 		objectMode: true
-// 	});
-
-// 	// Pipe the streams as follows
-// 	fileStream.pipe(jsonStream.input);
-// 	jsonStream.pipe(processingStream);
-	
-// 	// Finish
-// 	processingStream.on('finish', _finish);
-// 	res.send('Processing...');
-
-
-
-
-// 	function _finish() {
-// 		_processBatch();
-// 		console.log('\n\n - - Seeding complete - - \n\n');
-// 	}
-
-// 	async function _processBatch() {
-// 		total += batch.length;
-// 		console.log(`Batch #${count}: +${batch.length} => ${total}`);
-// 		try {
-// 			await Tweet.create(batch);
-// 		} catch (err) {
-// 			console.log(`Error (probably duplicates) on batch #${count}`);
-// 		}
-// 	}
-// });
 
 
 

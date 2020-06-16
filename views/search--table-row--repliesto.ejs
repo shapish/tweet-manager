@@ -1,0 +1,6 @@
+<% if (repliesTo.idTw) { %>
+	<div class="replies-to link" href="https://twitter.com/_/status/<%= repliesTo.idTw %>">
+		<div class="text"><span class="link color" href="https://twitter.com/<%= repliesTo.user.handle %>"><b><%= repliesTo.user.name %></b> <u>@<%= repliesTo.user.handle %></u></span>: <%- repliesTo.text %></div>
+		<%- include('search--table-row--media.ejs', { media: repliesTo.media }) %>
+	</div>
+<% } %>

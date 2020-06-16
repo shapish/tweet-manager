@@ -6,8 +6,10 @@ module.exports = mongoose.model('scrape-control', new mongoose.Schema({
 		type: String,
 		unique: true
 	},
-	gathering: Boolean,
+	// gathering: Boolean,
+	seeding: Boolean,
 	extracting: Boolean,
+	transferring: Boolean,
 	liveScraping: Boolean,
 	url: String, /* URL of next page to be scraped */
 	pagesDone: {

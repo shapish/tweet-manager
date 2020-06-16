@@ -13,8 +13,11 @@ const apiLabels = require('../routes/api-labels');
 const apiTweets = require('../routes/api-search');
 const apiUsers = require('../routes/api-users');
 const apiLogin = require('../routes/api-login');
-const apiScraper = require('../routes/api-scraper');
 const apiPostman = require('../routes/api-postman');
+
+// Development-only
+const isProd = process.env.NODE_ENV == 'production';
+const apiScraper = isProd ? null : require('../routes/api-scraper');
 
 // Frontend Helpers
 const frontendHelpers = require('../helpers/general-global');
@@ -42,8 +45,10 @@ module.exports = function(app) {
 	app.use('/api/tweets', apiTweets);
 	app.use('/api/users', apiUsers);
 	app.use('/api/login', apiLogin);
-	app.use('/api/scraper', apiScraper);
 	app.use('/api/postman', apiPostman);
+	app.use('/api/seed', apiPostman);
 	app.use(error);
 	
+	// Development only
+	if (apiScraper) app.use('/api/scraper', apiScraper);
 }

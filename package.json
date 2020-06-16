@@ -36,6 +36,7 @@
     "mongoose": "^5.9.17",
     "mongoose-fuzzy-searching-v2": "^3.0.2",
     "node-schedule": "^1.3.2",
+    "pretty-print-json": "^0.2.1",
     "puppeteer": "^3.3.0",
     "request": "^2.88.2",
     "stream-json": "^1.5.0",

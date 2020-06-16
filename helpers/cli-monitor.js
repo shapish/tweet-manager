@@ -30,35 +30,32 @@
 var colors = require('colors');
 
 function Monitor() {
-	this.hc();
+	this._hc();
 }
 
 
 // Display big fat banner of process
-Monitor.prototype.banner = function(text, gapT, gapB) {
-	const reverseGaps = gapT == -1;
-	gapT = gapT ? gapT : '\n'.repeat(reverseGaps ? 2 : 4);
-	gapB = gapB ? gapB : '\n'.repeat(reverseGaps ? 4 : 2);
+Monitor.prototype.banner = function(inputText) {
+	const { gapT, gapB, text } = this._parseSpacing(inputText, 2, 2);
 	const pad = '-'.repeat(10);
 	const str =  pad + ' ' + text + ' ' + pad;
 	const filler = '-'.repeat(str.length);
-	const result = [gapT,filler,str,filler,gapB].join('\n');
+	const result = gapT + [filler,str,filler].join('\n') + gapB + '\n';
 	process.stdout.write(result);
 }
 
 
 // Display title
-Monitor.prototype.title = function(text, gapT, gapB) {
-	gapT = gapT || gapT === 0 ? gapT : 2;
-	gapB = gapB || gapT === 0 ? gapB : 0;
-	process.stdout.write('\n'.repeat(gapT) + '--- ' + text + ' ---\n' + '\n'.repeat(gapB));
+Monitor.prototype.title = function(inputText) {
+	const { gapT, gapB, text } = this._parseSpacing(inputText, 2, 1);
+	process.stdout.write(gapT + '--- ' + text + ' ---' + gapB + '\n');
 }
 
 
 // Display text
-Monitor.prototype.log = function(text, gap) {
-	gap = gap ? gap : 0;
-	console.log(text + '\n'.repeat(gap));
+Monitor.prototype.log = function(inputText) {
+	const { gapT, gapB, text } = this._parseSpacing(inputText);
+	process.stdout.write(gapT + text + gapB + '\n');
 }
 
 
@@ -97,8 +94,8 @@ Monitor.prototype.wait = function(msg) {
 // Display status (%)
 Monitor.prototype.progress = function(done, total, width) {
 	width = width ? width : 300;
-	const pct = Math.round(done / total * 100);
-	const pctExact = done / total * 100;
+	const pct = Math.round(done / total * 100) || 0;
+	const pctExact = done / total * 100 || 0;
 	const complete = '\u2588';
 	// const incomplete = '\u2591'; // Characters creating bar
 	// const complete = '|';
@@ -112,7 +109,7 @@ Monitor.prototype.progress = function(done, total, width) {
 	// console.log(width, incompleteChars, completeChars, totalChars)
 
 	// Display progress bar
-	const str = `${this.prettyNr(done)} / ${this.prettyNr(total)}`;
+	const str = `${this._prettyNr(done)} / ${this._prettyNr(total)}`;
 	const pctStr = `${pct}%`;
 	const gap = (totalChars - str.length - pctStr.length); // Right align numbers
 	process.stdout.write(`\n${pctStr}${' '.repeat(gap)}${str}\n`); // Text
@@ -121,19 +118,43 @@ Monitor.prototype.progress = function(done, total, width) {
 
 
 // Hide cursor
-Monitor.prototype.hc = function() {
+Monitor.prototype._hc = function() {
 	process.stderr.write('\x1B[?25l');
 };
 
 
 // Show cursor
-Monitor.prototype.sc = function() {
+Monitor.prototype._sc = function() {
 	process.stderr.write('\x1B[?25h');
 };
 
 // Make numbers pretty --> 35,446
-Monitor.prototype.prettyNr = function(nr) {
+Monitor.prototype._prettyNr = function(nr) {
 	return nr.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
+
+// Plusses (+) before and after text are parsed to line breaks.
+// If none are defined, defaults are used.
+// Underscore at start or end of text will force zero line breaks.
+Monitor.prototype._parseSpacing = function(text, defaultGapT, defaultGapB) {
+	// Turn '+' before and after text into line breaks
+	const regExT = new RegExp(/^\++/);
+	const regExB = new RegExp(/\++$/);
+	let gapT = text.match(regExT);
+	gapT = gapT ? gapT[0].length : 0;
+	let gapB = text.match(regExB);
+	gapB = gapB ? gapB[0].length : 0;
+	text = text.replace(regExT, '').replace(regExB, '');
+
+	// Turn '_' before and after text into zero line breaks
+	if (text.match(/^_/)) { text = text.replace(/^_/, ''); defaultGapT = 0 };
+	if (text.match(/_$/)) { text = text.replace(/_$/, ''); defaultGapB = 0 };
+	
+	// If no line breaks set, use default
+	if (!gapT && (defaultGapT || defaultGapT === 0)) gapT = defaultGapT;
+	if (!gapB && (defaultGapB || defaultGapB === 0)) gapB = defaultGapB;
+	return { gapT: '\n'.repeat(gapT), gapB: '\n'.repeat(gapB), text: text };
+};
+
 
 module.exports = new Monitor();

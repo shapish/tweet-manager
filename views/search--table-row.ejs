@@ -2,7 +2,7 @@
 	class="table-row<% if (archived) { %> archived<% } %><% if (stars !== null) { %> l-<%= stars %><% if (deleted) { %> deleted<% } %>"
 	data-star="<%= stars %><% } %> "
 	data-id="<%= _id %>"
-	data-plain-text="<%= plainText %>"
+	data-plain-text="<%= ogText %>"
 	data-chapter-id="<% if (chapter) { %><%= chapter._id %><% } %>">
 	<div class="table-cell cb">
 		<input type="checkbox">
@@ -13,93 +13,27 @@
 	<div class="table-cell main">
 		<span>
 			<% if (isRT) { %>
-				<a href="https://twitter.com/realDonaldTrump/status/<%= rt.idTw %>" target="_blank" class="flag rt"><b>RT</b></a><a href="https://twitter.com/<%= rt.user.handle %>" class="flag"><span>@<%= rt.user.handle %></span></a>
+				<a href="https://twitter.com/realDonaldTrump/status/<%= rt.id %>" target="_blank" class="flag rt"><b>RT</b></a><a href="https://twitter.com/<%= rt.user.handle %>" class="flag" target="_blank"><span>@<%= rt.user.handle %></span></a>
 			<% } else if (user.handle != 'realDonaldTrump') { %>
 				<a href="https://twitter.com/<%= user.handle %>" target="_blank" class="flag"><b><%= user.name %></b><span>@<%= user.handle %></span></a>
 			<% } %>
-			<%- text %>
+			<% if (text) { %><%- text %><% } %>
 		</span><br>
-		<% if (media && media.length) { %>
-			<div class="media">
-			<% if (media.length == 1) { %>
-				<% if (media[0].mType == 'video') { %>
-					<%# <!-- video --> %>
-					<div class="video-wrap" data-url="<%= media[0].videoUrl %>">
-						<div class="video-play"><%- include('svg/twitter-play.ejs') %></div>
-						<img src="<%= media[0].mediaUrl %>">
-					</div>
-				<% } else if (media[0].mType == 'animated_gif') { %>
-					<%# <!-- animated gif --> %>
-					<div class="video-wrap">
-						<video width="100%" height="100%" autoplay muted loop>
-							<source src="<%= media[0].gifUrl %>" type="video/mp4">
-							Your browser does not support HTML5 video.
-						</video>
-						<img src="<%= media[0].mediaUrl %>">
-					</div>
-				<% } else { %>
-					<%# <!-- image --> %>
-					<div class="link" href="<%= media[0].mediaUrl %>" target="_blank"><img src="<%= media[0].mediaUrl %>"></div>
-				<% } %>
-			<% } else { %>
-				<% for (const i in media) { %>
-					<div class="link" href="<%= media[i].mediaUrl %>" target="_blank"><img class="small" src="<%= media[i].mediaUrl %>"></div>
-				<% } %>
-			<% } %>
-			</div>
-		<% } %>
-		<% if (quoted.id) { %>
-			<div class="quoted link" href="https://twitter.com/_/status/<%= quoted.id %>">
-				<div class="text"><span class="link color" href="https://twitter.com/<%= quoted.user.handle %>"><b><%= quoted.user.name %></b> <u>@<%= quoted.user.handle %></u></span>: <%- quoted.text %></div>
-				<% if (quoted.media && quoted.media.length) { %>
-					<div class="media">
-					<% if (quoted.media.length == 1) { %>
-						<img class="link" href="<%= quoted.media[0].mediaUrl %>" src="<%= quoted.media[0].mediaUrl %>">
-					<% } else { %>
-						<% for (const i in quoted.media) { %>
-							<img class="link small" href="<%= quoted.media[0].mediaUrl %>" src="<%= quoted.media[i].mediaUrl %>">
-						<% } %>
-					<% } %>
-					</div>
-				<% } %>
-			</div>
-		<% } %>
-		<div class="meta">
-			<% if (date) { %>
-				<a href="#"><%= dateString %></a> at <%= timeString %>
-			<% } %>
-			<% if (extra.retweets && extra.likes && extra.quotes) { %>
-				&nbsp;&nbsp;•&nbsp;&nbsp; RT <%= prettyNr(extra.retweets) %>
-				&nbsp;&nbsp;•&nbsp;&nbsp; &#9825; <%= prettyNr(extra.likes) %>
-				&nbsp;&nbsp;•&nbsp;&nbsp; Q <%= prettyNr(extra.quotes) %>
-				&nbsp;&nbsp;•&nbsp;&nbsp; Source: <%= source %>
-			<% } %>
-			<% if (!ogData && !deleted) { %>
-				&nbsp;&nbsp;•&nbsp;&nbsp; Not yet fully scraped.
-			<% } %>
-		</div>
-		<div class="label-wrap<% if (labels.length) { %> pad<% } %>">
-			<% if (deleted) { %><a href="#" class="label deleted">deleted</a><% } %>
-			<% if (typeof labels !== 'undefined') { labels.forEach((val) => { %>
-			<%- include('partials/label.ejs', { val: val }) %>
-			<% })} %>
-		</div>
-		<% if (repliesTo.id) { %>
-			<div class="replies-to link" href="https://twitter.com/_/status/<%= repliesTo.id %>">
-				<div class="text"><span class="link color" href="https://twitter.com/<%= repliesTo.user.handle %>"><b><%= repliesTo.user.name %></b> <u>@<%= repliesTo.user.handle %></u></span>: <%- repliesTo.text %></div>
-				<% if (repliesTo.media && repliesTo.media.length) { %>
-					<div class="media">
-					<% if (repliesTo.media.length == 1) { %>
-						<img class="link" href="<%= repliesTo.media[0].mediaUrl %>" src="<%= repliesTo.media[0].mediaUrl %>">
-					<% } else { %>
-						<% for (const i in repliesTo.media) { %>
-							<img class="link small" href="<%= repliesTo.media[i].mediaUrl %>" src="<%= repliesTo.media[i].mediaUrl %>">
-						<% } %>
-					<% } %>
-					</div>
-				<% } %>
-			</div>
-		<% } %>
+
+		<%# <!-- Media: Single image/video/gif or multiple images --> %>
+		<%- include('search--table-row--media.ejs', { media: media }) %>
+
+		<%# <!-- Quoted tweet --> %>
+		<%- include('search--table-row--quoted.ejs') %>
+
+		<%# <!-- Link preview --> %>
+		<%- include('search--table-row--link-preview.ejs') %>
+
+		<%# <!-- Meta info & labels --> %>
+		<%- include('search--table-row--meta-labels.ejs') %>
+
+		<%# <!-- Replies to --> %>
+		<%- include('search--table-row--repliesto.ejs') %>
 	</div>
 	<div class="table-cell chapter">
 		<a href="#" class="clip-100"><% if (chapter) { %><%= chapter.title %><% } else { %>- select -<% } %></a>

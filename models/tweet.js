@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const userSchema = {
 	name: String,
 	handle: String
-}
+};
 
 const mediaSchema = [{
 	id: String,
@@ -16,11 +16,30 @@ const mediaSchema = [{
 	height: Number
 }];
 
+const linkPreviewSchema = {
+	url: String,
+	urlExpanded: String,
+	urlVanity: String,
+	title: String,
+	description: String,
+	img: String,
+	thumb: String
+};
+
+const linkSchema = {
+	url: String,
+	urlExpanded: String,
+	urlDisplay: String,
+};
+
 const miniTweetSchema = {
-	id: String,
+	idTw: String,
 	user: userSchema,
+	link: linkSchema,
+	mentions: Array,
 	text: String,
 	media: mediaSchema,
+	linkPreview: linkPreviewSchema,
 	date: Date
 };
 
@@ -30,6 +49,7 @@ const tweetSchema = new mongoose.Schema({
 		unique: true
 	},
 	text: String,
+	ogText: String, // Text before we parse links and usernames
 	user: userSchema,
 	date: Date,
 	isRT: Boolean,
@@ -37,13 +57,14 @@ const tweetSchema = new mongoose.Schema({
 		idTw: String, // Retweet id (not scrapeable, but stored from tta)
 		date: Date,
 		user: userSchema,
-		rtIdMissing: Boolean // We don't have the RT id for scraped tweets, so we mark them
+		legacy: Boolean // Old retweets don't have the RT data
 	},
 	media: mediaSchema,
 	tagsTw: Array,
 	mentions: Array,
-	internalLinks: Array,
-	externalLinks: Array,
+	internalLinks: [linkSchema],
+	externalLinks: [linkSchema],
+	linkPreview: linkPreviewSchema,
 	quoted: miniTweetSchema,
 	repliesTo: miniTweetSchema,
 	thread: {
@@ -82,12 +103,13 @@ const tweetSchema = new mongoose.Schema({
 	deleted: {
 		type: Boolean,
 		default: false
-	},
-	test: Number
+	}
 });
 
 // Enable text search
 tweetSchema.path('text').index({text : true});
 
 const Tweet = mongoose.model('tweet', tweetSchema);
-module.exports = Tweet;
+const TweetScrape = mongoose.model('tweet-scrape', tweetSchema);
+
+module.exports = { Tweet, TweetScrape };

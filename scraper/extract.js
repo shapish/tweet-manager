@@ -1,71 +1,81 @@
-const request = require('./request');
-const { extractUrls, extractHashtags, extractMentions } = require('twitter-text');
-const he = require('he');
+// Modules
+const { extractHashtags, extractMentions } = require('twitter-text');
+const got = require('got'); // Http requests
+const cheerio = require('cheerio'); // jQuery
+
+// Helpers
 const cli = require('../helpers/cli-monitor');
-const { queryString, getTime } = require('../helpers/general');
-const got = require('got');
-const cheerio = require('cheerio');
+const { queryString, timeout } = require('../helpers/general');
+const twAuth = new (require('./tw-auth'))(); // Twitter authentication
 
-// Twitter authentication
-const BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA';
-const chromeUserAgent = { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36' };
-let _cachedGuestToken = null;
-
+// (async () => {
+// 	await twAuth.verify()
+// 	const test = await extract('1271429352933208072');
+// 	console.log('token test', test);
+// })();
 
 
 
 
 /**
  * Extracts all tweet data and formats it to our model
- * @param {number} idTw Tweet id
- * @param {string} user Username of author
+ * @param {Number} idTw Tweet id
+ * @param {Boolean} dontVerifyToken When extracting by batch, you want to set the token manually before each batch
  */
-async function extract(idTw, user, refreshToken) {
-	if (refreshToken) { cli.title(`REFRESH TOKEN - ${getTime()}`, 2, 2); _cachedGuestToken = null; }
-	
-	data = await _parseTweet(idTw, user);
+async function extract(idTw, dontVerifyToken) {
+	// Get token if none is set
+	if (!dontVerifyToken) await twAuth.verify();
 
-	// Extraction failed
-	if (data.errors) {
-		if (data.errors[0].code == 34 || data.errors[0].code === 0) {
+	// Parse tweet
+	const tweet = await _parseTweet(idTw);
+	
+	// Catch errors
+	if (tweet.errors) {
+		if (tweet.errors[0].code == 34 || tweet.errors[0].code === 0) {
 			// Tweet is deleted (0 is custom error in extract.js)
-			cli.log(` › Deleted: ${idTw}`.magenta);
+			cli.log(` › ${idTw}: ${tweet.errors[0].message} (code ${tweet.errors[0].code})`.magenta);
 			return { idTw: idTw, deleted: true }
 		} else {
 			// Other errors: https://bit.ly/304zWuo (1 is custom error in extract.js)
-			cli.log(` › Error: ${data.errors[0].code} for ${idTw}: ${data.errors[0].message}`.red);
-			return { idTw: idTw, errors: data.errors }
+			cli.log(` › Error #${tweet.errors[0].code} for ${idTw}: ${tweet.errors[0].message}`.red);
+			return { idTw: idTw, errors: tweet.errors }
 		}
 	}
 	
+	// Mold it into our schema
 	record = {
-		idTw: data.id_str,
-		text: data.full_text,
-		user: data.userData,
-		date: data.created_at,
-		isRT: !!data.rt,
-		rt: data.rt,
-		media: data.media,
-		location: data.place ? {
-			name: data.place.name,
-			id: data.place.id
+		idTw: tweet.id_str,
+		text: tweet.text,
+		ogText: tweet.ogText,
+		user: tweet.userData,
+		date: tweet.created_at,
+		isRT: !!tweet.rt,
+		rt: tweet.rt,
+		media: tweet.media,
+		location: tweet.place ? {
+			name: tweet.place.name,
+			id: tweet.place.id
 		} : null,
-		tagsTw: data.tags,
-		mentions: data.mentions,
-		internalLinks: data.links ? data.links.internal : null,
-		externalLinks: data.links ? data.links.external : null,
-		repliesTo: data.repliesTo,
-		quoted: data.quoted,
-		thread: data.thread,
+		tagsTw: tweet.tags,
+		mentions: tweet.mentions,
+		internalLinks: tweet.internalLinks,
+		externalLinks: tweet.externalLinks,
+		linkPreview: tweet.linkPreview ? tweet.linkPreview : '',
+		repliesTo: tweet.repliesTo,
+		quoted: tweet.quoted,
+		thread: tweet.thread,
 		extra: {
-			likes: data.favorite_count,
-			replies: data.reply_count,
-			retweets: data.retweet_count,
-			quotes: data.quote_count
+			likes: tweet.favorite_count,
+			replies: tweet.reply_count,
+			retweets: tweet.retweet_count,
+			quotes: tweet.quote_count
 		},
-		source: data.source,
-		ogData: data.ogData
+		source: tweet.source,
+		ogData: tweet.ogData,
+		deleted: false,
+		archived: false
 	}
+
 	return record;
 }
 
@@ -74,145 +84,163 @@ async function extract(idTw, user, refreshToken) {
 /**
  * Parses & cleans Tweet data object
  * @param {string} id Tweet ID
- * @param {boolean} dontExpand Don't look up quoted/replied tweets (to avoid chain-quoting/replying, we only store one level)
+ * @param {boolean} dontFollow Don't look up quoted/replied tweets (to avoid chain-quoting/replying, we only store one level)
  */
-async function _parseTweet(id, user, dontExpand) {
+async function _parseTweet(id, dontFollow) {
 	let tweet = await _fetchTweet(id);
-	if (tweet.errors) {
-		return tweet;
-	}
-
+	if (tweet.errors) { return tweet }
+	
+	// Store user data
 	tweet.userData = {
 		name: tweet.user.name,
 		handle: tweet.user.screen_name
 	}
-
-	// When it's a retweet, load the original tweet instead
-	// Note: scraping data never gets a RT id but gets the original tweet id indead
-	// So this part only applies when converting tweets from Trump Twitter Archive
+	
+	// When it's a retweet, load the text from the original tweet instead
 	// Eg. #1 https://twitter.com/realDonaldTrump/status/1239756509212553217
 	//    --> https://twitter.com/Techno_Fog/status/1239687082160689152
+	const handleRegEx = new RegExp(/^RT @(\S+)\b/);
 	if (tweet.retweeted_status_id_str) {
-		// console.log('Expand RT >>', tweet.id_str, ' -->', tweet.retweeted_status_id_str, '\n\n');
-		try {
-			retweet = tweet;
-			tweet = await _fetchTweet(tweet.retweeted_status_id_str);
-			if (tweet.errors) console.log('Errors', tweet.errors);
-			if (!tweet.errors) { // makse sure the original tweet is not deleted
-				// Store RT info
-				tweet.rt = {
-					idTw: retweet.id_str,
-					date: tweet.created_at,
-					user: retweet.userData
-				}
-				console.log('$$$', tweet.rt)
-				
-				// Credit retweeter
-				tweet.created_at = retweet.created_at;
-				tweet.userData = {
-					name: 'Donald J. Trump', // TODO: make dynamic
-					handle: user
-				}
-	
-				// In case this user is retweeting themselves, this tweet id
-				// will already exist in the database, so we can't use it
-				// Eg. #2 https://twitter.com/realDonaldTrump/status/1267247098648559620 (self-retweet)
-				//    --> https://twitter.com/realDonaldTrump/status/1267132763116838913
-				if (tweet.user.screen_name == retweet.user.screen_name) {
-					tweet.id_str = retweet.id_str; // old
-				}
-				console.log(tweet.user.screen_name, '==', retweet.user.screen_name, (tweet.user.screen_name == retweet.user.screen_name))
-			} else {
-				// Tweet might be deleted or API rate limit exceeded
-				console.log('Error: ' + id + ' --> og.' + tweet.retweeted_status_id_str);
-				console.log('RETURN: ', tweet);
-				return tweet;
+		const reTweet = tweet;
+		const rt = {};
+		
+		// Fetch the original tweet
+		tweet = await _fetchTweet(tweet.retweeted_status_id_str);
+		// Makse sure the original tweet is not deleted
+		if (tweet.errors && (tweet.errors[0].code == 34 || tweet.errors[0].code === 0)) {
+			// Original tweet probably deleted
+			console.log(`Error: Retweeted tweet deleted - rt:${reTweet.id_str} - og:${tweet.id_str}`);
+		} else {
+			// Store RT details
+			rt.id = tweet.id_str;
+			rt.date = tweet.created_at;
+			rt.user = {
+				handle: tweet.user.screen_name,
+				name: tweet.user.name
 			}
-		} catch {
-			console.log(`RT expanding failed: ${tweet.id_str} --> ${tweet.retweeted_status_id_str}`)
+
+			// Add the RT essentials to the og tweet
+			tweet.id_str = reTweet.id_str
+			tweet.userData = reTweet.userData
+			tweet.created_at = reTweet.created_at;
 		}
-	} else if (tweet.full_text.match(/^RT @(\S+)\b/)) {
+
+		// Save retweet info
+		if (!rt.user) rt.user = { handle: reTweet.full_text.match(handleRegEx)[1] }; // In case we couldn't load RT
+		tweet.rt = rt;
+	} else if (tweet.full_text.match(handleRegEx)) {
 		// Older tweets from before ~June 2013 don't have retweeted_status_id_str
 		tweet.rt = {
+			idTw: tweet.id_str,
+			legacy: true,
 			user: {
-				idTw: tweet.id_str,
-				date: tweet.created_at,
-				handle: tweet.full_text.match(/^RT @(\S+)\b/)[1],
-				rtIdMissing: true
+				handle: tweet.full_text.match(handleRegEx)[1]
 			}
 		}
 	}
-
-	// When it's a tweet not from the user we're scraping, mark it as retweet
-	if (user && tweet.user.screen_name != user) {
-		// console.log('REWTEEET ', tweet.id_str, '@'+tweet.user.screen_name) //, tweet.full_text.slice(0, 50).replace('\n', ''))
-		// Store RT info
-		tweet.rt = {
-			idTw: tweet.id_str,
-			date: tweet.created_at,
-			user: {
-				name: tweet.user.name,
-				handle: tweet.user.screen_name
-			},
-			rtIdMissing: true
-		}
-
-		// Credit retweeter
-		tweet.userData = {
-			name: 'Donald J. Trump', // TODO: make dynamic
-			handle: user
-		}
-		// console.log(tweet.userData)
-	}
-
 	
+	// Log a note when importing foreign tweet
+	if (!dontFollow && tweet.userData.handle != 'realDonaldTrump') console.log('Foreign tweet from @' + tweet.userData.handle);
+
 	// Tags, mentions (parse)
-	const _text = he.decode(tweet.full_text);
-	tweet.tags = extractHashtags(_text);
-	tweet.mentions = extractMentions(_text);
+	tweet.tags = extractHashtags(tweet.full_text);
+	tweet.mentions = extractMentions(tweet.full_text);
 
 	// links (simplify)
-	let links = { internal: [], external: [] };
+	tweet.internalLinks = [];
+	tweet.externalLinks = [];
 	if (tweet.entities.urls) {
-		links = tweet.entities.urls.forEach(link => {
+		tweet.entities.urls.forEach(link => {
 			if (link.expanded_url.match(/\/status\/([\d]+)/)) {
-				links.internal.push(link.expanded_url);
+				tweet.internalLinks.push({
+					url: link.url,
+					urlExpanded: link.expanded_url,
+					urlDisplay: link.display_url
+				});
 			} else {
-				links.external.push(link.expanded_url);
+				tweet.externalLinks.push({
+					url: link.url,
+					urlExpanded: link.expanded_url,
+					urlDisplay: link.display_url
+				});
 			}
 		});
 	}
-	tweet.links = links;
+
+	// Link preview card
+	if (tweet.card && (tweet.card.name == 'summary_large_image' || tweet.card.name == 'summary')) {
+		tweet.linkPreview = {
+			url: tweet.card.url,
+			urlExpanded: tweet.entities.urls[tweet.entities.urls.length - 1].expanded_url,
+			urlVanity: tweet.card.binding_values.vanity_url.string_value,
+			title: tweet.card.binding_values.title.string_value,
+			description: tweet.card.binding_values.description ? tweet.card.binding_values.description.string_value : '',
+			img: (tweet.card.binding_values.summary_photo_image) ? tweet.card.binding_values.summary_photo_image.image_value.url : null,
+			thumb: (tweet.card.binding_values.thumbnail_image) ? tweet.card.binding_values.thumbnail_image.image_value.url : null
+		}
+	}
 
 	// Media (simplify)
 	let media;
 	if (tweet.extended_entities && tweet.extended_entities.media) {
 		media = tweet.extended_entities.media.map(m => {
-			return {
+			const media = {
 				id: m.id_str,
 				mediaUrl: m.media_url,
 				url: m.url,
 				mType: m.type, // Note: tweets are videos with type:image
 				width: m.original_info.width,
-				height: m.original_info.height
+				height: m.original_info.height,
 			}
+
+			// Attach video url
+			if (m.type == 'video') {
+				const videoFormats = m.video_info.variants; // Array of video formats
+				let bitrate = 0;
+				let videoUrl;
+				videoFormats.forEach(format => {
+					if (format.bitrate && format.bitrate > bitrate) {
+						bitrate	= format.bitrate;
+						videoUrl = format.url;
+					}
+				});
+				// console.log('videoUrl: ', videoUrl, bitrate);
+				media.videoUrl = videoUrl;
+			}
+
+			// Attach gif url – eg. 1270329252462964737
+			if (m.type == 'animated_gif') {
+				media.gifUrl = m.video_info.variants[0].url;
+				// console.log('Animated gif: ', id)
+			}
+
+			return media;
 		});
 	}
 	tweet.media = media;
 
 	// Quoted tweet
 	let quoted;
-	if (tweet.quoted_status_id_str && !dontExpand) {
-		quoted = await _parseTweet(tweet.quoted_status_id_str, user, true);
+	if (tweet.quoted_status_id_str && !dontFollow) {
+		quoted = await _parseTweet(tweet.quoted_status_id_str, true);
 		if (quoted.user) { // <-- Make sure this quoted tweet still exists
 			quoted = {
-				id: tweet.quoted_status_id_str,
+				idTw: tweet.quoted_status_id_str,
 				user: {
 					name: quoted.user.name,
 					handle: quoted.user.screen_name
 				},
+				link: {
+					url: tweet.quoted_status_permalink.url,
+					urlExpanded: tweet.quoted_status_permalink.expanded,
+					urlDisplay: tweet.quoted_status_permalink.display
+				},
+				mentions: quoted.mentions,
 				text: quoted.full_text,
 				media: quoted.media,
+				internalLinks: quoted.internalLinks,
+				externalLinks: quoted.externalLinks,
+				linkPreview: quoted.linkPreview,
 				date: quoted.created_at
 			}
 		}
@@ -221,17 +249,21 @@ async function _parseTweet(id, user, dontExpand) {
 
 	// Replies to
 	let repliesTo;
-	if (tweet.in_reply_to_status_id_str && !dontExpand) {
-		repliesTo = await _parseTweet(tweet.in_reply_to_status_id_str, user, true);
+	if (tweet.in_reply_to_status_id_str && !dontFollow) {
+		repliesTo = await _parseTweet(tweet.in_reply_to_status_id_str, true); // Follow replies to the bottom
 		if (repliesTo.user) { // <-- Make sure this replied to tweet still exists
 			repliesTo = {
-				id: tweet.in_reply_to_status_id_str,
+				idTw: tweet.in_reply_to_status_id_str,
 				user: {
 					name: repliesTo.user.name,
 					handle: repliesTo.user.screen_name
 				},
+				mentions: repliesTo.mentions,
 				text: repliesTo.full_text,
 				media: repliesTo.media,
+				internalLinks: repliesTo.internalLinks,
+				externalLinks: repliesTo.externalLinks,
+				linkPreview: repliesTo.linkPreview,
 				date: repliesTo.created_at
 			}
 		}
@@ -254,11 +286,14 @@ async function _parseTweet(id, user, dontExpand) {
 	// Attach OG data in case we need to parse something else later
 	tweet.ogData = JSON.stringify(tweet);
 
+	// Clean up & markup links
+	_parseUrls(tweet);
+
 	// Clean – remove this if you need to access more data
 	delete tweet.entities
 	delete tweet.extended_entities
 	delete tweet.card
-
+	
 	return tweet;
 }
 
@@ -269,19 +304,6 @@ async function _parseTweet(id, user, dontExpand) {
  * @param { Number } id Tweet id
  */
 async function _fetchTweet(id) {
-	if (!_cachedGuestToken) await _updateCachedGuestToken();
-
-	const authOptions = {
-		headers: {
-			authorization: `Bearer ${BEARER_TOKEN}`,
-			Referrer: `https://twitter.com/realDonaldTrump/status/${id}`,
-			'x-csrf-token': 'undefined',
-			'x-guest-token': _cachedGuestToken,
-			'x-twitter-client-language': 'en',
-			...chromeUserAgent
-		}
-	}
-	
 	let params = {
 		tweet_mode: 'extended', // To get non-truncated full_text
 		include_reply_count: 1,
@@ -313,18 +335,34 @@ async function _fetchTweet(id) {
 	
 	params = queryString(params);
 	let response;
-	try { response = await request.json(`https://api.twitter.com/2/timeline/conversation/${id}.json?${params}`, authOptions) }
-	catch {	response = {'errors': [{'message':'Failed to connect to Twitter','code':1}]} }
-	// Refresh token when it expires
-	if (response && response.errors && response.errors[0].code == 200) _cachedGuestToken = null;
-	if (response.errors) return response;
+	try {
+		response = await got(`https://api.twitter.com/2/timeline/conversation/${id}.json?${params}`, { headers: twAuth.getHeaders() })
+	} catch (error) {
+		return JSON.parse(error.response.body);
+	};
+
+	// Refresh token when rate limit is reached
+	twAuth.rateLimitRemains = response.headers['x-rate-limit-remaining'];
+	if (twAuth.rateLimitRemains <= 1) {
+		// Note: while this is great when queing things linearly, the most 
+		// efficient way is to extract a whole batch at once using array.forEach,
+		// in which case you will want to reset the token before each batch,
+		// and set the batch to 50, so even with the following quoted tweets
+		// and repliesTo, the batch will stay under the rate limit of 186.
+		cli.log('REFRESHING GUEST TOKEN - extract.js'.red);
+		await twAuth.refresh();
+	} else {
+		// Log rate limit status
+		// cli.log(`${twAuth.rateLimitRemains} / ${id}`.yellow);
+		// cli.log(`${twAuth.rateLimitRemains}`.yellow);
+	}
 	
-	const tweet = response.globalObjects.tweets[id];
+	const tweet = JSON.parse(response.body).globalObjects.tweets[id];
 	// Sometimes Twitter returns an empty data object for deleted tweets
-	if (!tweet) return {'errors': [{'message':'Scraper error, empty data','code':0}]};
+	if (!tweet) return {errors: [{ message: 'Unavailable Tweet', code: 0}]};
 
 	const userId = tweet.user_id_str;
-	const user = response.globalObjects.users[userId];
+	const user = JSON.parse(response.body).globalObjects.users[userId];
 	const { name, screen_name, location, description, profile_image_url_https } = user;
 	tweet.user = { name, screen_name, location, description, profile_image_url_https };
 	return tweet;
@@ -332,17 +370,67 @@ async function _fetchTweet(id) {
 
 
 
-// Get guest token to access Twitter API
-async function _updateCachedGuestToken(bearerToken=BEARER_TOKEN) {
-	_cachedGuestToken = await _getGuestToken(bearerToken);
-}
-async function _getGuestToken(token) {
-	const guestTokenResponse = await request('https://api.twitter.com/1.1/guest/activate.json',
-		{
-			method: 'POST',
-			headers: { authorization: `Bearer ${token}`, ...chromeUserAgent }
-		})
-	return JSON.parse(guestTokenResponse.body).guest_token;
+/**
+ * Removes all urls that we're previewing (media or linkPreview)
+ * plus displays vanity urls for all exterenal link
+ * @param {Remove } tweet Tweet from which to strip urls
+ */
+function _parseUrls(tweet) {
+	tweet.ogText = tweet.full_text;
+	tweet.text = tweet.full_text;
+	_parse(tweet);
+	if (tweet.quoted && tweet.quoted.idTw) _parse(tweet.quoted);
+	if (tweet.repliesTo && tweet.repliesTo.idTw) _parse(tweet.repliesTo);
+
+	function _parse(tweet) {
+		let text = tweet.text;
+
+		// Remove media links
+		if (tweet.media && tweet.media.length) {
+			tweet.media.forEach(m => {
+				const re = new RegExp(m.url);
+				text = text.replace(re, '');
+			});
+		}
+
+		// Remove link preview links
+		if (tweet.linkPreview && Object.keys(tweet.linkPreview).length > 0) {
+			const re = new RegExp(tweet.linkPreview.url);
+			text = text.replace(re, '');
+		}
+
+		// Remove quoted tweet links
+		if (tweet.quoted && tweet.quoted.idTw) {
+			const re = new RegExp(tweet.quoted.link.url);
+			text = text.replace(re, '');
+		}
+
+		// Expand & enrich internal links
+		if (tweet.internalLinks && tweet.internalLinks.length) {
+			tweet.internalLinks.forEach(link => {
+				const re = new RegExp(link.url);
+				text = text.replace(re, `<a target="_blank" href="${link.urlExpanded}">${link.urlDisplay}</a>`);
+			})
+		}
+
+		// Expand & enrich external links
+		if (tweet.externalLinks && tweet.externalLinks.length) {
+			tweet.externalLinks.forEach(link => {
+				const re = new RegExp(link.url);
+				text = text.replace(re, `<a target="_blank" href="${link.urlExpanded}">${link.urlDisplay}</a>`);
+			})
+		}
+
+		// Link usernames
+		if (tweet.mentions && tweet.mentions.length) {
+			tweet.mentions.forEach(mention => {
+				const re = new RegExp('@'+mention, 'gi');
+				text = text.replace(re, `<a target="_blank" href="https://twitter.com/${mention}">@${mention}</a>`);
+			})
+		}
+
+		tweet.text = text ? text.trim() : '';
+	}
 }
 
 
@@ -413,20 +501,19 @@ async function extractSimple(id, user) {
  * @param {string} idTw Tweet id
  * @param {*} type original / parsed / extracted (default: all)
  */
-async function inspect(idTw, user, type) {
+async function inspect(idTw, type) {
 	let result = {};
-	user = user == '_' ? null : user;
 	if (type == 'original') result = await _fetchTweet(idTw);
-	else if (type == 'parsed') result = await _parseTweet(idTw, user);
-	else if (type == 'extracted') result = await extract(idTw, user);
+	else if (type == 'parsed') result = await _parseTweet(idTw);
+	else if (type == 'extracted') result = await extract(idTw);
 	else if (!type) result = {
 		original: await _fetchTweet(idTw),
-		parsed: await _parseTweet(idTw, user),
-		extracted: await extract(idTw, user)
+		parsed: await _parseTweet(idTw),
+		extracted: await extract(idTw)
 	}
 	return result;
 };
 
+const refreshTwitterToken = twAuth.refresh;
 
-
-module.exports = { extract, extractSimple, inspect };
+module.exports = { extract, extractSimple, inspect, refreshTwitterToken, twAuth };

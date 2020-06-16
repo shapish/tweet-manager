@@ -1,91 +1,106 @@
-// TODO: tidy and simplify
+// Modules
+const got = require('got');
 
-const { timeout } = require('../helpers/general');
+// Helpers
 const cli = require('../helpers/cli-monitor');
+const { timeout, writeToFile, queryString, getDate, getTime } = require('../helpers/general')
+const twAuth = new (require('./tw-auth'))(); // Twitter authentication
+
 
 
 /**
- * Scrapes as many pages as are defined in batchSize and
- * returns results per page via the callback function
- * @param {Object} options Contains browser & batchSize
- * @param {Function} cb Callback
+ * Scrapes someone's twitter profile (ids only) directly from the
+ * Twitter API, however Twitter only serves up to about ~1300 tweets
+ * @param {*} userId Twitter handle to scrape
+ * @param {*} cb callback that will send the results back per batch (page)
  */
-async function gather(options, cb) {
-	const { browser, batchSize } = options;
-	let { url, page } = options;
-	let cycle = 1;
-	let attempt = 1;
+async function gatherIds(userId, cb, createLog) {
+	
+	// Start
+	cli.banner('Scraping started'.green);
 
-	const webPage = await browser.newPage();
-	await webPage.setUserAgent('Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)');
+	// Scraping
+	const allTweetIds = []; // To avoid duplicates, like pinned tweets
+	await _scrapeOnePage();
 
-	await _scrapeOnePage(url);
-	await webPage.close();
+	// Done
+	console.log(`Result: ${allTweetIds.length} tweets scraped:\n`, allTweetIds.join(','));
 
-	// Scrape one page and send results back to control
-	async function _scrapeOnePage(url) {
-		const obj = { ids: [], url: url };
-		await _tryScrape(obj);
-		
-		// Complete next url
-		if (obj.url) {
-			obj.url = (obj.url.slice(0,1) == '/') ? `https://twitter.com${obj.url}` : obj.url;
+
+
+	// Scrape one page, then loop back for the next, until bottom is reached
+	async function _scrapeOnePage(cursorBottom) {
+		await twAuth.refresh(); // Get new token per batch
+
+		// Fetch tweets
+		let params = {
+			tweet_mode: 'extended',
+			// Note: The Twitter rate limit is 186, but quoted tweets and repliesTo are being followed,
+			// multiplying the amount of API requests up to 3 per tweet – hence only 50 tweets/page.
+			count: 50,
+			cursor: cursorBottom
 		}
-
-		cli.title(`p ${page}: ${obj.ids.length} ids scraped`, 0, 1);
-
-		// Return current batch of ids + next page url
-		if (obj.ids.length > 0) {
-			await cb(obj.ids, obj.url, page); // <------------------------- callback!
-		}
-		
-		// Scrape next page
-		if (obj.url && cycle < batchSize) {
-			page++;
-			cycle++
-			await timeout(10);
-			await _scrapeOnePage(obj.url);
-		}
-		
-	}
-
-	// Keep on reloading the same page if no tweets are being loaded
-	async function _tryScrape(obj) {
-		const currentPageUrl = obj.url;
-		await webPage.goto(obj.url, { waitUntil: 'networkidle0' });
-		const result = await webPage.evaluate(_ => {
-			let ids = Array.from(document.querySelectorAll('td.timestamp a')).map(a => a.getAttribute('name').match(/\d+$/)[0]);
-			let olderTweetsButton = document.querySelector('.w-button-more a');
-			let url = olderTweetsButton ? olderTweetsButton.getAttribute('href') : null;
-			return [ids, url];
+		params = queryString(params);
+		const response = await got(`https://api.twitter.com/2/timeline/profile/${userId}.json?${params}`, {
+			method: 'GET',
+			headers: twAuth.getHeaders()
 		});
-		obj.ids = result[0];
-		obj.url = result[1];
-
-		cli.log(`p ${page} - ${attempt} -> ${obj.ids.length} url: ${currentPageUrl} next: ${obj.url}`.cyan);
-
-		// Often IE6 UI won't properly load tweets, so we try again
-		// Every page has 30 but sometimes it only loads 27-30
-		if (obj.ids.length < 27) {
-			if (attempt < 100) {
-				// When failed, reset url from next page (should be null) to current page
-				obj.url = currentPageUrl;
-
-				attempt++;
-				const to = attempt <= 5 ? 100 : (attempt - 5) * 200; // Start slowing down attempts after 10
-				await timeout(to);
-				await _tryScrape(obj);
+		
+		// Parse entire page of tweets & store as batch
+		const allPageTweets = JSON.parse(response.body).globalObjects.tweets;
+		const uniquePageTweets = [];
+		for (let tweet in allPageTweets) {
+			const tw = allPageTweets[tweet];
+			// Avoid duplicates
+			if (!allTweetIds.includes(tw.id_str)) {
+				uniquePageTweets.push(tw);
+				allTweetIds.push(tw.id_str);
 			} else {
-				// After trying 100 times, we probably reached the bottom; abort.
-				// Twitter stops serving tweets older than a few thousand.
-				cli.banner('Gathering Finished');
+				cli.log(`Duplicate: ${tw.id_str}`.red);
 			}
+		}
+		
+		// Reduce to only ids
+		const pageTweetIds = uniquePageTweets.map(tw => {
+			return tw.id_str;
+		});
+		
+		// Log
+		if (createLog) {
+			// Create a loggable format
+			const pageTweetsLog = uniquePageTweets.map(tw => {
+				return tw.id_str + ' - ' + tw.created_at + ' - ' + tw.full_text.replace(/\n/g, ''); // .slice(0, 50)
+			});
+			const now = new Date();
+			writeToFile(pageTweetsLog, 'id-scrape-log-' + getDate(now, 1) + '--' + getTime(now).replace(/:/, '-'));
+			writeToFile(',' + pageTweetIds.join(','), 'id-scrape-log-' + getDate(now, 1) + '--' + getTime(now).replace(/:/, '-'))
+		}
+
+		// Process batch
+		cb(pageTweetIds);
+		
+		// Refresh token when rate limit is reached
+		const rateLimitRemains = response.headers['x-rate-limit-remaining'];
+		if (rateLimitRemains <= 1) {
+			cli.log('REFRESHING GUEST TOKEN - gather.js'.red);
+			await twAuth.refresh();
 		} else {
-			// Successful scrape, reset
-			attempt = 1;
+			cli.log(`${rateLimitRemains}`.yellow);
+		}
+		
+		// Get next page parameter (cursorBottom)
+		const prevCursorBottom = cursorBottom;
+		const entries = JSON.parse(response.body).timeline.instructions[0].addEntries.entries;
+		cursorBottom = encodeURIComponent(entries[entries.length - 1].content.operation.cursor.value); // -2 for top
+
+		// Scrape next page
+		if (cursorBottom != prevCursorBottom) {
+			await timeout(5000);
+			await _scrapeOnePage(cursorBottom);
+		} else {
+			cli.banner('Scraping complete'.green);
 		}
 	}
 }
 
-
-module.exports = gather;
+module.exports = { gatherIds };

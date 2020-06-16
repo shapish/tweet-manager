@@ -1,3 +1,20 @@
+/* General */
+h4 {
+	margin-bottom: 5px;
+}
+form {
+	margin-top: 20px;
+	width: 100%;
+}
+.step {
+	margin-bottom: 40px;
+	/* border: solid 1px; */
+	overflow: auto;
+}
+
+
+
+
 /* Live Scrape */
 #scrape-new-tweets::after {
 	content: 'Scrape latest tweets';
@@ -13,6 +30,33 @@
 }
 
 
+
+
+/* Seeding */
+form .input-wrap:not(.clear) {
+	clear: none;
+}
+form input[type=text] {
+	width: 150px;
+}
+
+
+
+/* Transferring */
+.process.transfer-wrap {
+	clear: none;
+	flex-direction: row;
+	padding-top: 25px;
+}
+
+
+
+
+
+
+/**
+ * Process button states
+ */
 .process {
 	margin-bottom: 40px;
 	clear: left;
@@ -31,32 +75,60 @@
 	color: green;
 }
 
+/* Seeding */
+#btn-seed::after {
+	content: 'Start Seeding';
+}
+#btn-seed.on::after {
+	content: 'Stop Seeding';
+}
+#btn-seed:not(.on) + .display::after {
+	content: 'Seeding off';
+}
+#btn-seed.on + .display::after {
+	content: 'Seeding inprogress';
+}
+
 /* Gathering */
-#gather::after {
+#btn-gather::after {
 	content: 'Start Gathering';
 }
-#gather.on::after {
+#btn-gather.on::after {
 	content: 'Stop Gathering';
 }
-#gather:not(.on) + .display::after {
+#btn-gather:not(.on) + .display::after {
 	content: 'Gathering off';
 }
-#gather.on + .display::after {
-	content: 'Gathering on!';
+#btn-gather.on + .display::after {
+	content: 'Gathering in progress';
 }
 
 /* Extracting */
-#extract::after {
+#btn-extract::after {
 	content: 'Start Extracting';
 }
-#extract.on::after {
+#btn-extract.on::after {
 	content: 'Stop Extracting';
 }
-#extract:not(.on) + .display::after {
+#btn-extract:not(.on) + .display::after {
 	content: 'Extracting off';
 }
-#extract.on + .display::after {
-	content: 'Extracting on!';
+#btn-extract.on + .display::after {
+	content: 'Extracting in progress';
+}
+
+/* Extracting */
+#btn-transfer::after {
+	content: 'Start Transfer';
+}
+#btn-transfer.on::after {
+	content: 'Stop Transfer';
+}
+#btn-transfer:not(.on) + .display::after {
+	content: 'Transferring off';
+}
+#btn-transfer.on + .display::after {
+	content: 'Transferring in progress';
 }
 
 /* Transferring */

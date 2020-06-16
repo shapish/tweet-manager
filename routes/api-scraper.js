@@ -2,18 +2,122 @@ const express = require('express');
 const router = express.Router();
 const puppeteer = require('puppeteer');
 const got = require('got');
+const prettyJson = require('pretty-print-json');
 
 // Models
-const Tweet = require('../models/tweet');
-const TweetScrape = require('../models/tweet-scrape'); // Mirror of Tweet where we store scraped tweets
+const { Tweet, TweetScrape } = require('../models/tweet');
 const ScrapeControl = require('../models/scrape-control'); // Storing of options and status
+const Tta = require('../models/tta'); // Trump Twitter Archive
 
 // Functions
 const { gatherAndStore, extractData, openBrowser } = require('../scraper/control');  // Control functions
-const { extract, extractSimple, inspect } = require('../scraper/extract');
-const request = require('../scraper/request');
+const { extract, twAuth, extractSimple, inspect } = require('../scraper/extract');
+const { seed, extractTweets, transferData } = require('../scraper/seed');
 const cli = require('../helpers/cli-monitor');
 const { padNr, timeout } = require('../helpers/general');
+
+
+
+/**
+ * Seeding
+ */
+
+// Seed database
+// Seed TweetScrape with ids only: http://localhost:5000/api/scraper/seed/TweetScrape/tta-20-06-12.json?tta=1
+// Seed Tta http://localhost:5000/api/scraper/seed/Tta/tta-20-06-12.json?drop=1
+router.post('/seed/:collection/:filename/:state', async (req, res) => {
+	// return console.log(req.originalUrl.split('?').shift())
+	if (+req.params.state) {
+		// Loads 1 page at a time, then forwards to next until done
+		seed({
+			filename: req.params.filename, // Where to seed from
+			collection: req.params.collection, // Where to seed
+			p: req.query.p, // Current request's page
+			done: +req.query.done, // Docs processed
+			drop: +req.query.drop,
+			idsOnly: +req.query.ids_only,
+			url: req.protocol + '://' + req.get('host') + req.originalUrl.split('?').shift()
+		});
+		res.send('Seeding in progress, check console.');
+	} else {
+		// Abort
+		seed('abort');
+		res.send('Seeding aborted.');
+	}
+});
+
+
+// Extract tweet info for collection ful off ids
+router.post('/extract/:collection/:state', async (req, res) => {
+	if (+req.params.state) {
+		// Loads 1 page at a time, then forwards to next until done
+		extractTweets(req.params.collection);
+		res.send('Extracting in progress, check console.');
+	} else {
+		// Abort
+		extractTweets('abort');
+		res.send('Extracting aborted.');
+	}
+});
+
+
+// Transfer data from TweetScrape to Tweet
+router.post('/transfer/:state', async (req, res) => {
+	if (+req.params.state) {
+		// Loads 1 page at a time, then forwards to next until done
+		transferData({
+			drop: +req.query.drop
+		});
+		res.send('Transferring in progress, check console.');
+	} else {
+		// Abort
+		transferData('abort');
+		res.send('Transferring aborted.');
+	}
+});
+
+
+
+
+
+/**
+ * Live Scraping
+ */
+
+// Live scrape latest tweets directly into the main table
+// --> Loop through scraped ids and extract tweet data
+router.post('/scrape-live/:state', async (req, res) => {
+	if (+req.params.state) {
+		scrapeLatest();
+		res.send('Live scraping in progress, check console.');
+	} else {
+		// Abort
+		scrapeLatest('abort');
+		res.send('Live scraping aborted.');
+	}
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -22,10 +126,15 @@ const { padNr, timeout } = require('../helpers/general');
 // 1266740439740284928 // Thread
 // 1268006529678049281
 router.get('/tweet/:id', async (req, res) => {
+	twAuth.refresh();
 	const tweet = await extract(req.params.id);
-	console.log(tweet)
-	console.log(JSON.stringify(tweet, null, 4))
-	res.send(tweet);
+	// console.log(tweet)
+	// console.log(JSON.stringify(tweet, null, '\t'))
+	const html = prettyJson.toHtml(tweet, { indent: 3 });
+	// console.log(html)
+	// res.send(html);
+	res.send(req.params.id + ' / ' + twAuth.rateLimitRemains + '<br><br><br><pre>' + html + '</pre>');
+	// res.send('<pre>' + JSON.stringify(tweet, null, '\t') + '</pre>');
 });
 
 
@@ -40,7 +149,7 @@ router.post('/gather/:state', async (req, res) => {
 		const ctrl = await ScrapeControl.findOne({ name: 'scrape-control' });
 		if (!ctrl) {
 			const errorMsg = 'ABORTED – Initialize Scrape Controller first';
-			cli.title(errorMsg.red, 2, 2);
+			cli.title('++' + errorMsg.red + '++');
 			return res.send(errorMsg)
 		}
 
@@ -60,139 +169,35 @@ router.post('/gather/:state', async (req, res) => {
 
 
 
-// API: Toggle extractor
-// --> Loop through scraped ids and extract tweet data
-router.post('/extract/:state', async (req, res) => {
-	let state = +req.params.state;
-
-	if (state) {
-		// Display START banner
-		const total = await TweetScrape.estimatedDocumentCount();
-		const done = await TweetScrape.countDocuments({ text: { $exists: true } });
-		cli.banner('Start Extracting');
-		cli.progress(done, total)
-
-		// Start scraping
-		extractData();
-	}
-
-	const ctrl = await ScrapeControl.findOneAndUpdate({ name: 'scrape-control' }, {
-		extracting: state
-	}, { new: true });
-	res.send(ctrl);
-});
-
-
-
-// API: Transfer
-// --> Move data from scraped table to main table
-router.post('/transfer', async (req, res) => {
-	const batchSize = 500;
-	let batch = 0;
-	const total = await TweetScrape.count({ text: { $exists: true } });
-	res.send(`Transferring: ${total} tweets`);
-
-	// Remove previously old tweets
-	// Tweet.collection.drop();
-
-	cli.banner('TRANSFER START');
-	cli.log(`${total} tweets`, 2);
-	await _transferLoop();
-	cli.title('Transfer complete');
-
-	async function _transferLoop() {
-		cli.log(`Batch #${batch}`)
-		const tweets = await TweetScrape.find({ text: { $exists: true } })
-			.skip(batch * batchSize)
-			.limit(batchSize)
-			.select('-_id -__v')
-			.lean();
-		await Tweet.create(tweets);
-		cli.title('Done');
-		batch++;
-
-		// Keep on looping until end is reached
-		if ((batch * batchSize) < total) {
-			await _transferLoop();
-		}
-	}
-});
-
-
-
-// Live scrape latest tweets directly into the main table
-// --> Loop through scraped ids and extract tweet data
-router.post('/scrape-live/:state', async (req, res) => {
-	let state = +req.params.state;
-	let i = 0;
-	let tweets;
-
-	await ScrapeControl.findOneAndUpdate({ name: 'scrape-control' }, {
-		liveScraping: state
-	}, { new: true });
-
-	if (state) {
-		const query = {
-			deleted: false,
-			ogData: null,
-			date: { $gt: new Date('2020-05-28') } // For testing
-			// date: { $gt: new Date('2020-06-01') } // For testing
-		}
-		
-		// Display START banner
-		const total = await Tweet.countDocuments(query);
-		tweets = await Tweet.find(query);
-		cli.banner(`Start Live Extracting ${total} tweets`);
-		// console.log(tweets);
-
-		// Start scraping
-		await _cycle();
-	} else {
-		cli.title(`Stopping Extraction`, 2, 2);
-	}
-
-	res.send({ state: state });
-
-	async function _cycle() {
-		fullTweet = await extract(tweets[i].idTw);
-		if (fullTweet.text) {
-			// console.log(fullTweet)
-			console.log('#'+(i+1), fullTweet.idTw, fullTweet.text.replace('\n', '').slice(0.30), '\n\n');
-		} else {
-			// Tweet is deleted
-			console.log('DELETED: ', fullTweet)
-		}
-		tweets[i] = fullTweet;
-		await Tweet.findOneAndUpdate({
-			idTw: tweets[i].idTw
-		}, tweets[i]);
-		if (i < tweets.length - 1) {
-			const { liveScraping } = await ScrapeControl.findOne({ name: 'scrape-control' });
-			if (liveScraping) {
-				i++;
-				// await timeout(5000);
-				await _cycle();
-			}
-		} else {
-			cli.banner(`Done extracting`, -1);
-		}
-	}
-});
-
-
-
 // Get new tweet using GOT
 router.post('/new-trump-tweet', async (req, res) => {
-	const id = req.body.tweet.match(/\d+$/)[0];
+	const idTw = req.body.tweet.match(/\d+$/)[0];
 	const user = req.body.user;
 	
 	// Ignore tweets already scraped
-	const exists = !!await Tweet.countDocuments({ idTw: id });
-	if (exists) return res.send(`Tweet ${id} has previously been scraped.`);
+	const exists = !!await Tweet.countDocuments({ idTw: idTw });
+	if (exists) return res.send(`Tweet ${idTw} has previously been scraped.`);
 
 	// Extract & save
-	const tweet = await extractSimple(id, user);
+	const tweet = await extractSimple(idTw, user);
 	console.log('New tweet coming in!', tweet)
+	if (tweet) await Tweet.create(tweet);
+
+	res.send(tweet);
+});
+
+
+// Get new tweet using GOT
+router.post('/new-tweet/:idTw', async (req, res) => {
+	const idTw = req.params.idTw;
+
+	// Make sure it's not a duplicate
+	const exists = !!await Tweet.countDocuments({ idTw: idTw });
+	if (exists) return res.send(`Tweet ${idTw} has previously been scraped.`);
+
+	// Extract & save
+	const tweet = await extract(idTw);
+	console.log('New tweet coming in!', tweet.text)
 	if (tweet) await Tweet.create(tweet);
 
 	res.send(tweet);
@@ -201,13 +206,13 @@ router.post('/new-trump-tweet', async (req, res) => {
 
 
 // Inspect tweet
-router.get('/inspect/:user/:id', async (req, res) => {
+router.get('/inspect/:id', async (req, res) => {
 	const tweet = await inspect(req.params.id);
 	res.send(tweet);
 });
-router.get('/inspect/:user/:id/:type', async (req, res) => {
+router.get('/inspect/:id/:type', async (req, res) => {
 	// Type can be original / parsed / extracted
-	const tweet = await inspect(req.params.id, req.params.user, req.params.type);
+	const tweet = await inspect(req.params.id, req.params.type);
 	res.send(tweet);
 });
 
@@ -218,6 +223,7 @@ router.get('/inspect/:user/:id/:type', async (req, res) => {
 router.get('/init/:user', async (req, res) => {
 	let ctrl = await ScrapeControl.findOneAndUpdate({ name: 'scrape-control' }, {
 		name: 'scrape-control',
+		seeding: false,
 		extracting: false,
 		gathering: false,
 		url: null,

@@ -9,14 +9,14 @@ var schedule = require('node-schedule');
 
 
 // Models
-const Tweet = require('../models/tweet');
+const { Tweet } = require('../models/tweet');
 const { User } = require('../models/user');
 const Chapter = require('../models/chapter');
 
 // Functions
 const Search = require('../helpers/classes/Search');
 const Pg = require('../helpers/classes/Pagination');
-const { getDateNav, linkText } = require('../helpers/search');
+const { getDateNav, linkText, hideTextUrls } = require('../helpers/search');
 const { padNr, getTime, getDate, laterDate, timeout } = require('../helpers/general');
 const { url } = require('../helpers/general-global');
 const { auth } = require('../middleware/auth');
@@ -221,9 +221,6 @@ async function display(req, res) {
 	// Complete pagination parameters
 	pg.complete(resultCount);
 
-	// Link URLs and usernames
-	linkText(tweets);
-
 	// Parse clean date & time formats
 	tweets = tweets.map(tweet => {
 		tweet.dateString = getDate(tweet.date);
@@ -339,14 +336,16 @@ router.get('/download/:format', auth, async (req, res) => {
 
 	// Create filename
 	const date = new Date();
-	const filename = 'the45th-data-' + date.getFullYear() + padNr(date.getMonth()) + padNr(date.getDay()) + '-' + date.getHours() + padNr(date.getMinutes()) + padNr(date.getSeconds());
+	const filenameQuery = req.query.q ? '--' + req.query.q.replace(/["=/]/gi, '').replace(/[^a-z0-9]/gi, '_') : ''
+	const filename = 'the45th-data-' + date.getFullYear() + '-' + padNr(date.getMonth() + 1) + '-' + padNr(date.getDate())
+		+ '--' + date.getHours() + 'h' + padNr(date.getMinutes()) + 'm' + padNr(date.getSeconds() + 's' + filenameQuery);
 	const filenameExt = `${filename}.${format}`;
 	const path = `public/downloads/${filenameExt}`; // Internal path to sliced file (for fs)
 	const pathTmp = path + '-tmp'; // Temporary filename until download is complete
 	const pathPublic = `/downloads/${filenameExt}`; // External path to sliced file (for front-end)
 
 	if (sliced) {
-		// For larger queries, write results into a file
+		// For larger queries, slice results and write them into file
 		_slicedDownload();
 	} else {
 		// Smaller queries are downloaded at once

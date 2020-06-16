@@ -1,0 +1,21 @@
+<div class="meta">
+	<% if (date) { %>
+		<a href="#"><%= dateString %></a> at <%= timeString %>
+	<% } %>
+	<% if (extra.retweets && extra.likes && extra.quotes) { %>
+		&nbsp;&nbsp;•&nbsp;&nbsp; RT <%= prettyNr(extra.retweets) %>
+		&nbsp;&nbsp;•&nbsp;&nbsp; &#9825; <%= prettyNr(extra.likes) %>
+		&nbsp;&nbsp;•&nbsp;&nbsp; Q <%= prettyNr(extra.quotes) %>
+		&nbsp;&nbsp;•&nbsp;&nbsp; Source: <%= source %>
+	<% } %>
+	<% if (!ogData && !deleted) { %>
+		&nbsp;&nbsp;•&nbsp;&nbsp; Not yet fully scraped.
+	<% } %>
+</div>
+
+<div class="label-wrap<% if (labels.length) { %> pad<% } %>">
+	<% if (deleted) { %><a href="#" class="label deleted">deleted</a><% } %>
+	<% if (typeof labels !== 'undefined') { labels.forEach((val) => { %>
+	<%- include('partials/label.ejs', { val: val }) %>
+	<% })} %>
+</div>

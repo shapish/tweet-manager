@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 
 // Models
-const Tweet = require('../models/tweet');
+const { Tweet } = require('../models/tweet');
 const Chapter = require('../models/chapter');
 
 // Middleware

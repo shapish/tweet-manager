@@ -1,3 +1,4 @@
+const fs = require('fs');
 
 /**
  * Helper functions available  only in backend
@@ -117,7 +118,7 @@ function laterDate(interval) {
 			laterDate.setHours(laterDate.getHours() + interval * 24 * 7);
 			break;
 		case 'd':
-			laterDate.setHours(laterDate.getHours() + interval * 24);
+			laterDate.setDate(laterDate.getDate() + interval);
 			break;
 		case 'h':
 			laterDate.setHours(laterDate.getHours() + interval);
@@ -135,14 +136,17 @@ function laterDate(interval) {
 
 // Promisyfied timeout
 function timeout(time) {
-    return new Promise((resolve) => {
-        setTimeout(resolve, time)
-    })
+	return new Promise((resolve) => {
+		setTimeout(resolve, time)
+	})
 }
 
 
 // Stringify URL parameters
 function queryString(params) {
+	// Remove empty values
+	for (let key in params) { if (!params[key]) delete params[key] }
+	// Parse the rest
 	return Object.keys(params).map(key => key + '=' + params[key]).join('&');
 }
 
@@ -190,4 +194,22 @@ function getDate(date, type) {
 }
 
 
-module.exports = { removeDupDocs, compareArrays, linkURLs, linkUserNames, createPath, laterDate: laterDate, timeout, queryString, padNr, getTime, getDate }
+/**
+ * Write data to file
+ * https://stackoverflow.com/questions/3459476/how-to-append-to-a-file-in-node/43370201#43370201
+ */
+function writeToFile(data, filename, options) {
+	filename = filename ? filename : 'dump';
+	options = options ? options : {};
+	const format = options.format ? options.format : 'txt';
+	const content = Array.isArray(data) ? data.join('\n') : typeof data == 'string' ? data : String(data);
+	fs.appendFile(`public/logs/${filename}.${format}`, content, function (err) {
+		if (err) throw err;
+		console.log('Saved!');
+	});
+}
+
+
+module.exports = { removeDupDocs, compareArrays, linkURLs, linkUserNames,
+	createPath, laterDate: laterDate, timeout, queryString, padNr, getTime,
+	getDate, writeToFile }

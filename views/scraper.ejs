@@ -9,39 +9,106 @@
 	]
 }) %>
 <h3>Live Scraper</h3>
+<p>This looks up and "api scrapes" (completes) all tweets in the main table that have been "simple scraped".</p>
 <div class="process">
-	<button id="scrape-new-tweets" class="<% if (extracting) { %>on<% } %>"></button>
+	<button id="scrape-latest" class="<% if (extracting) { %>on<% } %>"></button>
 	<div class="display"></div>
 </div><br><br>
-<p>This looks up and "api scrapes" (completes) all tweets in the main table that have been "simple scraped".</p>
 <br><br>
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 <br><br>
-<h3>Batch Scraper</h3>
-<p>This scrapes an entire timeline into a separate table which then is transferred. Three steps:</p>
+<h3>Seeder</h3>
+
+<div class="step">
+	<h3>Step 1: Import Ids</h3>
+	<p>Take a JSON file with tweets from the /data folder and seed them to a collection.<br>
+	When only importing ids, we'll look for <i>id_str</i> and ignore the rest.</p>
+	<form id="form-seed">
+		<div class="input-wrap">
+			<label>Target Collection</label>
+			<input type="text" name="collection" value="TweetScrape" placeholder="Target collection">
+		</div>
+		<div class="input-wrap">
+			<label>JSON filename</label>
+			<input type="text" name="filename" value="tta-20-06-12.json" placeholder="filename.json">
+		</div>
+		<div class="input-wrap clear">
+			<label>Delete Previous Data</label>
+			<div class="dropdown">
+				<select name="drop-collection-seed">
+					<option value="0">no, keep</option>
+					<option value="1" selected>yes, delete</option>
+				</select>
+				<div class="dsp">yes, delete</div>
+			</div>
+		</div>
+		<div class="input-wrap">
+			<label>What to import</label>
+			<div class="dropdown">
+				<select name="ids-only">
+					<option value="1" selected>ids only</option>
+					<option value="0">full tweets</option>
+				</select>
+				<div class="dsp">only ids</div>
+			</div>
+		</div>
+		<div class="process">
+			<br><br>
+			<button id="btn-seed" class="<% if (seeding) { %>on<% } %>"></button>
+			<div class="display"></div>
+		</div>
+	</form>
+</div>
+
+<div class="step">
+	<h3>Step2: Extract Tweets</h3>
+	<p>Cycle through tweets, fetch and store tweet data from Twitter API.</p>
+	<div class="process">
+		<button id="btn-extract" class="<% if (extracting) { %>on<% } %>"></button>
+		<div class="display"></div>
+	</div>
+</div>
+
+<div class="step">
+	<h3>Step3: Transfer Data</h3>
+	<p>Transfer the fully completed collection of tweets to the main table.<br>
+	(TweetScrape to Tweet)</p>
+	<form>
+		<div class="input-wrap">
+			<label>Delete previous data</label>
+			<div class="dropdown">
+				<select name="drop-collection-transfer">
+					<option value="0">no, keep</option>
+					<option value="1" selected>yes, delete</option>
+				</select>
+				<div class="dsp">yes, delete</div>
+			</div>
+		</div>
+		<div class="process transfer-wrap">
+			<label></label>
+			<button id="btn-transfer"></button>
+			<div class="display"></div>
+		</div>
+	</form>
+</div>
+
+<br><br><br><br><br>
+
 <% if (typeof gathering == 'undefined') { %>
 	<a href="/api/scraper/init/realDonaldTrump" target="_blank">Initialize Scrape Controller</a> to start.<br>
 <% } else { %>
-	<p>1. <b>Gather</b> will scrape ids from DJT's timeline Twitter and store them in the TweetScrapes table.</p>
-	<p>2. <b>Extract</b> will run each id by the Twitter API and fetch all data, updating the TweetScrapes table (requires localhost).</p>
-	<p>3. <b>Transfer</b> will transfer the TweetScrapes table to Tweets table. Duplicated will throw an error.</p>
-	<br><br>
-	<p style="color: #d00">Connected to: <%= database %></p><br>
-	<div class="process">
+	
+
+	<!-- <div class="process">
 		<button id="gather" class="<% if (gathering) { %>on<% } %>"></button>
 		<div class="display"></div>
-	</div>
+	</div> -->
 	
-	<div class="process">
-		<button id="extract" class="<% if (extracting) { %>on<% } %>"></button>
-		<div class="display"></div>
-	</div>
 	
-	<div class="process">
-		<button id="transfer">Transfer Data</button>
-		<div class="display"></div>
-	</div><br>
-	<br><br>
+	
+	<br>
+	<br>
+	<br>
 	<h3>Useful links</h3>
 	<ul>
 		<li>

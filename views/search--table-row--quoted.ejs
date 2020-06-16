@@ -1,0 +1,7 @@
+<% if (quoted.idTw) { %>
+	<div class="quoted link" href="https://twitter.com/_/status/<%= quoted.idTw %>">
+		<div class="text"><span class="link color" href="https://twitter.com/<%= quoted.user.handle %>"><b><%= quoted.user.name %></b> <u>@<%= quoted.user.handle %></u></span>: <%- quoted.text %></div>
+		<%- include('search--table-row--media.ejs', { media: quoted.media }) %>
+		<%- include('search--table-row--link-preview.ejs', { linkPreview: quoted.linkPreview }) %>
+	</div>
+<% } %>

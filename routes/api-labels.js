@@ -4,7 +4,7 @@ const router = express.Router();
 
 // Models
 const Label = require('../models/label');
-const Tweet = require('../models/tweet');
+const { Tweet } = require('../models/tweet');
 
 // Middleware
 const {auth} = require('../middleware/auth');
