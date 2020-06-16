@@ -68,7 +68,9 @@ router.post('/scrape-live/:state', async (req, res) => {
 // 1268006529678049281
 router.get('/tweet/:id', async (req, res) => {
 	await twAuth.refresh();
+	console.log('AUTH token: ', twAuth.guestToken);
 	const tweet = await extract(req.params.id);
+	console.log('INSPECT: ', tweet);
 	// console.log(tweet)
 	// console.log(JSON.stringify(tweet, null, '\t'))
 	const html = prettyJson.toHtml(tweet, { indent: 3 });
