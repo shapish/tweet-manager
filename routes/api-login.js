@@ -2,7 +2,6 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
-const _ = require('lodash');
 const Joi = require('@hapi/joi');
 
 // Models

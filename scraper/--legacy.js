@@ -247,6 +247,8 @@ router.post('/seed/:filename', async (req, res) => {
  * how to properly use it but might have to return to this technique to parse mega JSONs bigger
  * than the current Trump twitter archive
  */
+const StreamArray = require( 'stream-json/streamers/StreamArray');
+const { Writable } = require('stream');
 router.post('/seed/:filename', async (req, res) => {
 	const fileStream = fs.createReadStream('data/' + req.params.filename + '.json');
 	const jsonStream = StreamArray.withParser();
