@@ -323,3 +323,139 @@ function whatever() {
 
 	// ...
 }
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+/**
+ * Gather & storing ids using puppeteer fakje browser
+ * 
+ * Uses puppeteer to scrape tweet from a spoofed IE6 UI,
+ * until bottom is reached or scraper is turned off.
+ * Stores twitter ids in database per batch.
+ * 
+ * @param {string} url Leave empty (used for loop)
+ * @param {number} batchSize How many tweets to scrape before storing them
+ */
+async function gatherAndStore1(url, batchSize) {
+	if (!url) return console.error('Abort: no scrape url provided.');
+	batchSize = batchSize ? batchSize : 5;
+	let batchNr = 0;
+
+	// Scrape control keeps track of progress & allows to pause/resume
+	let { pagesDone, total } = await ScrapeControl.findOne({ name: 'scrape-control' }).select('pagesDone total');
+	let page = pagesDone + 1;
+	cli.title(`Starting at p: ${page} – Tweets scraped: ${total}`, 0, 3)
+
+	// No-sandbox required for Heroku: https://bit.ly/36UH3qE
+	const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
+
+	// Scrape first batch, loop until turned off
+	await _gatherLoop(url);
+	
+	async function _gatherLoop(url) {
+		let batchIds = [];
+		
+		// Loop through one batch of pages
+		// and store all ids in array
+		await gather({
+			browser: browser,
+			url: url,
+			batchSize: batchSize,
+			page: page
+		}, async (ids, nextUrl, p) => {
+			// Callback called for each page
+			batchIds.push(...ids);
+			url = nextUrl;
+			// cli.log(`Returning p:${page}`.green)
+			page = p;
+		});
+
+		// Remove duplicates within our results (not needed but more accurate counting)
+		const dups = batchIds.filter((item, index) => batchIds.indexOf(item) != index);
+		dups.forEach((dup, i) => batchIds.splice(batchIds.indexOf(dup), 1))
+
+		// Remove ids that already have been scraped
+		let existing = batchIds.map(async (id, i) => {
+			return Tweet.countDocuments({ idTw: id });
+		});
+		existing = await Promise.all(existing);
+		const newBatchIds = [];
+		const removedIds = []; // Store for logging
+		existing.forEach((exists, i) => {
+			if (exists) {
+				removedIds.push(batchIds[i]);
+			} else {
+				newBatchIds.push(batchIds[i]);
+			}
+		});
+
+		batchNr++;
+		cli.title(`Processing batch #${batchNr}: ${newBatchIds.length}/${batchIds.length} new tweets.`);
+		batchIds = newBatchIds;
+
+		// Update total
+		total += batchIds.length;
+
+		// If no new tweets are scraped, end the process.
+		if (!batchIds.length) return cli.banner('Scrapes up to date');
+
+		// Monitor
+		cli.log(`Removed ${removedIds.length} already imported tweets: [${removedIds.join(',')}]`)
+		cli.title(`Store in database: ${batchIds.length} --> Total: ${total}`, 0, 2);
+		// cli.log(batchIds.join(',').green);
+		// cli.log(`${batchIds[0]} --> ${batchIds[batchIds.length - 1]} - ${url}`, 2);
+
+		// Store ids in database
+		const promise2 = batchIds.map(id => {
+			return TweetScrape.findOneAndUpdate({ idTw: id }, {
+				idTw: id
+			}, { upsert: true, new: true });
+		});
+		let tweets = await Promise.all(promise2);
+
+		// Store next page URL & check if we should continue
+		await ScrapeControl.findOneAndUpdate({ name: 'scrape-control' }, {
+			url: url,
+			pagesDone: page, // Not working, needs debug
+			total: total // Off with a few – not functional but sloppy
+		});
+
+		page++;
+
+		// Batch repeats with delay until we reach bottom of profile
+		if (url) {
+			await timeout(5000);
+			const { gathering } = await ScrapeControl.findOne({ name: 'scrape-control' });
+			if (gathering) { _gatherLoop(url) } else { cli.title('Stopped', 2, 2) }
+		}
+	}
+};
+
+
+// Open puppeteet browser with user agent spoofing for testing
+async function openBrowser() {
+	const browser = await puppeteer.launch({ headless: false });
+	const page = await browser.newPage();
+	await page.setUserAgent('Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)');
+	await page.goto('https://twitter.com/realDonaldTrump');
+}
+
+
+// Logging in using puppeteer
+async function login() {
+	const browser = await puppeteer.launch({headless: false});
+	const page = await browser.newPage();
+	await page.setUserAgent('Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)');
+	await page.setViewport({width: 1200, height: 720});
+	await page.goto('https://mobile.twitter.com/session/new', { waitUntil: 'networkidle0' }); // wait until page load
+	await page.type('input[type=text]', 'moenen@shapish.com');
+	await page.type('input[type=password]', 'tweetpUrg3#');
+	await Promise.all([
+		page.click('input[type=submit]:not(#promo_close)'),
+		page.waitForNavigation({ waitUntil: 'networkidle0' })
+	]);
+	await page.goto('https://twitter.com/realDonaldTrump', { waitUntil: 'networkidle0' }); // wait until page load
+}
+// login();

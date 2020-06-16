@@ -1,8 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const puppeteer = require('puppeteer');
-const got = require('got');
-const prettyJson = require('pretty-print-json');
 
 // Models
 const { Tweet, TweetScrape } = require('../models/tweet');

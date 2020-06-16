@@ -44,7 +44,7 @@ async function scrapeLatest(options) {
 		// Start scraping
 		await _cycle();
 	} else {
-		cli.title(`++Stopping Extraction++`);
+		
 	}
 
 	res.send({ state: state });
@@ -66,11 +66,12 @@ async function scrapeLatest(options) {
 			const { liveScraping } = await ScrapeControl.findOne({ name: 'scrape-control' });
 			if (liveScraping) {
 				i++;
-				// await timeout(5000);
 				await _cycle();
+			} else {
+				cli.title(`++Live Scraping Aborted++`);
 			}
 		} else {
-			cli.banner(`Done extracting`);
+			cli.title(`++Live Scraping Completed++`);
 		}
 	}
 }
