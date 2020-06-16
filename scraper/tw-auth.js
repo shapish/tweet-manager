@@ -16,11 +16,13 @@ module.exports = function() {
 	
 	// Fetch new guest token
 	this.refresh = async function() {
+		console.log('Getting guest token')
 		const response = await got('https://api.twitter.com/1.1/guest/activate.json', {
 			method: 'POST',
 			headers: { authorization: `Bearer ${bearerToken}`, ...userAgent }
 		});
 		this.guestToken = JSON.parse(response.body).guest_token;
+		console.log('Guest token success', this.guestToken);
 	}
 
 	// Verifies if guest token exists, creates one if not
