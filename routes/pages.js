@@ -7,12 +7,15 @@ const config = require('config');
 // Models
 const Label = require('../models/label');
 const { User } = require('../models/user');
-const ScrapeControl = require('../models/scrape-control');
 
 // Middleware & functions
 const {auth} = require('../middleware/auth');
+const scrapeControl = new (require('../scraper/scrape-control'))();
 
-
+// (async function x() {
+// 	const { scrapingLatest, findMissing } = await scrapeControl.get();
+// 	console.log(scrapingLatest, Boolean(scrapingLatest), scrapingLatest === true)
+// })();
 
 
 // Landing -> Search
@@ -59,41 +62,26 @@ router.get('/users', auth, async (req, res) => {
 
 
 // Seeder
-router.get('/seeder', auth, async (req, res) => {
-	const scraper = await ScrapeControl.findOne({ name: 'scrape-control' });
-	let data = { user: req.user };
-	if (scraper) {
-		const { seeding, extracting, transferring } = scraper;
-		data = {
-			seeding: seeding,
-			extracting: extracting,
-			transferring: transferring,
-			user: req.user,
-			database: config.get('db').match('localhost') ? 'localhost' : 'production'
-		};
-	}
-	
-	res.render('seeder', data);
+router.get('/seed', auth, async (req, res) => {
+	const { seeding, extracting, transferring } = await scrapeControl.get();
+	res.render('seed', {
+		seeding: seeding,
+		extracting: extracting,
+		transferring: transferring,
+		user: req.user
+	});
 });
 
 
 
 // Scraper
-router.get('/scraper', auth, async (req, res) => {
-	const scraper = await ScrapeControl.findOne({ name: 'scrape-control' });
-	let data = { user: req.user };
-	if (scraper) {
-		const { gathering, extracting, seeding } = scraper;
-		data = {
-			seeding: seeding,
-			gathering: gathering,
-			extracting: extracting,
-			user: req.user,
-			database: config.get('db').match('localhost') ? 'localhost' : 'production'
-		};
-	}
-	
-	res.render('scraper', data);
+router.get('/scrape', auth, async (req, res) => {
+	const { scrapingLatest, fillingMissing } = await scrapeControl.get();
+	res.render('scrape', {
+		scrapingLatest: scrapingLatest,
+		fillingMissing: fillingMissing,
+		user: req.user
+	});
 });
 
 

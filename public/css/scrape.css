@@ -1,0 +1,55 @@
+.step {
+	margin-bottom: 100px;
+	overflow: auto;
+}
+
+/**
+ * Process button states
+ */
+ .process {
+	margin-bottom: 40px;
+	clear: left;
+}
+.process button {
+	min-width: 150px;
+	margin-right: 30px;
+}
+.process .display {
+	float: left;
+	height: 40px;
+	line-height: 40px;
+	color: rgba(0,0,0,.3);
+}
+.process button.on + .display {
+	color: green;
+}
+
+/* Extract Latest */
+#btn-extract-latest::after {
+	content: 'Start Extracting';
+}
+#btn-extract-latest.on::after {
+	content: 'Stop Extracting';
+}
+#btn-extract-latest:not(.on) + .display::after {
+	content: 'Off';
+}
+#btn-extract-latest.on + .display::after {
+	content: 'Extracting in progress';
+}
+
+
+
+/* Find Missing */
+#btn-fill-missing::after {
+	content: 'Fill In Missing';
+}
+#btn-fill-missing.on::after {
+	content: 'Abort';
+}
+#btn-fill-missing:not(.on) + .display::after {
+	content: 'Off';
+}
+#btn-fill-missing.on + .display::after {
+	content: 'Scanning in progress';
+}

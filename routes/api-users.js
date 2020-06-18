@@ -9,7 +9,7 @@ const { User, validate } = require('../models/user');
 
 // Middleware & functions
 const { auth, isAdmin2 } = require('../middleware/auth');
-const { createPath, laterDate } = require('../helpers/general');
+const { pathEncode, laterDate } = require('../helpers/general');
 
 
 
@@ -35,7 +35,7 @@ router.post('/', async (req, res) => {
 	
 	// Create new user record
 	user = new User(_.pick(req.body, ['name', 'email', 'password', 'isAdmin']));
-	user.path = createPath(user.name);
+	user.path = pathEncode(user.name);
 	
 	// Encrypt password
 	const salt = await bcrypt.genSalt(10);
@@ -76,7 +76,7 @@ router.put('/', auth, async (req, res) => {
 	// Look up user by email
 	let user = await User.findOneAndUpdate({ email: req.body.email }, {
 		name: req.body.name,
-		path: createPath(req.body.name),
+		path: pathEncode(req.body.name),
 		password: password
 	});
 	

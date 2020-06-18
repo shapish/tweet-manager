@@ -13,7 +13,7 @@
 	<div class="table-cell main">
 		<span>
 			<% if (isRT) { %>
-				<a href="https://twitter.com/realDonaldTrump/status/<%= rt.id %>" target="_blank" class="flag rt"><b>RT</b></a><a href="https://twitter.com/<%= rt.user.handle %>" class="flag" target="_blank"><span>@<%= rt.user.handle %></span></a>
+				<a href="https://twitter.com/realDonaldTrump/status/<%= rt.idTw %>" target="_blank" class="flag rt"><b>RT</b></a><a href="https://twitter.com/<%= rt.user.handle %>" class="flag" target="_blank"><span>@<%= rt.user.handle %></span></a>
 			<% } else if (user.handle != 'realDonaldTrump') { %>
 				<a href="https://twitter.com/<%= user.handle %>" target="_blank" class="flag"><b><%= user.name %></b><span>@<%= user.handle %></span></a>
 			<% } %>

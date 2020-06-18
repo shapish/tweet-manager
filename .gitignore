@@ -1,5 +1,8 @@
-/node_modules/
+node_modules/
 # public/node_modules/
-public/downloads/
+public/downloads
+public/logs
 coverage/
 logs/
+data/
+_local/

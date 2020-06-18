@@ -14,7 +14,7 @@ const apiTweets = require('../routes/api-search');
 const apiUsers = require('../routes/api-users');
 const apiLogin = require('../routes/api-login');
 const apiPostman = require('../routes/api-postman');
-const apiScraper = require('../routes/api-scraper');
+const apiScrape = require('../routes/api-scrape');
 
 // Frontend Helpers
 const frontendHelpers = require('../helpers/general-global');
@@ -22,7 +22,7 @@ const frontendHelpers = require('../helpers/general-global');
 // Development-only
 const isProd = process.env.NODE_ENV == 'production';
 // const isProd = true;
-const apiSeeder = isProd ? null : require('../routes/api-seeder');
+const apiSeed = isProd ? null : require('../routes/api-seed');
 
 module.exports = function(app) {
 	app.use(express.json());
@@ -48,9 +48,9 @@ module.exports = function(app) {
 	app.use('/api/users', apiUsers);
 	app.use('/api/login', apiLogin);
 	app.use('/api/postman', apiPostman);
-	app.use('/api/scraper', apiScraper);
+	app.use('/api/scrape', apiScrape);
 	app.use(error);
 	
 	// Development only
-	if (!isProd) app.use('/api/seeder', apiSeeder);
+	if (!isProd) app.use('/api/seed', apiSeed);
 }

@@ -1,0 +1,35 @@
+<%- include('partials/head.ejs', {
+	page: 'scrape',
+	title: 'Scrape Latest Tweets',
+	css: [
+		'scrape.css'
+	],
+	jsDefer: [
+		'scrape.js'
+	]
+}) %>
+<div class="step">
+	<h3>Extract Latest</h3>
+	<p>Cycles through all incomplete tweets that have been simple-scraped, extracts and stores the full data from the Twitter API.</p>
+	<br>
+	<% if (test) { %>TEST OK<% } %><br>
+	<%= scrapingLatest %> -- <% if (scrapingLatest) { %>A<% } %>
+	<div class="process">
+		<button id="btn-extract-latest" class="<% if (scrapingLatest) { %>on<% } %>"></button>
+		<div class="display"></div>
+	</div>
+</div>
+
+<div class="step">
+	<h3>Find Missing</h3>
+	<p>Pulls the last ~1300 tweets from @realDonaldTrump, cross-checks and fills in any missing gaps.<br>
+	Should have no results unless IFTTT is failing.</p>
+	<br>
+	<div class="process">
+		<button id="btn-find-missing" class="<% if (findMissing) { %>on<% } %>"></button>
+		<div class="display"></div>
+	</div>
+</div>
+
+
+<%- include('partials/foot.ejs') %>

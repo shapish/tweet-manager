@@ -91,8 +91,8 @@ function linkUserNames(text, fake) {
 
 
 // Create url path from Title
-function createPath(title) {
-	return title.toLowerCase().trim().replace(/\s+/g, '-').replace(/&/g, 'and').replace(/[^\w-]/g, '');
+function pathEncode(text) {
+	return text.toLowerCase().trim().replace(/\s+/g, '-').replace(/&/g, 'and').replace(/[^\w-]/g, '');
 	// return title.toLowerCase().trim().replace(/\s+/g, '-').replace(/&/g, 'and').replace(/[?#<>\\\/.,!:`~^;''""=\[\]\(\)]/g, '');
 }
 
@@ -198,18 +198,17 @@ function getDate(date, type) {
  * Write data to file
  * https://stackoverflow.com/questions/3459476/how-to-append-to-a-file-in-node/43370201#43370201
  */
-function writeToFile(data, filename, options) {
+function writeToFile(filename, data, options) {
 	filename = filename ? filename : 'dump';
 	options = options ? options : {};
 	const format = options.format ? options.format : 'txt';
-	const content = Array.isArray(data) ? data.join('\n') : typeof data == 'string' ? data : String(data);
+	const content = Array.isArray(data) ? data.join('\n') + '\n' : typeof data == 'string' ? data : String(data);
 	fs.appendFile(`public/logs/${filename}.${format}`, content, function (err) {
 		if (err) throw err;
-		console.log('Saved!');
 	});
 }
 
 
 module.exports = { removeDupDocs, compareArrays, linkURLs, linkUserNames,
-	createPath, laterDate: laterDate, timeout, queryString, padNr, getTime,
+	pathEncode, laterDate: laterDate, timeout, queryString, padNr, getTime,
 	getDate, writeToFile }

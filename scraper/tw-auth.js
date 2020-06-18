@@ -7,7 +7,6 @@ const got = require('got');
  * Bearer token might have to be swapped out in order to work,
  * look for it in the HTTP headers sent to Twitter web api.
  */
-
 module.exports = function() {
 	const bearerToken = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA';
 	const userAgent = { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36' };
@@ -16,13 +15,11 @@ module.exports = function() {
 	
 	// Fetch new guest token
 	this.refresh = async function() {
-		console.log('Getting guest token')
 		const response = await got('https://api.twitter.com/1.1/guest/activate.json', {
 			method: 'POST',
 			headers: { authorization: `Bearer ${bearerToken}`, ...userAgent }
 		});
 		this.guestToken = JSON.parse(response.body).guest_token;
-		console.log('Guest token success', this.guestToken);
 	}
 
 	// Verifies if guest token exists, creates one if not
@@ -43,4 +40,6 @@ module.exports = function() {
 			...userAgent
 		}
 	}
+
+	this.refresh();
 }

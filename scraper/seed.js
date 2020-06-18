@@ -11,7 +11,7 @@ const Tta = require('../models/tta');
 const cli = require('../helpers/cli-monitor');
 const { extract, twAuth } = require('./extract');
 const { getTime, padNr, timeout } = require('../helpers/general');
-const sc = new (require('./scrape-control'))();
+const scrapeControl = new (require('./scrape-control'))();
 // const { prettyNr } = require('../helpers/general-global');
 
 
@@ -30,12 +30,12 @@ const sc = new (require('./scrape-control'))();
 async function seed(options) {
 	// No options = turn off
 	if (options == 'abort') {
-		await sc.unset('seeding');
+		await scrapeControl.set('seeding', false);
 		return;
 	} else {
-		await sc.set('seeding');
+		await scrapeControl.set('seeding', true);
 	}
-
+	
 	const p = +options.p || 1;
 	let done = +options.done || 0;
 	const collectionName = options.collection;
@@ -75,7 +75,7 @@ async function seed(options) {
 
 	// Loop through batches of this page
 	let j = 0;
-	while (batches[j] && sc.is('seeding')) {
+	while (batches[j] && await scrapeControl.get('seeding')) {
 		await _seedOneBatch(j);
 		j++;
 	}
@@ -83,10 +83,10 @@ async function seed(options) {
 	// Repeat
 	if (p == totalPages) {
 		// Done
-		await sc.unset('seeding');
+		await scrapeControl.set('seeding', false);
 		cli.banner(`Seeding Complete+++++`);
 	} else {
-		if (sc.is('seeding')) {
+		if (await scrapeControl.get('seeding')) {
 			// Load next page
 			const nextUrl = `${url}?ids_only=${idsOnly}&p=${p+1}&done=${done}`;
 			// cli.log(`+- Next page: ${url} -+`);
@@ -127,10 +127,10 @@ async function seed(options) {
 async function extractTweets(collection) {
 	// No options = turn off
 	if (collection == 'abort') {
-		await sc.unset('extracting');
+		await scrapeControl.set('extracting', false);
 		return;
 	} else {
-		await sc.set('extracting');
+		await scrapeControl.set('extracting', true);
 	}
 
 
@@ -184,7 +184,7 @@ async function extractTweets(collection) {
 
 		// Next loop
 		if (tweets.length == batchSize) {
-			if (sc.is('extracting')) {
+			if (await scrapeControl.get('extracting')) {
 				_extractLoop(batchSize);
 			} else {
 				cli.progress(processed, total);
@@ -192,7 +192,7 @@ async function extractTweets(collection) {
 			}
 		} else {
 			// Turn off process when done
-			sc.unset('extracting');
+			await scrapeControl.set('extracting', false);
 			cli.banner('Extracting Finished+++++');
 		}
 
@@ -283,10 +283,10 @@ async function _fetchDeletedTweet(tweet) {
 async function transferData(options) {
 	// No options = turn off
 	if (options == 'abort') {
-		await sc.unset('transferring');
+		await scrapeControl.set('transferring', false);
 		return;
 	} else {
-		await sc.set('transferring');
+		await scrapeControl.set('transferring', true);
 	}
 
 	const batchSize = 500;
@@ -309,7 +309,7 @@ async function transferData(options) {
 
 	// Complete
 	cli.banner('Transfer Complete+++++');
-	await sc.unset('transferring');
+	await scrapeControl.set('transferring', false);
 
 	// Transfer one batch
 	async function _transferCycle() {

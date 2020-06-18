@@ -6,20 +6,32 @@ module.exports = mongoose.model('scrape-control', new mongoose.Schema({
 		type: String,
 		unique: true
 	},
-	// gathering: Boolean,
-	seeding: Boolean,
-	extracting: Boolean,
-	transferring: Boolean,
-	liveScraping: Boolean,
-	url: String, /* URL of next page to be scraped */
-	pagesDone: {
-		/* Page number of next page to be scraped */
-		type: Number,
-		default: 0
+
+	// Seeding
+	seeding: {
+		type: Boolean,
+		default: false
 	},
-	total: {
-		/* Count of how many tweets are scraped */
-		type: Number,
-		default: 0
+	extracting: {
+		type: Boolean,
+		default: false
+	},
+	transferring: {
+		type: Boolean,
+		default: false
+	},
+
+	// Maintaining
+	gathering: {
+		type: Boolean,
+		default: false
+	},
+	scrapingLatest: {
+		type: Boolean,
+		default: false
+	},
+	fillingMissing: {
+		type: Boolean,
+		default: false
 	}
 }, { collection: 'scrape-control' }));

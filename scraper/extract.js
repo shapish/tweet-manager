@@ -8,11 +8,6 @@ const cli = require('../helpers/cli-monitor');
 const { queryString, timeout } = require('../helpers/general');
 const twAuth = new (require('./tw-auth'))(); // Twitter authentication
 
-// (async () => {
-// 	await twAuth.verify()
-// 	const test = await extract('1271429352933208072');
-// 	console.log('token test', test);
-// })();
 
 
 
@@ -143,7 +138,7 @@ async function _parseTweet(idTw, dontFollow) {
 	}
 	
 	// Log a note when importing foreign tweet
-	if (!dontFollow && tweet.userData.handle != 'realDonaldTrump') console.log('Foreign tweet from @' + tweet.userData.handle);
+	if (!dontFollow && tweet.userData.handle != 'realDonaldTrump') console.log('Foreign tweet from @' + tweet.userData.handle + ' - ' + idTw);
 
 	// Tags, mentions (parse)
 	tweet.tags = extractHashtags(tweet.full_text);
@@ -304,9 +299,9 @@ async function _parseTweet(idTw, dontFollow) {
 
 /**
  * Fetch original Twitter data object
- * @param { Number } id Tweet id
+ * @param { Number } idTw Tweet id
  */
-async function _fetchTweet(id) {
+async function _fetchTweet(idTw) {
 	let params = {
 		tweet_mode: 'extended', // To get non-truncated full_text
 		include_reply_count: 1,
@@ -340,14 +335,13 @@ async function _fetchTweet(id) {
 	let response;
 	
 	try {
-		response = await got(`https://api.twitter.com/2/timeline/conversation/${id}.json?${params}`, {
+		response = await got(`https://api.twitter.com/2/timeline/conversation/${idTw}.json?${params}`, {
 			headers: twAuth.getHeaders(),
 			retry: 0 // Only way to eliminate ugle console errors
 		});
 	} catch (error) {
-		if (!error.response.body) console.log('######', error.response)
+		if (!error.response) return {errors: [{ message: 'Twitter dropped connection (fluke)', code: 1}]};
 		return JSON.parse(error.response.body);
-		// response = JSON.parse(error.response.body);
 	};
 
 	// Refresh token when rate limit is reached
@@ -366,7 +360,7 @@ async function _fetchTweet(id) {
 		// cli.log(`${twAuth.rateLimitRemains}`.yellow);
 	}
 	
-	const tweet = JSON.parse(response.body).globalObjects.tweets[id];
+	const tweet = JSON.parse(response.body).globalObjects.tweets[idTw];
 	// Sometimes Twitter returns an empty data object for deleted tweets
 	if (!tweet) return {errors: [{ message: 'Unavailable Tweet', code: 0}]};
 

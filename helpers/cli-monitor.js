@@ -59,6 +59,12 @@ Monitor.prototype.log = function(inputText) {
 }
 
 
+// Display text without linebreak
+Monitor.prototype.drip = function(text) {
+	process.stdout.write(String(text));
+}
+
+
 // Display gap
 Monitor.prototype.gap = function(size) {
 	size = size ? size : 5;
@@ -140,6 +146,7 @@ Monitor.prototype._parseSpacing = function(text, defaultGapT, defaultGapB) {
 	// Turn '+' before and after text into line breaks
 	const regExT = new RegExp(/^\++/);
 	const regExB = new RegExp(/\++$/);
+	text = String(text);
 	let gapT = text.match(regExT);
 	gapT = gapT ? gapT[0].length : 0;
 	let gapB = text.match(regExB);

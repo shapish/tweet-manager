@@ -9,7 +9,7 @@ const { User } = require('../models/user');
 
 // Middleware & functions
 const { auth, isAdmin1 } = require('../middleware/auth');
-const {createPath} = require('../helpers/general');
+const { pathEncode } = require('../helpers/general');
 
 
 
@@ -28,7 +28,7 @@ router.put('/', [auth, isAdmin1], async (req, res) => {
 	const updatePromises = chapters.map(doc => {
 		let { _id } = doc;
 		_id = _id ? _id : new mongoose.mongo.ObjectID(); // Add id for new chapters
-		doc.path = createPath(doc.title);
+		doc.path = pathEncode(doc.title);
 		// Upsert skips Mongoose default magic so we gotta set these here
 		doc.tweets = doc.tweets ? doc.tweets : [];
 		doc.wordCount = doc.wordCount ? doc.wordCount : null;
@@ -74,7 +74,7 @@ router.put('/:id', [auth, isAdmin1], async (req, res) => {
 	const updates = {};
 	for (const field in req.body) {
 		updates[field] = req.body[field];
-		if (field == 'title') updates.path = createPath(req.body.title);
+		if (field == 'title') updates.path = pathEncode(req.body.title);
 		if (field == 'writer') {
 			updates.writer = await User.findById(req.body.writer);
 		}

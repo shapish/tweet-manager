@@ -1,37 +1,35 @@
-const ScrapeControl = require('../models/scrape-control');
+const SC = require('../models/scrape-control');
 
-module.exports = function sc() {
-	const sc = { name: 'scrape-control' };
+module.exports = function ScrapeControl(userHandle) {
+	userHandle = userHandle ? userHandle : 'realDonaldTrump';
+	const id = { name: userHandle };
 	
-	// Initialize
-	this.seeding = false;
-	this.extracting = false;
-	this.gathering = false;
-	(async function _init() {
-		const ctrl = await ScrapeControl.findOne(sc);
-		this.seeding = ctrl.seeding;
-		this.extracting = ctrl.extracting;
-		this.gathering = ctrl.gathering;
-	})();
-
 	// Check status
-	this.is = function(action) {
-		return this[action];
+	this.get = async function(action) {
+		const ctrl = await SC.findOne(id);
+		return action ? ctrl[action] : ctrl;
 	}
 
-	// Turn action on
-	this.set = async function(action) {
+	// Turn action on or off
+	this.set = async function(action, value) {
 		const update = {};
-		update[action] = true;
-		await ScrapeControl.findOneAndUpdate(sc, update);
-		this[action] = true;
+		update[action] = value;
+		await SC.findOneAndUpdate(id, update);
 	}
 
-	// Turn action off
-	this.unset = async function(action) {
-		const update = {};
-		update[action] = false;
-		await ScrapeControl.findOneAndUpdate(sc, update);
-		this[action] = false;
+	// Only called once to create the scrape control for this user
+	this.init = async function(userHandle) {
+		await SC.findOneAndDelete({ name: userHandle });
+		const ctrl = new SC({
+			name: userHandle,
+			seeding: false,
+			gathering: false,
+			extracting: false,
+			transferring: false,
+			scrapingLatest: false,
+			findMissing: false
+		});
+		ctrl.save();
+		return ctrl;
 	}
 }

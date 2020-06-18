@@ -33,17 +33,20 @@ initControls.bind(tweetTable)();
 
 // Handle additional row click events
 function onRowClick($row) {
-	$row.on('click', '.video-wrap', (e) => { this._playVideo($(e.currentTarget), $row) });
+	$row.on('click', '.video-wrap', (e) => {
+		this._playVideo($(e.currentTarget), $row);
+		// console.log(e.currentTarget, e.target, 'video');
+	});
 	$row.on('click', '.btn-archive', (e) => { this._toggleArchive($(e.target)); e.preventDefault(); });
 	$row.on('click', '.btn-copy', (e) => { this._copyToClipboard($row); e.preventDefault(); });
 	$row.on('click', '.link', (e) => {
 		const $link = $(e.currentTarget);
-		// Avoid overlapping links to fire twice
-		if (!$link.find('.link.clicked').length) {
-			window.open($link.attr('href'));
-			$link.addClass('clicked');
-			setTimeout(() => { $link.removeClass('clicked') }, 100);
-		}
+		if ($link.find('.link.clicked').length) return; // Avoid overlapping links to fire twice
+		if ($(e.target).closest('.video-wrap').length) return; // Avoid links to open on video play
+		window.open($link.attr('href'));
+		$link.addClass('clicked');
+		setTimeout(() => { $link.removeClass('clicked') }, 100);
+	
 	});
 }
 
